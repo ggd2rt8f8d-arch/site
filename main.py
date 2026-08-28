@@ -4,6 +4,9 @@ import logging
 import hashlib
 import hmac
 import asyncpg
+import random
+import json
+import aiohttp
 from typing import Optional
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -20,17 +23,14 @@ from aiogram.enums import ChatMemberStatus
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.client.default import DefaultBotProperties
-from aiogram.client.session.aiohttp import AiohttpSession
-
 
 # ==================== ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ ====================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-TELEGRAM_API_BASE = os.getenv("TELEGRAM_API_BASE", "https://api.telegram.org")
+BOT_ID = os.getenv("BOT_ID")
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "@topzfilmz")
 DATABASE_URL = os.getenv("DATABASE_URL")
-BOT_ID = os.getenv("BOT_ID")  # ← добавить эту переменную
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-secret-key")
+TELEGRAM_API_BASE = os.getenv("TELEGRAM_API_BASE", "https://api.telegram.org")
 
 super_admins_str = os.getenv("SUPER_ADMIN_IDS", "")
 SUPER_ADMIN_IDS = [int(x.strip()) for x in super_admins_str.split(",") if x.strip().isdigit()]
@@ -39,15 +39,6 @@ if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан!")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL не задан!")
-
-session = AiohttpSession(api=TELEGRAM_API_BASE)
-
-# Создаём бота
-bot = Bot(
-    token=BOT_TOKEN,
-    session=session,
-    default=DefaultBotProperties(parse_mode="HTML")
-)
 
 # ==================== ЛОГИРОВАНИЕ ====================
 logging.basicConfig(level=logging.INFO)
@@ -201,6 +192,9 @@ async def init_db():
 async def get_pool():
     return pool
 
+# ==================== ХРАНИЛИЩЕ КОДОВ ====================
+verification_codes = {}
+
 # ==================== БОТ (aiogram) ====================
 bot = Bot(token=BOT_TOKEN)
 storage = MemoryStorage()
@@ -336,145 +330,57 @@ async def check_sub(user_id: int) -> bool:
     except Exception:
         return False
 
-# ---------- Функции для профилей и наказаний ----------
-async def get_user_profile(user_id: int):
-    async with pool.acquire() as conn:
-        is_admin_user = await is_admin(user_id)
-        is_banned_user = await is_banned(user_id)
-        
-        movies_count = await conn.fetchval(
-            "SELECT movies_added FROM admin_stats WHERE user_id = $1", user_id
-        ) or 0
-        
-        warns = await conn.fetchval(
-            "SELECT COUNT(*) FROM punishments WHERE user_id = $1 AND type = 'warning' AND resolved = FALSE",
-            user_id
-        ) or 0
-        
-        punishments = await conn.fetch(
-            """
-            SELECT * FROM punishments WHERE user_id = $1 ORDER BY created_at DESC
-            """, user_id
-        )
-        
-        user_name = await conn.fetchrow(
-            "SELECT username, first_name, last_name, photo_url FROM user_names WHERE user_id = $1",
-            user_id
-        )
-        
-        if user_name:
-            username = user_name["username"] or user_name["first_name"] or f"Пользователь {user_id}"
-            photo_url = user_name["photo_url"]
-        else:
-            username = f"Пользователь {user_id}"
-            photo_url = None
-        
-        return {
-            "user_id": user_id,
-            "username": username,
-            "photo_url": photo_url,
-            "is_admin": is_admin_user,
-            "is_banned": is_banned_user,
-            "movies_count": movies_count,
-            "warns": warns,
-            "total_punishments": len(punishments),
-            "punishments": [dict(p) for p in punishments]
+# ==================== ФУНКЦИИ ДЛЯ РАБОТЫ С TELEGRAM API ====================
+async def get_telegram_user(user_id: int):
+    """Получает данные пользователя из Telegram API"""
+    try:
+        # Используем aiogram для получения информации
+        chat = await bot.get_chat(user_id)
+        user_info = {
+            "id": user_id,
+            "username": chat.username,
+            "first_name": chat.first_name,
+            "last_name": chat.last_name,
+            "photo_url": None
         }
-
-async def add_punishment(user_id: int, ptype: str, reason: str, issued_by: int, duration_hours: int = 0):
-    async with pool.acquire() as conn:
-        if duration_hours > 0:
-            await conn.execute(
-                """
-                INSERT INTO punishments (user_id, type, reason, issued_by, expires_at)
-                VALUES ($1, $2, $3, $4, NOW() + ($5 || ' hours')::INTERVAL)
-                """,
-                user_id, ptype, reason, issued_by, duration_hours
-            )
-        else:
-            await conn.execute(
-                """
-                INSERT INTO punishments (user_id, type, reason, issued_by)
-                VALUES ($1, $2, $3, $4)
-                """,
-                user_id, ptype, reason, issued_by
-            )
         
-        if ptype in ("ban", "permanent_ban"):
-            await ban_user(user_id, reason, duration_hours if ptype == "ban" else 0)
+        # Пробуем получить фото профиля
+        try:
+            photos = await bot.get_user_profile_photos(user_id, limit=1)
+            if photos.photos:
+                file = photos.photos[0][-1]
+                file_info = await bot.get_file(file.file_id)
+                user_info["photo_url"] = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_info.file_path}"
+        except:
+            pass
+        
+        return user_info
+    except Exception as e:
+        logger.error(f"Ошибка получения данных пользователя {user_id}: {e}")
+        return None
 
-async def resolve_punishment(punishment_id: int, resolved_by: int):
-    async with pool.acquire() as conn:
-        punishment = await conn.fetchrow(
-            "SELECT user_id, type FROM punishments WHERE id = $1", punishment_id
+async def send_verification_code(user_id: int):
+    """Отправляет код подтверждения в Telegram"""
+    code = str(random.randint(100000, 999999))
+    expires_at = datetime.now() + timedelta(minutes=5)
+    verification_codes[user_id] = {"code": code, "expires_at": expires_at}
+    
+    try:
+        await bot.send_message(
+            user_id,
+            f"🔐 <b>Код подтверждения</b>\n\n"
+            f"Ваш код для входа в админ-панель:\n\n"
+            f"<code>{code}</code>\n\n"
+            f"⏳ Код действителен <b>5 минут</b>.\n"
+            f"Никому не сообщайте этот код!",
+            parse_mode="HTML"
         )
-        if punishment:
-            await conn.execute(
-                """
-                UPDATE punishments 
-                SET resolved = TRUE, resolved_by = $1, resolved_at = NOW()
-                WHERE id = $2
-                """,
-                resolved_by, punishment_id
-            )
-            if punishment["type"] in ("ban", "permanent_ban"):
-                await unban_user(punishment["user_id"])
-            return True
+        return True
+    except Exception as e:
+        logger.error(f"Ошибка отправки кода: {e}")
         return False
 
-async def add_review(movie_code: str, user_id: int, rating: int, text: str):
-    async with pool.acquire() as conn:
-        await conn.execute(
-            "INSERT INTO movie_reviews (movie_code, user_id, rating, text) VALUES ($1, $2, $3, $4)",
-            movie_code, user_id, rating, text
-        )
-
-async def get_reviews(movie_code: str):
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT * FROM movie_reviews WHERE movie_code = $1 ORDER BY created_at DESC",
-            movie_code
-        )
-        return [dict(r) for r in rows]
-
-async def save_user_name(user_id: int, username: str = None, first_name: str = None, last_name: str = None, photo_url: str = None):
-    async with pool.acquire() as conn:
-        await conn.execute(
-            """
-            INSERT INTO user_names (user_id, username, first_name, last_name, photo_url, updated_at)
-            VALUES ($1, $2, $3, $4, $5, NOW())
-            ON CONFLICT (user_id) DO UPDATE
-            SET username = $2, first_name = $3, last_name = $4, photo_url = $5, updated_at = NOW()
-            """,
-            user_id, username, first_name, last_name, photo_url
-        )
-
-async def get_user_name(user_id: int):
-    async with pool.acquire() as conn:
-        row = await conn.fetchrow(
-            "SELECT username, first_name, last_name, photo_url FROM user_names WHERE user_id = $1",
-            user_id
-        )
-        if row:
-            return row["username"] or row["first_name"] or f"Пользователь {user_id}", row["photo_url"]
-        return f"Пользователь {user_id}", None
-
-async def add_profile_comment(target_user_id: int, author_id: int, text: str):
-    async with pool.acquire() as conn:
-        await conn.execute(
-            "INSERT INTO profile_comments (target_user_id, author_id, text) VALUES ($1, $2, $3)",
-            target_user_id, author_id, text
-        )
-
-async def get_profile_comments(target_user_id: int):
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT * FROM profile_comments WHERE target_user_id = $1 ORDER BY created_at DESC",
-            target_user_id
-        )
-        return [dict(r) for r in rows]
-
-# ---------- Клавиатуры ----------
+# ==================== КЛАВИАТУРЫ ====================
 def subscribe_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📢 Подписаться", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
@@ -512,20 +418,10 @@ def movie_actions_kb(code: str, user_id: int):
     buttons.append([InlineKeyboardButton(text="◀️ Назад", callback_data="admin_list")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-# ---------- Хэндлеры бота ----------
+# ==================== ХЭНДЛЕРЫ БОТА ====================
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
-    photo_url = None
-    if message.from_user.photo:
-        photo_url = message.from_user.photo.url
-    await save_user_name(
-        message.from_user.id,
-        message.from_user.username,
-        message.from_user.first_name,
-        message.from_user.last_name,
-        photo_url
-    )
     
     if await is_banned(message.from_user.id):
         return await message.answer("🚫 Вы заблокированы в боте.")
@@ -730,7 +626,8 @@ async def cb_admins(callback: CallbackQuery):
         text += "Пока нет."
     else:
         for a in admins:
-            name, _ = await get_user_name(a["user_id"])
+            name_data = await get_user_name(a["user_id"])
+            name = name_data[0] if name_data else f"Пользователь {a['user_id']}"
             text += f"👤 {name} (<code>{a['user_id']}</code>)"
             text += f" — 🎬 {a['movies_count']} | ⚠️ {a['warns']}/3\n"
     
@@ -791,7 +688,8 @@ async def cb_list_bans(callback: CallbackQuery):
     else:
         text = "🚫 <b>Забаненные:</b>\n\n"
         for b in banned:
-            name, _ = await get_user_name(b["user_id"])
+            name_data = await get_user_name(b["user_id"])
+            name = name_data[0] if name_data else f"Пользователь {b['user_id']}"
             text += f"👤 {name} (<code>{b['user_id']}</code>)"
             if b["reason"]:
                 text += f" — {b['reason']}"
@@ -844,6 +742,147 @@ async def handle_code(message: Message):
     caption = f"<b>{movie['title']} ({movie['year']})</b>\n\n⭐ <b>IMDb:</b> {movie['rating']}\n\n{movie['description']}"
     await message.answer_photo(photo=movie["poster"], caption=caption, parse_mode="HTML")
 
+# ==================== ФУНКЦИИ ДЛЯ ПРОФИЛЕЙ ====================
+async def save_user_data(user_id: int, username: str = None, first_name: str = None, last_name: str = None, photo_url: str = None):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO user_names (user_id, username, first_name, last_name, photo_url, updated_at)
+            VALUES ($1, $2, $3, $4, $5, NOW())
+            ON CONFLICT (user_id) DO UPDATE
+            SET username = $2, first_name = $3, last_name = $4, photo_url = $5, updated_at = NOW()
+            """,
+            user_id, username, first_name, last_name, photo_url
+        )
+
+async def get_user_name(user_id: int):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT username, first_name, last_name, photo_url FROM user_names WHERE user_id = $1",
+            user_id
+        )
+        if row:
+            name = row["username"] or row["first_name"] or f"Пользователь {user_id}"
+            return name, row["photo_url"]
+        return f"Пользователь {user_id}", None
+
+async def get_user_profile(user_id: int):
+    async with pool.acquire() as conn:
+        is_admin_user = await is_admin(user_id)
+        is_banned_user = await is_banned(user_id)
+        
+        movies_count = await conn.fetchval(
+            "SELECT movies_added FROM admin_stats WHERE user_id = $1", user_id
+        ) or 0
+        
+        warns = await conn.fetchval(
+            "SELECT COUNT(*) FROM punishments WHERE user_id = $1 AND type = 'warning' AND resolved = FALSE",
+            user_id
+        ) or 0
+        
+        punishments = await conn.fetch(
+            """
+            SELECT * FROM punishments WHERE user_id = $1 ORDER BY created_at DESC
+            """, user_id
+        )
+        
+        user_name_data = await get_user_name(user_id)
+        username = user_name_data[0]
+        photo_url = user_name_data[1]
+        
+        return {
+            "user_id": user_id,
+            "username": username,
+            "photo_url": photo_url,
+            "is_admin": is_admin_user,
+            "is_banned": is_banned_user,
+            "movies_count": movies_count,
+            "warns": warns,
+            "total_punishments": len(punishments),
+            "punishments": [dict(p) for p in punishments]
+        }
+
+async def get_user_name(user_id: int):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT username, first_name, last_name, photo_url FROM user_names WHERE user_id = $1",
+            user_id
+        )
+        if row:
+            name = row["username"] or row["first_name"] or f"Пользователь {user_id}"
+            return name, row["photo_url"]
+        return f"Пользователь {user_id}", None
+
+async def add_punishment(user_id: int, ptype: str, reason: str, issued_by: int, duration_hours: int = 0):
+    async with pool.acquire() as conn:
+        if duration_hours > 0:
+            await conn.execute(
+                """
+                INSERT INTO punishments (user_id, type, reason, issued_by, expires_at)
+                VALUES ($1, $2, $3, $4, NOW() + ($5 || ' hours')::INTERVAL)
+                """,
+                user_id, ptype, reason, issued_by, duration_hours
+            )
+        else:
+            await conn.execute(
+                """
+                INSERT INTO punishments (user_id, type, reason, issued_by)
+                VALUES ($1, $2, $3, $4)
+                """,
+                user_id, ptype, reason, issued_by
+            )
+        
+        if ptype in ("ban", "permanent_ban"):
+            await ban_user(user_id, reason, duration_hours if ptype == "ban" else 0)
+
+async def resolve_punishment(punishment_id: int, resolved_by: int):
+    async with pool.acquire() as conn:
+        punishment = await conn.fetchrow(
+            "SELECT user_id, type FROM punishments WHERE id = $1", punishment_id
+        )
+        if punishment:
+            await conn.execute(
+                """
+                UPDATE punishments 
+                SET resolved = TRUE, resolved_by = $1, resolved_at = NOW()
+                WHERE id = $2
+                """,
+                resolved_by, punishment_id
+            )
+            if punishment["type"] in ("ban", "permanent_ban"):
+                await unban_user(punishment["user_id"])
+            return True
+        return False
+
+async def add_review(movie_code: str, user_id: int, rating: int, text: str):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO movie_reviews (movie_code, user_id, rating, text) VALUES ($1, $2, $3, $4)",
+            movie_code, user_id, rating, text
+        )
+
+async def get_reviews(movie_code: str):
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM movie_reviews WHERE movie_code = $1 ORDER BY created_at DESC",
+            movie_code
+        )
+        return [dict(r) for r in rows]
+
+async def add_profile_comment(target_user_id: int, author_id: int, text: str):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO profile_comments (target_user_id, author_id, text) VALUES ($1, $2, $3)",
+            target_user_id, author_id, text
+        )
+
+async def get_profile_comments(target_user_id: int):
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM profile_comments WHERE target_user_id = $1 ORDER BY created_at DESC",
+            target_user_id
+        )
+        return [dict(r) for r in rows]
 
 # ==================== FASTAPI АДМИН-ПАНЕЛЬ ====================
 templates = Jinja2Templates(directory="templates")
@@ -859,26 +898,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # ---------- Вспомогательные функции ----------
-def verify_telegram_auth(data: dict) -> Optional[int]:
-    check_data = data.copy()
-    check_hash = check_data.pop("hash", None)
-    if not check_hash:
-        return None
-    sorted_items = sorted(check_data.items())
-    data_string = "\n".join([f"{k}={v}" for k, v in sorted_items])
-    secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
-    hmac_hash = hmac.new(secret_key, data_string.encode(), hashlib.sha256).hexdigest()
-    if hmac_hash == check_hash:
-        return int(data.get("id", 0))
-    return None
-
 def get_user_id_from_cookie(request: Request) -> Optional[int]:
     user_id_str = request.cookies.get("user_id")
     if user_id_str and user_id_str.isdigit():
         return int(user_id_str)
     return None
 
-# ---------- Проверки прав ----------
 async def check_admin(request: Request):
     user_id = get_user_id_from_cookie(request)
     if not user_id or not await is_admin(user_id):
@@ -891,42 +916,63 @@ async def check_super_admin(request: Request):
         raise HTTPException(status_code=403, detail="Только суперадмин")
     return user_id
 
-# ---------- Роуты ----------
+# ---------- Роуты входа по коду ----------
 @app.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {
         "request": request,
         "BOT_TOKEN": BOT_TOKEN,
-        "BOT_ID": BOT_ID  # ← обязательно передаём
+        "BOT_ID": BOT_ID
     })
 
-@app.post("/auth/telegram")
-async def auth_telegram(request: Request):
-    form = await request.form()
-    data = dict(form)
-    user_id = verify_telegram_auth(data)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Неверная подпись")
+@app.post("/auth/request-code")
+async def request_code(request: Request, user_id: int = Form(...)):
+    """Запрос кода подтверждения"""
     if not await is_admin(user_id):
         return JSONResponse(status_code=403, content={"error": "У вас нет прав администратора"})
     
-    await save_user_name(
-        user_id,
-        data.get("username", ""),
-        data.get("first_name", ""),
-        data.get("last_name", ""),
-        None
-    )
+    # Проверяем, есть ли уже активный код
+    if user_id in verification_codes:
+        stored = verification_codes[user_id]
+        if datetime.now() < stored["expires_at"]:
+            return JSONResponse(status_code=400, content={"error": "Код уже отправлен. Проверьте Telegram."})
     
-    response = JSONResponse({"success": True, "user_id": user_id})
-    response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
-    return response
+    success = await send_verification_code(user_id)
+    if success:
+        return {"success": True, "message": "Код отправлен в Telegram"}
+    else:
+        return JSONResponse(status_code=500, content={"error": "Не удалось отправить код"})
 
-@app.post("/auth/id")
-async def auth_by_id(request: Request, user_id: int = Form(...)):
-    if not await is_admin(user_id):
-        return HTMLResponse("У вас нет прав администратора", status_code=403)
-    response = RedirectResponse(url="/dashboard", status_code=302)
+@app.post("/auth/verify-code")
+async def verify_code(request: Request, user_id: int = Form(...), code: str = Form(...)):
+    """Проверка кода и вход"""
+    stored = verification_codes.get(user_id)
+    if not stored:
+        return JSONResponse(status_code=400, content={"error": "Код не запрошен или истёк"})
+    
+    if datetime.now() > stored["expires_at"]:
+        del verification_codes[user_id]
+        return JSONResponse(status_code=400, content={"error": "Код истёк. Запросите новый"})
+    
+    if stored["code"] != code:
+        return JSONResponse(status_code=400, content={"error": "Неверный код"})
+    
+    # Удаляем использованный код
+    del verification_codes[user_id]
+    
+    # Получаем данные пользователя из Telegram
+    user_data = await get_telegram_user(user_id)
+    if user_data:
+        await save_user_data(
+            user_id,
+            user_data.get("username"),
+            user_data.get("first_name"),
+            user_data.get("last_name"),
+            user_data.get("photo_url")
+        )
+    
+    # Создаём сессию
+    response = JSONResponse({"success": True})
     response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
     return response
 
@@ -1152,7 +1198,7 @@ async def api_resolve_punishment(request: Request, punishment_id: int):
         raise HTTPException(status_code=404, detail="Наказание не найдено")
     return {"success": True}
 
-# ---------- Комментарии к профилям ----------
+# ---------- Комментарии ----------
 @app.get("/api/profile/{user_id}/comments")
 async def api_get_profile_comments(request: Request, user_id: int):
     await check_admin(request)
@@ -1183,40 +1229,6 @@ async def api_stats(request: Request):
         admins = await conn.fetchval("SELECT COUNT(*) FROM admins") or 0
         bans = await conn.fetchval("SELECT COUNT(*) FROM bans") or 0
     return {"movies": movies, "requests": requests, "admins": admins, "bans": bans}
-
-@app.post("/auth/telegram")
-async def auth_telegram(request: Request):
-    form = await request.form()
-    data = dict(form)
-    
-    # Логируем полученные данные
-    logger.info(f"📩 Получены данные от Telegram: {data}")
-    
-    user_id = verify_telegram_auth(data)
-    
-    logger.info(f"🔍 Проверка подписи: user_id={user_id}")
-    
-    if not user_id:
-        logger.error("❌ Неверная подпись!")
-        raise HTTPException(status_code=401, detail="Неверная подпись")
-    
-    if not await is_admin(user_id):
-        logger.warning(f"⛔ Пользователь {user_id} не админ")
-        return JSONResponse(status_code=403, content={"error": "У вас нет прав администратора"})
-    
-    logger.info(f"✅ Авторизация успешна: {user_id}")
-    
-    await save_user_name(
-        user_id,
-        data.get("username", ""),
-        data.get("first_name", ""),
-        data.get("last_name", ""),
-        None
-    )
-    
-    response = JSONResponse({"success": True, "user_id": user_id})
-    response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
-    return response
 
 
 # ==================== ЗАПУСК ====================
