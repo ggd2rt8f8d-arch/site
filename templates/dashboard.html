@@ -147,12 +147,6 @@
             color: #adb5bd;
             font-size: 20px;
         }
-        .admin-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
         @media (max-width: 768px) {
             .sidebar {
                 position: relative;
@@ -481,6 +475,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// ==================== ПЕРЕМЕННЫЕ ====================
+const IS_SUPER = {{ is_super|lower }};
+
 // ==================== НАВИГАЦИЯ ====================
 const pageTitles = {
     dashboard: 'Главная',
@@ -509,7 +506,7 @@ document.querySelectorAll('.sidebar .nav-link[data-page]').forEach(link => {
 async function apiRequest(url, options = {}) {
     const res = await fetch(url, {
         ...options,
-        credentials: 'same-origin',  // Отправляем куки
+        credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
             ...(options.headers || {})
@@ -543,6 +540,9 @@ async function loadMovies() {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Загрузка...</td></tr>';
         
         const res = await apiRequest('/api/movies');
+        if (!res.ok) {
+            throw new Error('Ошибка загрузки');
+        }
         moviesData = await res.json();
         renderMovies(moviesData);
     } catch(e) {
@@ -557,25 +557,33 @@ function renderMovies(data) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">📭 Фильмов пока нет</td></tr>';
         return;
     }
-    tbody.innerHTML = data.map(m => `
-        <tr>
-            <td><code>${m.code}</code></td>
-            <td>${m.title}</td>
-            <td>${m.year}</td>
-            <td>
-                ${m.poster ? `<img src="${m.poster}" class="movie-poster" onerror="this.style.display='none'">` : '<div class="movie-poster-placeholder"><i class="fas fa-image"></i></div>'}
-            </td>
-            <td>⭐ ${m.rating || '-'}</td>
-            <td>
-                <button class="btn btn-warning btn-action btn-sm" onclick="editMovie('${m.code}')">
-                    <i class="fas fa-edit"></i>
-                </button>
-                ${ {{ is_super }} ? `<button class="btn btn-danger btn-action btn-sm" onclick="deleteMovie('${m.code}')">
+    tbody.innerHTML = data.map(m => {
+        const isSuper = IS_SUPER;
+        let actions = `
+            <button class="btn btn-warning btn-action btn-sm" onclick="editMovie('${m.code}')">
+                <i class="fas fa-edit"></i>
+            </button>
+        `;
+        if (isSuper) {
+            actions += `
+                <button class="btn btn-danger btn-action btn-sm" onclick="deleteMovie('${m.code}')">
                     <i class="fas fa-trash"></i>
-                </button>` : '' }
-            </td>
-        </tr>
-    `).join('');
+                </button>
+            `;
+        }
+        return `
+            <tr>
+                <td><code>${m.code}</code></td>
+                <td>${m.title}</td>
+                <td>${m.year}</td>
+                <td>
+                    ${m.poster ? `<img src="${m.poster}" class="movie-poster" onerror="this.style.display='none'">` : '<div class="movie-poster-placeholder"><i class="fas fa-image"></i></div>'}
+                </td>
+                <td>⭐ ${m.rating || '-'}</td>
+                <td>${actions}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 document.getElementById('movieSearch')?.addEventListener('input', function() {
