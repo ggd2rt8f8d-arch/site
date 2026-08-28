@@ -748,6 +748,21 @@ async def api_stats(request: Request):
         bans = await conn.fetchval("SELECT COUNT(*) FROM bans") or 0
     return {"movies": movies, "requests": requests, "admins": admins, "bans": bans}
 
+@app.post("/auth/id")
+async def auth_by_id(request: Request, user_id: int = Form(...)):
+    if not await is_admin(user_id):
+        return HTMLResponse("У вас нет прав администратора", status_code=403)
+    response = RedirectResponse(url="/dashboard", status_code=302)
+    response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
+    return response
+
+@app.get("/api/check-auth")
+async def check_auth(request: Request):
+    user_id = get_user_id_from_cookie(request)
+    if user_id and await is_admin(user_id):
+        return {"authenticated": True, "user_id": user_id}
+    return {"authenticated": False}
+
 # ==================== ЗАПУСК ====================
 if __name__ == "__main__":
     import uvicorn
