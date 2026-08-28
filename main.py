@@ -1115,6 +1115,20 @@ async def dashboard(request: Request):
     if not user_id:
         return RedirectResponse(url="/", status_code=302)
     
+    # Проверяем, есть ли пользователь в БД
+    if not await is_user_exists(user_id):
+        # Создаём пользователя, если его нет
+        await add_user(user_id)
+        user_data = await get_telegram_user(user_id)
+        if user_data:
+            await save_user_data(
+                user_id,
+                user_data.get("username"),
+                user_data.get("first_name"),
+                user_data.get("last_name"),
+                user_data.get("photo_url")
+            )
+    
     is_admin_user = await is_admin(user_id)
     is_super_user = await is_super_admin(user_id)
     
