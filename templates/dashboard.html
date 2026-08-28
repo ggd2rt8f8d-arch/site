@@ -7,7 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
     <style>
-        /* ===== ВСЕ СТИЛИ ОСТАЮТСЯ ТЕМИ ЖЕ ===== */
         * { font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background: #0d0d0d; color: #d4d4d4; }
         ::-webkit-scrollbar { width: 5px; }
@@ -271,6 +270,14 @@
             color: #fff;
         }
         .btn-sm { padding: 2px 8px; font-size: 11px; }
+        .btn-outline-light {
+            border-color: #333;
+            color: #aaa;
+        }
+        .btn-outline-light:hover {
+            background: #2a2a2a;
+            color: #fff;
+        }
 
         .search-box {
             position: relative;
@@ -345,6 +352,13 @@
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid #333;
+        }
+        .avatar-xl {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #333;
         }
 
         .profile-card {
@@ -507,18 +521,164 @@
             display: block;
         }
 
+        /* ===== СТРАНИЦА ФИЛЬМА В СТИЛЕ КИНОПОИСКА ===== */
         .movie-page-container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             background: #141414;
             border: 1px solid #2a2a2a;
             border-radius: 14px;
-            padding: 30px;
+            padding: 0;
+            overflow: hidden;
         }
-        .movie-page-container .movie-poster-large {
-            max-width: 250px;
+        .movie-page-container .movie-banner {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            background: #1a1a1a;
+        }
+        .movie-page-container .movie-content {
+            padding: 30px 35px;
+        }
+        .movie-page-container .movie-title-section {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 25px;
+        }
+        .movie-page-container .movie-title-section .movie-poster-large {
+            width: 180px;
             border-radius: 12px;
             border: 1px solid #333;
+            flex-shrink: 0;
+        }
+        .movie-page-container .movie-title-section .movie-info h1 {
+            font-weight: 300;
+            color: #e8e8e8;
+            font-size: 28px;
+            margin: 0;
+        }
+        .movie-page-container .movie-title-section .movie-info .original-title {
+            color: #777;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        .movie-page-container .movie-title-section .movie-info .movie-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            color: #999;
+            font-size: 14px;
+        }
+        .movie-page-container .movie-title-section .movie-info .movie-meta span {
+            background: #1a1a1a;
+            padding: 4px 14px;
+            border-radius: 30px;
+            border: 1px solid #2a2a2a;
+        }
+        .movie-page-container .movie-title-section .movie-info .movie-description {
+            color: #bbb;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-top: 12px;
+        }
+        .movie-page-container .movie-title-section .movie-info .movie-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .movie-page-container .movie-title-section .movie-info .movie-actions .btn {
+            padding: 8px 24px;
+            font-size: 14px;
+        }
+
+        .movie-page-container .movie-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 30px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin: 20px 0;
+            border: 1px solid #2a2a2a;
+        }
+        .movie-page-container .movie-details-grid .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #222;
+        }
+        .movie-page-container .movie-details-grid .detail-item:last-child {
+            border-bottom: none;
+        }
+        .movie-page-container .movie-details-grid .detail-item .label {
+            color: #777;
+            font-size: 13px;
+        }
+        .movie-page-container .movie-details-grid .detail-item .value {
+            color: #ddd;
+            font-size: 13px;
+            text-align: right;
+        }
+
+        .movie-page-container .cast-section {
+            margin: 20px 0;
+        }
+        .movie-page-container .cast-section h6 {
+            color: #999;
+            font-weight: 300;
+            margin-bottom: 12px;
+        }
+        .movie-page-container .cast-section .cast-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .movie-page-container .cast-section .cast-grid .cast-item {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .movie-page-container .reviews-section {
+            margin-top: 25px;
+        }
+        .movie-page-container .reviews-section h6 {
+            color: #999;
+            font-weight: 300;
+            margin-bottom: 12px;
+        }
+        .movie-page-container .reviews-section .review-item {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+        }
+        .movie-page-container .reviews-section .review-item .review-header {
+            display: flex;
+            justify-content: space-between;
+            color: #777;
+            font-size: 12px;
+        }
+        .movie-page-container .reviews-section .review-item .review-text {
+            color: #ccc;
+            margin-top: 4px;
+            font-size: 14px;
+        }
+        .movie-page-container .reviews-section .review-item .review-rating {
+            color: #e8c84a;
+        }
+        .movie-page-container .reviews-section .review-item .review-actions {
+            margin-top: 6px;
+        }
+
+        .movie-page-container .tpz-rating {
+            font-size: 18px;
+            color: #e8c84a;
         }
 
         @media (max-width: 768px) {
@@ -586,11 +746,26 @@
                 font-size: 13px;
                 padding: 8px 16px;
             }
-            .movie-page-container {
-                padding: 16px;
+            .movie-page-container .movie-title-section {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
             }
-            .movie-page-container .movie-poster-large {
-                max-width: 150px;
+            .movie-page-container .movie-title-section .movie-poster-large {
+                width: 140px;
+            }
+            .movie-page-container .movie-content {
+                padding: 16px 18px;
+            }
+            .movie-page-container .movie-banner {
+                height: 150px;
+            }
+            .movie-page-container .movie-details-grid {
+                grid-template-columns: 1fr;
+                padding: 12px 14px;
+            }
+            .movie-page-container .movie-title-section .movie-info h1 {
+                font-size: 22px;
             }
         }
 
@@ -617,6 +792,12 @@
             .stat-card .label {
                 font-size: 14px;
             }
+            .movie-page-container .movie-banner {
+                height: 400px;
+            }
+            .movie-page-container .movie-title-section .movie-poster-large {
+                width: 220px;
+            }
         }
 
         .fade-in { animation: fadeIn 0.25s ease; }
@@ -624,26 +805,43 @@
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .movie-page-container .review-item {
-            background: #1a1a1a;
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .image-preview {
+            max-width: 150px;
+            max-height: 100px;
+            border-radius: 8px;
             border: 1px solid #2a2a2a;
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin-bottom: 10px;
+            margin-top: 8px;
         }
-        .movie-page-container .review-item .review-header {
-            display: flex;
-            justify-content: space-between;
-            color: #777;
-            font-size: 12px;
+        .banner-preview {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+            margin-top: 8px;
+            object-fit: cover;
         }
-        .movie-page-container .review-item .review-text {
-            color: #ccc;
-            margin-top: 4px;
-            font-size: 14px;
-        }
-        .movie-page-container .review-item .review-rating {
-            color: #e8c84a;
+        .profile-banner {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+            background: #1a1a1a;
         }
     </style>
 </head>
@@ -689,7 +887,7 @@
             <h4 id="pageTitle">Главная</h4>
         </div>
         <div class="user-info" onclick="toggleDropdown()" id="userMenu">
-            <span class="user-name" id="topBarName">{{ username or 'Загрузка...' }}</span>
+            <span class="user-name" id="topBarName">{{ display_name or 'Загрузка...' }}</span>
             <img src="{{ photo_url or 'https://ui-avatars.com/api/?name=' + user_id|string + '&background=2a2a2a&color=cccccc&size=34&rounded=true' }}" class="avatar-sm" id="topBarAvatar" onerror="this.style.display='none'">
             <div class="dropdown-menu-custom" id="userDropdown">
                 <button class="dropdown-item" onclick="showProfilePage()">
@@ -872,8 +1070,9 @@
             <div class="profile-header">
                 <img src="{{ photo_url or 'https://ui-avatars.com/api/?name=' + user_id|string + '&background=2a2a2a&color=cccccc&size=72&rounded=true' }}" class="avatar-lg" id="profileAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2272%22 height=%2272%22%3E%3Crect fill=%22%23222%22 width=%2272%22 height=%2272%22/%3E%3Ctext x=%2236%22 y=%2244%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2230%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
                 <div class="profile-info">
-                    <h3 id="profileName">{{ username or 'Загрузка...' }}</h3>
+                    <h3 id="profileName">{{ display_name or 'Загрузка...' }}</h3>
                     <div class="sub" id="profileId"><i class="fas fa-id-badge"></i> ID: {{ user_id }}</div>
+                    <div class="sub" id="profileUsername">@{{ username or user_id }}</div>
                     {% if is_super %}
                         <span class="badge-super"><i class="fas fa-crown"></i> Суперадмин</span>
                     {% elif is_admin %}
@@ -890,8 +1089,8 @@
                     <div class="lbl"><i class="fas fa-film"></i> Фильмов</div>
                 </div>
                 <div class="stat-item">
-                    <div class="num warn" id="pWarns">0</div>
-                    <div class="lbl"><i class="fas fa-exclamation-triangle"></i> Выговоров</div>
+                    <div class="num" id="pReviews">0</div>
+                    <div class="lbl"><i class="fas fa-star"></i> Отзывов</div>
                 </div>
                 <div class="stat-item">
                     <div class="num ok" id="pPunishments">0</div>
@@ -917,7 +1116,7 @@
         </div>
     </div>
 
-    <!-- ====== СТРАНИЦА ФИЛЬМА ====== -->
+    <!-- ====== СТРАНИЦА ФИЛЬМА (Кинопоиск-стиль) ====== -->
     <div id="page-movie" style="display:none" class="fade-in">
         <div class="movie-page-container" id="moviePageContainer">
             <div id="moviePageContent">
@@ -934,16 +1133,34 @@
 
             <h6 style="color:#999;font-weight:300;margin-bottom:15px;"><i class="fas fa-user"></i> Аккаунт</h6>
             <div class="mb-3">
-                <label class="form-label" style="color:#999;">Имя</label>
-                <input type="text" class="form-control" id="settingsFirstName" placeholder="Ваше имя" value="{{ username or '' }}">
+                <label class="form-label" style="color:#999;">Отображаемое имя</label>
+                <input type="text" class="form-control" id="settingsDisplayName" placeholder="Ваше имя" value="{{ display_name or '' }}">
             </div>
             <div class="mb-3">
-                <label class="form-label" style="color:#999;">Юзернейм</label>
-                <input type="text" class="form-control" id="settingsUsername" placeholder="@username" value="">
+                <label class="form-label" style="color:#999;">Юзернейм (без @)</label>
+                <input type="text" class="form-control" id="settingsUsername" placeholder="username" value="{{ username or '' }}">
             </div>
             <div class="mb-3">
-                <label class="form-label" style="color:#999;">Ссылка на аватарку</label>
-                <input type="text" class="form-control" id="settingsPhotoUrl" placeholder="https://example.com/avatar.jpg" value="{{ photo_url or '' }}">
+                <label class="form-label" style="color:#999;">Аватарка</label>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <div class="file-input-wrapper">
+                        <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
+                        <input type="file" id="settingsPhotoFile" accept="image/*" onchange="previewImage(this, 'photoPreview')">
+                    </div>
+                    <input type="text" class="form-control" id="settingsPhotoUrl" placeholder="Или вставьте ссылку" style="flex:1;min-width:150px;" value="{{ photo_url or '' }}">
+                </div>
+                <img id="photoPreview" class="image-preview" src="{{ photo_url or '' }}" style="display:{{ 'block' if photo_url else 'none' }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" style="color:#999;">Баннер</label>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <div class="file-input-wrapper">
+                        <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
+                        <input type="file" id="settingsBannerFile" accept="image/*" onchange="previewImage(this, 'bannerPreview')">
+                    </div>
+                    <input type="text" class="form-control" id="settingsBannerUrl" placeholder="Или вставьте ссылку" style="flex:1;min-width:150px;" value="{{ banner_url or '' }}">
+                </div>
+                <img id="bannerPreview" class="banner-preview" src="{{ banner_url or '' }}" style="display:{{ 'block' if banner_url else 'none' }}">
             </div>
             <button class="btn btn-primary" onclick="saveProfileSettings()">
                 <i class="fas fa-save"></i> Сохранить профиль
@@ -995,10 +1212,6 @@
                     <i class="fas fa-telegram" style="color:#0088cc;font-size:18px;"></i>
                     <span style="color:#ccc;font-size:13px;">@topzfilmz</span>
                 </div>
-                <div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;padding:10px 14px;border-radius:10px;border:1px solid #2a2a2a;">
-                    <i class="fas fa-envelope" style="color:#888;font-size:18px;"></i>
-                    <span style="color:#ccc;font-size:13px;">support@topzfilmz.ru</span>
-                </div>
             </div>
         </div>
     </div>
@@ -1027,7 +1240,7 @@
 
 <!-- Добавить фильм -->
 <div class="modal fade" id="addMovieModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Добавить фильм</h5>
@@ -1037,7 +1250,26 @@
                 <div class="mb-3"><label class="form-label">Код</label><input type="text" class="form-control" id="movieCode" placeholder="the-matrix"></div>
                 <div class="mb-3"><label class="form-label">Название</label><input type="text" class="form-control" id="movieTitle" placeholder="Матрица"></div>
                 <div class="mb-3"><label class="form-label">Год</label><input type="number" class="form-control" id="movieYear" placeholder="1999"></div>
-                <div class="mb-3"><label class="form-label">Обложка</label><input type="text" class="form-control" id="moviePoster" placeholder="https://example.com/poster.jpg"></div>
+                <div class="mb-3"><label class="form-label">Постер</label>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <div class="file-input-wrapper">
+                            <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
+                            <input type="file" id="moviePosterFile" accept="image/*" onchange="previewImage(this, 'moviePosterPreview')">
+                        </div>
+                        <input type="text" class="form-control" id="moviePoster" placeholder="Или ссылка" style="flex:1;min-width:150px;">
+                    </div>
+                    <img id="moviePosterPreview" class="image-preview" style="display:none;">
+                </div>
+                <div class="mb-3"><label class="form-label">Баннер</label>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <div class="file-input-wrapper">
+                            <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
+                            <input type="file" id="movieBannerFile" accept="image/*" onchange="previewImage(this, 'movieBannerPreview')">
+                        </div>
+                        <input type="text" class="form-control" id="movieBanner" placeholder="Или ссылка" style="flex:1;min-width:150px;">
+                    </div>
+                    <img id="movieBannerPreview" class="banner-preview" style="display:none;">
+                </div>
                 <div class="mb-3"><label class="form-label">Описание</label><textarea class="form-control" id="movieDescription" rows="3"></textarea></div>
                 <div class="mb-3"><label class="form-label">IMDb</label><input type="text" class="form-control" id="movieRating" placeholder="8.7"></div>
             </div>
@@ -1051,7 +1283,7 @@
 
 <!-- Редактировать фильм -->
 <div class="modal fade" id="editMovieModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-edit"></i> Редактировать</h5>
@@ -1061,7 +1293,26 @@
                 <div class="mb-3"><label class="form-label">Код</label><input type="text" class="form-control" id="editCode" disabled></div>
                 <div class="mb-3"><label class="form-label">Название</label><input type="text" class="form-control" id="editTitle"></div>
                 <div class="mb-3"><label class="form-label">Год</label><input type="number" class="form-control" id="editYear"></div>
-                <div class="mb-3"><label class="form-label">Обложка</label><input type="text" class="form-control" id="editPoster"></div>
+                <div class="mb-3"><label class="form-label">Постер</label>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <div class="file-input-wrapper">
+                            <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
+                            <input type="file" id="editPosterFile" accept="image/*" onchange="previewImage(this, 'editPosterPreview')">
+                        </div>
+                        <input type="text" class="form-control" id="editPoster" placeholder="Или ссылка" style="flex:1;min-width:150px;">
+                    </div>
+                    <img id="editPosterPreview" class="image-preview" style="display:none;">
+                </div>
+                <div class="mb-3"><label class="form-label">Баннер</label>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <div class="file-input-wrapper">
+                            <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
+                            <input type="file" id="editBannerFile" accept="image/*" onchange="previewImage(this, 'editBannerPreview')">
+                        </div>
+                        <input type="text" class="form-control" id="editBanner" placeholder="Или ссылка" style="flex:1;min-width:150px;">
+                    </div>
+                    <img id="editBannerPreview" class="banner-preview" style="display:none;">
+                </div>
                 <div class="mb-3"><label class="form-label">Описание</label><textarea class="form-control" id="editDescription" rows="3"></textarea></div>
                 <div class="mb-3"><label class="form-label">IMDb</label><input type="text" class="form-control" id="editRating"></div>
             </div>
@@ -1197,6 +1448,19 @@ let currentProfileUserId = CURRENT_USER;
 let currentMovieCode = null;
 let currentReviewMovieCode = null;
 
+// ==================== ФУНКЦИИ ПРЕДПРОСМОТРА ====================
+function previewImage(input, previewId) {
+    const preview = document.getElementById(previewId);
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
 // ==================== САЙДБАР ====================
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
@@ -1265,7 +1529,6 @@ async function apiRequest(url, options = {}) {
             ...(options.headers || {})
         }
     });
-    // НЕ ПЕРЕНАПРАВЛЯЕМ на /, а просто возвращаем ошибку
     if (res.status === 401 || res.status === 403) {
         console.warn('⚠️ Нет доступа к API:', url);
         throw new Error('Доступ запрещён');
@@ -1374,13 +1637,20 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
         code: document.getElementById('movieCode').value.trim(),
         title: document.getElementById('movieTitle').value.trim(),
         year: parseInt(document.getElementById('movieYear').value),
-        poster: document.getElementById('moviePoster').value.trim(),
+        poster: document.getElementById('moviePoster').value.trim() || '',
+        banner: document.getElementById('movieBanner').value.trim() || '',
         description: document.getElementById('movieDescription').value.trim(),
         rating: document.getElementById('movieRating').value.trim()
     };
     for (let key in data) {
-        if (!data[key] && key !== 'year') { showToast('⚠️ Заполните все поля', 'warning'); return; }
-        if (key === 'year' && isNaN(data[key])) { showToast('⚠️ Год должен быть числом', 'warning'); return; }
+        if (!data[key] && key !== 'year' && key !== 'poster' && key !== 'banner') {
+            showToast('⚠️ Заполните все поля', 'warning');
+            return;
+        }
+        if (key === 'year' && isNaN(data[key])) {
+            showToast('⚠️ Год должен быть числом', 'warning');
+            return;
+        }
     }
     try {
         const res = await apiRequest('/api/movies', { method: 'POST', body: JSON.stringify(data) });
@@ -1390,8 +1660,11 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
             document.getElementById('movieTitle').value = '';
             document.getElementById('movieYear').value = '';
             document.getElementById('moviePoster').value = '';
+            document.getElementById('movieBanner').value = '';
             document.getElementById('movieDescription').value = '';
             document.getElementById('movieRating').value = '';
+            document.getElementById('moviePosterPreview').style.display = 'none';
+            document.getElementById('movieBannerPreview').style.display = 'none';
             loadMovies(); loadStats();
             showToast('✅ Фильм добавлен', 'success');
         } else {
@@ -1409,8 +1682,11 @@ async function editMovie(code) {
         document.getElementById('editTitle').value = m.title;
         document.getElementById('editYear').value = m.year;
         document.getElementById('editPoster').value = m.poster || '';
+        document.getElementById('editBanner').value = m.banner || '';
         document.getElementById('editDescription').value = m.description || '';
         document.getElementById('editRating').value = m.rating || '';
+        document.getElementById('editPosterPreview').style.display = 'none';
+        document.getElementById('editBannerPreview').style.display = 'none';
         new bootstrap.Modal(document.getElementById('editMovieModal')).show();
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
@@ -1421,6 +1697,7 @@ document.getElementById('updateMovieBtn')?.addEventListener('click', async funct
         title: document.getElementById('editTitle').value,
         year: parseInt(document.getElementById('editYear').value),
         poster: document.getElementById('editPoster').value,
+        banner: document.getElementById('editBanner').value,
         description: document.getElementById('editDescription').value,
         rating: document.getElementById('editRating').value
     };
@@ -1442,7 +1719,7 @@ async function deleteMovie(code) {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-// ==================== СТРАНИЦА ФИЛЬМА ====================
+// ==================== СТРАНИЦА ФИЛЬМА (Кинопоиск-стиль) ====================
 async function showMoviePage(code) {
     currentMovieCode = code;
     try {
@@ -1451,40 +1728,98 @@ async function showMoviePage(code) {
         const reviewsRes = await apiRequest(`/api/movies/${code}/reviews`);
         const reviews = await reviewsRes.json();
         
+        // Проверяем, есть ли отзыв от текущего пользователя
+        let userReview = null;
+        try {
+            const userReviewRes = await apiRequest(`/api/movies/${code}/reviews?user=${CURRENT_USER}`);
+            // Если API не поддерживает фильтр, просто игнорируем
+        } catch(e) {}
+        
         let reviewsHtml = '';
         if (reviews && reviews.length) {
-            reviewsHtml = reviews.map(r => `
-                <div class="review-item">
-                    <div class="review-header">
-                        <span><i class="fas fa-user"></i> ${r.user_id}</span>
-                        <span class="review-rating"><i class="fas fa-star"></i> ${r.rating}/10</span>
-                        ${IS_SUPER ? `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteReview(${r.id}, '${code}')" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i></button>` : ''}
+            reviewsHtml = reviews.map(r => {
+                const isOwner = r.user_id == CURRENT_USER;
+                return `
+                    <div class="review-item">
+                        <div class="review-header">
+                            <span><i class="fas fa-user"></i> ${r.user_id}</span>
+                            <span class="review-rating"><i class="fas fa-star"></i> ${r.rating}/10</span>
+                            ${isOwner ? `<button class="btn btn-danger btn-sm" onclick="deleteMyReview(${r.id}, '${code}')" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i></button>` : ''}
+                            ${IS_SUPER ? `<button class="btn btn-danger btn-sm" onclick="deleteReview(${r.id}, '${code}')" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                        <div class="review-text">${r.text || ''}</div>
+                        <div style="color:#777;font-size:10px;margin-top:4px;">${new Date(r.created_at).toLocaleString()}</div>
                     </div>
-                    <div class="review-text">${r.text || ''}</div>
-                    <div style="color:#777;font-size:10px;margin-top:4px;">${new Date(r.created_at).toLocaleString()}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         } else {
-            reviewsHtml = '<p class="text-secondary-light text-center py-3">Нет отзывов</p>';
+            reviewsHtml = '<p class="text-secondary-light text-center py-3">Нет отзывов. Будьте первым!</p>';
         }
+        
+        // Формируем детали фильма
+        const details = [
+            { label: 'Год производства', value: m.year || '-' },
+            { label: 'Страна', value: 'США' },
+            { label: 'Жанр', value: 'Фантастика, Боевик' },
+            { label: 'Режиссер', value: '-' },
+            { label: 'Сценарий', value: '-' },
+            { label: 'Бюджет', value: '-' },
+            { label: 'Сборы в США', value: '-' },
+            { label: 'Сборы в мире', value: '-' }
+        ];
         
         const container = document.getElementById('moviePageContent');
         container.innerHTML = `
-            <div class="text-center">
-                ${m.poster ? `<img src="${m.poster}" class="movie-poster-large" onerror="this.style.display='none'">` : ''}
-                <h3 style="font-weight:300;color:#e8e8e8;margin-top:15px;">${m.title} (${m.year})</h3>
-                <p class="text-secondary-light"><i class="fas fa-star" style="color:#e8c84a;"></i> IMDb: ${m.rating || '-'}</p>
-                <p class="text-secondary-light"><i class="fas fa-star" style="color:#e8c84a;"></i> TPZ: ${m.tpz || '-'} (${m.votes || 0} оценок)</p>
-                <p style="color:#bbb;max-width:600px;margin:10px auto;">${m.description || 'Нет описания'}</p>
-                <hr style="border-color:#2a2a2a;">
-                <div class="d-flex justify-content-center gap-2 flex-wrap">
-                    ${IS_ADMIN ? `<button class="btn btn-warning btn-sm" onclick="editMovie('${m.code}')"><i class="fas fa-edit"></i> Редактировать</button>` : ''}
-                    ${IS_ADMIN ? `<button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#reviewModal" onclick="setReviewMovie('${m.code}')"><i class="fas fa-star"></i> Отзыв</button>` : ''}
-                    <button class="btn btn-secondary btn-sm" onclick="showPage('movies')"><i class="fas fa-arrow-left"></i> Назад</button>
+            ${m.banner ? `<img src="${m.banner}" class="movie-banner" onerror="this.style.display='none'">` : ''}
+            <div class="movie-content">
+                <div class="movie-title-section">
+                    ${m.poster ? `<img src="${m.poster}" class="movie-poster-large" onerror="this.style.display='none'">` : ''}
+                    <div class="movie-info">
+                        <h1>${m.title}</h1>
+                        <div class="original-title">${m.title} (${m.year})</div>
+                        <div class="movie-meta">
+                            <span><i class="fas fa-star" style="color:#e8c84a;"></i> IMDb: ${m.rating || '-'}</span>
+                            <span><i class="fas fa-star" style="color:#e8c84a;"></i> TPZ: ${m.tpz || '-'} (${m.votes || 0} оценок)</span>
+                            <span>${m.year}</span>
+                        </div>
+                        <div class="movie-description">${m.description || 'Нет описания'}</div>
+                        <div class="movie-actions">
+                            <button class="btn btn-primary" onclick="if(IS_ADMIN)editMovie('${m.code}')" ${!IS_ADMIN ? 'disabled' : ''}>
+                                <i class="fas fa-edit"></i> Редактировать
+                            </button>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal" onclick="setReviewMovie('${m.code}')">
+                                <i class="fas fa-star"></i> Оставить отзыв
+                            </button>
+                            <button class="btn btn-secondary" onclick="showPage('movies')">
+                                <i class="fas fa-arrow-left"></i> Назад
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <hr style="border-color:#2a2a2a;">
-                <h6 style="font-weight:300;color:#999;"><i class="fas fa-comments"></i> Отзывы (${reviews ? reviews.length : 0})</h6>
-                <div id="movieReviews">${reviewsHtml}</div>
+                
+                <div class="movie-details-grid">
+                    ${details.map(d => `
+                        <div class="detail-item">
+                            <span class="label">${d.label}</span>
+                            <span class="value">${d.value}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="cast-section">
+                    <h6><i class="fas fa-users"></i> В главных ролях</h6>
+                    <div class="cast-grid">
+                        <span class="cast-item">Том Холланд</span>
+                        <span class="cast-item">Зендея</span>
+                        <span class="cast-item">Сэди Синк</span>
+                        <span class="cast-item">Джейкоб Баталон</span>
+                    </div>
+                </div>
+                
+                <div class="reviews-section">
+                    <h6><i class="fas fa-comments"></i> Отзывы (${reviews ? reviews.length : 0})</h6>
+                    <div id="movieReviews">${reviewsHtml}</div>
+                </div>
             </div>
         `;
         document.getElementById('pageTitle').textContent = `🎬 ${m.title}`;
@@ -1502,6 +1837,20 @@ async function deleteReview(reviewId, movieCode) {
             showToast('✅ Отзыв удалён', 'success');
             showMoviePage(movieCode);
             loadMovies();
+            loadStats();
+        }
+    } catch(e) { showToast('❌ Ошибка', 'danger'); }
+}
+
+async function deleteMyReview(reviewId, movieCode) {
+    if (!confirm('Удалить ваш отзыв?')) return;
+    try {
+        const res = await apiRequest(`/api/reviews/${reviewId}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('✅ Ваш отзыв удалён', 'success');
+            showMoviePage(movieCode);
+            loadMovies();
+            loadStats();
         }
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
@@ -1522,6 +1871,7 @@ document.getElementById('saveReviewBtn')?.addEventListener('click', async functi
             showToast('✅ Отзыв добавлен', 'success');
             if (currentReviewMovieCode) showMoviePage(currentReviewMovieCode);
             loadMovies();
+            loadStats();
         } else { showToast('❌ Ошибка', 'danger'); }
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 });
@@ -1545,7 +1895,7 @@ async function loadAdmins() {
             return `
                 <tr class="clickable-row" onclick="showProfileModal(${a.user_id})">
                     <td><img src="${a.photo_url || 'https://ui-avatars.com/api/?name=' + a.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'"></td>
-                    <td><div style="font-weight:400;color:#ddd;">${a.username || 'Пользователь'}</div><div style="font-size:11px;color:#666;"><code>${a.user_id}</code></div></td>
+                    <td><div style="font-weight:400;color:#ddd;">${a.display_name || 'Пользователь'}</div><div style="font-size:11px;color:#666;"><code>${a.user_id}</code></div></td>
                     <td>${a.movies_count || 0}</td>
                     <td><span class="${(a.warns || 0) >= 3 ? 'text-danger' : 'text-secondary-light'}">${a.warns || 0}/3</span></td>
                     ${IS_SUPER ? `<td style="white-space:nowrap;">${actions}</td>` : ''}
@@ -1599,7 +1949,7 @@ async function loadBans() {
             return `
                 <tr class="clickable-row" onclick="showProfileModal(${b.user_id})">
                     <td><img src="${b.photo_url || 'https://ui-avatars.com/api/?name=' + b.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'"></td>
-                    <td><div style="font-weight:400;color:#ddd;">${b.username || 'Пользователь'}</div><div style="font-size:11px;color:#666;"><code>${b.user_id}</code></div></td>
+                    <td><div style="font-weight:400;color:#ddd;">${b.display_name || 'Пользователь'}</div><div style="font-size:11px;color:#666;"><code>${b.user_id}</code></div></td>
                     <td>${b.reason || '-'}</td>
                     <td>${b.expires_at ? new Date(b.expires_at).toLocaleString() : 'Навсегда'}</td>
                     ${IS_SUPER ? `<td style="white-space:nowrap;">${actions}</td>` : ''}
@@ -1648,17 +1998,18 @@ async function loadProfile(user_id) {
     try {
         const res = await apiRequest(`/api/profile/${user_id}`);
         const data = await res.json();
-        document.getElementById('profileName').textContent = data.username || `Пользователь ${user_id}`;
+        document.getElementById('profileName').textContent = data.display_name || `Пользователь ${user_id}`;
         document.getElementById('profileId').innerHTML = `<i class="fas fa-id-badge"></i> ID: ${user_id}`;
+        document.getElementById('profileUsername').textContent = `@${data.username || user_id}`;
         document.getElementById('pMovies').textContent = data.movies_count || 0;
-        document.getElementById('pWarns').textContent = data.warns || 0;
+        document.getElementById('pReviews').textContent = data.reviews_count || 0;
         document.getElementById('pPunishments').textContent = data.total_punishments || 0;
         
         if (data.photo_url) {
             document.getElementById('profileAvatar').src = data.photo_url;
             document.getElementById('topBarAvatar').src = data.photo_url;
         }
-        document.getElementById('topBarName').textContent = data.username || `Пользователь ${user_id}`;
+        document.getElementById('topBarName').textContent = data.display_name || `Пользователь ${user_id}`;
         
         const history = document.getElementById('pHistory');
         if (!data.punishments || !data.punishments.length) {
@@ -1692,14 +2043,15 @@ async function showProfileModal(user_id) {
         body.innerHTML = `
             <div class="text-center">
                 <img src="${data.photo_url || 'https://ui-avatars.com/api/?name=' + user_id + '&background=2a2a2a&color=cccccc&size=80&rounded=true'}" class="avatar-lg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23222%22 width=%2280%22 height=%2280%22/%3E%3Ctext x=%2240%22 y=%2248%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2232%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
-                <h4 class="mt-3" style="font-weight:300;color:#e8e8e8;">${data.username || 'Пользователь'}</h4>
+                <h4 class="mt-3" style="font-weight:300;color:#e8e8e8;">${data.display_name || 'Пользователь'}</h4>
                 <p class="text-secondary-light"><i class="fas fa-id-badge"></i> ID: ${user_id}</p>
+                <p class="text-secondary-light">@${data.username || user_id}</p>
                 ${data.is_admin ? '<span class="badge-super"><i class="fas fa-crown"></i> Админ</span>' : ''}
                 ${data.is_banned ? '<span class="badge-active" style="margin-left:8px;"><i class="fas fa-ban"></i> Забанен</span>' : ''}
                 <hr style="border-color:#2a2a2a;">
                 <div class="row g-3 text-center">
                     <div class="col-4"><div class="stat-item"><div class="num">${data.movies_count || 0}</div><div class="lbl"><i class="fas fa-film"></i> Фильмов</div></div></div>
-                    <div class="col-4"><div class="stat-item"><div class="num warn">${data.warns || 0}</div><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Выговоров</div></div></div>
+                    <div class="col-4"><div class="stat-item"><div class="num">${data.reviews_count || 0}</div><div class="lbl"><i class="fas fa-star"></i> Отзывов</div></div></div>
                     <div class="col-4"><div class="stat-item"><div class="num ok">${data.total_punishments || 0}</div><div class="lbl"><i class="fas fa-gavel"></i> Наказаний</div></div></div>
                 </div>
                 ${IS_SUPER ? `
@@ -1736,7 +2088,7 @@ async function showProfileModal(user_id) {
                 </div>
             </div>
         `;
-        document.getElementById('profileModalName').textContent = `👤 ${data.username || 'Пользователь'}`;
+        document.getElementById('profileModalName').textContent = `👤 ${data.display_name || 'Пользователь'}`;
         const punishBtn = document.getElementById('punishBtn');
         if (IS_SUPER && user_id != CURRENT_USER) {
             punishBtn.style.display = 'inline-block';
@@ -1931,13 +2283,18 @@ function saveAppSettings() {
 }
 
 async function saveProfileSettings() {
-    const first_name = document.getElementById('settingsFirstName').value.trim();
+    const display_name = document.getElementById('settingsDisplayName').value.trim();
     const username = document.getElementById('settingsUsername').value.trim();
     const photo_url = document.getElementById('settingsPhotoUrl').value.trim();
+    const banner_url = document.getElementById('settingsBannerUrl').value.trim();
+    
+    // Если загружены файлы, они уже в предпросмотре, но нужно отправить ссылки
+    // Для простоты используем URL из полей ввода
+    
     try {
         const res = await apiRequest(`/api/profile/${CURRENT_USER}`, {
             method: 'PUT',
-            body: JSON.stringify({ first_name, username, photo_url })
+            body: JSON.stringify({ display_name, username, photo_url, banner_url })
         });
         if (res.ok) {
             showToast('✅ Профиль обновлён', 'success');
