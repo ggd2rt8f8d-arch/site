@@ -753,9 +753,23 @@ async def get_or_create_user_from_google(email: str, name: str, picture: str):
         row = await conn.fetchrow("SELECT user_id FROM google_users WHERE email = $1", email)
         if row:
             user_id = row["user_id"]
+            # Проверяем, есть ли пользователь в таблице users
+            user_exists = await conn.fetchval("SELECT 1 FROM users WHERE user_id = $1", user_id)
+            if not user_exists:
+                # Создаём пользователя, если его нет
+                username = email.split('@')[0]
+                existing = await conn.fetchval("SELECT user_id FROM users WHERE username = $1", username)
+                if existing:
+                    username = f"{username}_{random.randint(100, 999)}"
+                await conn.execute(
+                    "INSERT INTO users (user_id, username, first_name, last_name, photo_url, last_seen, is_online) VALUES ($1, $2, $3, $4, $5, NOW(), TRUE)",
+                    user_id, username, name, None, picture
+                )
+                await save_user_data(user_id, username, name, None, name, picture, None)
             await update_user_online(user_id)
             return user_id
         
+        # Создаём нового пользователя
         user_id = random.randint(100000000, 999999999)
         username = email.split('@')[0]
         existing = await conn.fetchval("SELECT user_id FROM users WHERE username = $1", username)
@@ -766,8 +780,11 @@ async def get_or_create_user_from_google(email: str, name: str, picture: str):
             "INSERT INTO google_users (email, user_id, name, picture) VALUES ($1, $2, $3, $4)",
             email, user_id, name, picture
         )
+        await conn.execute(
+            "INSERT INTO users (user_id, username, first_name, last_name, photo_url, last_seen, is_online) VALUES ($1, $2, $3, $4, $5, NOW(), TRUE)",
+            user_id, username, name, None, picture
+        )
         await save_user_data(user_id, username, name, None, name, picture, None)
-        await add_user(user_id, username, name, None, picture)
         return user_id
 
 # ---------- Друзья ----------
@@ -1989,8 +2006,32 @@ async def api_profile(request: Request, user_id: int):
         raise HTTPException(status_code=401, detail="Не авторизован")
     await update_user_online(current_user)
     
-    if not await is_user_exists(user_id):
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    # Проверяем существует ли пользователь в user_names
+    async with pool.acquire() as conn:
+        user_exists = await conn.fetchval("SELECT 1 FROM user_names WHERE user_id = $1", user_id)
+        if not user_exists:
+            # Проверяем в google_users
+            google_user = await conn.fetchrow("SELECT * FROM google_users WHERE user_id = $1", user_id)
+            if google_user:
+                # Создаём запись в user_names
+                await save_user_data(
+                    user_id,
+                    google_user["name"].lower().replace(" ", "_"),
+                    google_user["name"],
+                    None,
+                    google_user["name"],
+                    google_user["picture"],
+                    None
+                )
+                # Проверяем users
+                user_exists2 = await conn.fetchval("SELECT 1 FROM users WHERE user_id = $1", user_id)
+                if not user_exists2:
+                    await conn.execute(
+                        "INSERT INTO users (user_id, username, first_name, last_name, photo_url, last_seen, is_online) VALUES ($1, $2, $3, $4, $5, NOW(), TRUE)",
+                        user_id, google_user["name"].lower().replace(" ", "_"), google_user["name"], None, google_user["picture"]
+                    )
+            else:
+                raise HTTPException(status_code=404, detail="Пользователь не найден")
     
     profile = await get_user_profile(user_id)
     if not profile:
