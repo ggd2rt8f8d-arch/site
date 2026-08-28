@@ -127,9 +127,12 @@
             margin-top: 15px;
             display: none;
         }
-        .loading-spinner {
-            display: none;
-            margin: 10px auto;
+        .telegram-widget-container {
+            margin: 10px 0;
+            min-height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
     </style>
 </head>
@@ -141,21 +144,12 @@
         <h1>Movie Admin</h1>
         <p>Войдите, чтобы управлять фильмами</p>
 
-        <!-- Кнопка входа через Telegram -->
-        <button class="telegram-btn" onclick="redirectToTelegram()">
-            <i class="fab fa-telegram"></i> Войти через Telegram
-        </button>
-
-        <div id="loadingSpinner" class="loading-spinner">
-            <div class="spinner-border text-light" role="status">
-                <span class="visually-hidden">Загрузка...</span>
-            </div>
-            <p style="color:rgba(255,255,255,0.6);font-size:14px;margin-top:10px;">Ожидание авторизации...</p>
-        </div>
+        <!-- ВСТРОЕННЫЙ ВИДЖЕТ TELEGRAM -->
+        <div class="telegram-widget-container" id="telegramWidget"></div>
 
         <hr class="divider">
 
-        <!-- Запасной вход по ID (на всякий случай) -->
+        <!-- Запасной вход по ID -->
         <form method="post" action="/auth/id">
             <label class="id-label"><i class="fas fa-key"></i> Или введите Telegram ID</label>
             <input type="number" name="user_id" placeholder="Например: 123456789" class="id-input" required>
@@ -179,14 +173,13 @@
 
     <script>
         // ============================================================
-        // 1. ГЛОБАЛЬНАЯ ФУНКЦИЯ — её вызывает Telegram Widget
+        // ГЛОБАЛЬНАЯ ФУНКЦИЯ — её вызывает Telegram Widget
         // ============================================================
         window.onTelegramAuth = function(user) {
             console.log('✅ Авторизация через Telegram:', user);
             
             document.getElementById('successMsg').style.display = 'block';
             document.getElementById('successText').textContent = 'Авторизация успешна! Перенаправление...';
-            document.getElementById('loadingSpinner').style.display = 'none';
             
             // Отправляем данные на сервер
             fetch('/auth/telegram', {
@@ -224,13 +217,48 @@
                 document.getElementById('errorMsg').style.display = 'block';
                 document.getElementById('errorText').textContent = err.message || 'Ошибка соединения с сервером';
                 document.getElementById('successMsg').style.display = 'none';
-                document.getElementById('loadingSpinner').style.display = 'none';
             });
         };
 
         // ============================================================
-        // 2. ЗАПУСК ВИДЖЕТА ЧЕРЕЗ iframe (надёжный способ)
+        // ЗАГРУЗКА ВИДЖЕТА
         // ============================================================
+        function loadTelegramWidget() {
+            const container = document.getElementById('telegramWidget');
+            const botToken = '{{ BOT_TOKEN }}';
+            const botId = botToken ? botToken.split(':')[0] : '';
+            
+            if (!botId) {
+                container.innerHTML = '<p style="color:rgba(255,255,255,0.5);font-size:14px;">⚠️ BOT_TOKEN не настроен</p>';
+                return;
+            }
+
+            // Создаём скрипт виджета
+            const script = document.createElement('script');
+            script.src = 'https://telegram.org/js/telegram-widget.js?22';
+            script.setAttribute('data-telegram-login', botId);
+            script.setAttribute('data-size', 'large');
+            script.setAttribute('data-radius', '50');
+            script.setAttribute('data-request-access', 'write');
+            script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+            script.setAttribute('data-userpic', 'true');
+            script.async = true;
+            
+            script.onerror = function() {
+                container.innerHTML = `
+                    <button class="telegram-btn" onclick="redirectToTelegram()">
+                        <i class="fab fa-telegram"></i> Войти через Telegram
+                    </button>
+                `;
+            };
+            
+            container.appendChild(script);
+            console.log('🔑 Bot ID:', botId);
+            console.log('🌐 Origin:', window.location.origin);
+            console.log('✅ Виджет загружается...');
+        }
+
+        // Запасной способ — открыть окно OAuth
         function redirectToTelegram() {
             const botToken = '{{ BOT_TOKEN }}';
             const botId = botToken ? botToken.split(':')[0] : '';
@@ -241,47 +269,17 @@
                 return;
             }
             
-            // Показываем спиннер
-            document.getElementById('loadingSpinner').style.display = 'block';
+            const origin = encodeURIComponent(window.location.origin);
+            const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${origin}&embed=1&request_access=write`;
             
-            // Создаём iframe с виджетом
-            const iframe = document.createElement('iframe');
-            iframe.src = `https://oauth.telegram.org/embed/${botId}?origin=${encodeURIComponent(window.location.origin)}&return_to=${encodeURIComponent(window.location.href)}`;
-            iframe.style.cssText = 'display:none;';
-            iframe.onload = function() {
-                // Пытаемся отправить сообщение в iframe для авторизации
-                try {
-                    iframe.contentWindow.postMessage({
-                        event: 'auth_request',
-                        origin: window.location.origin
-                    }, 'https://oauth.telegram.org');
-                } catch(e) {
-                    console.log('Не удалось отправить сообщение, возможно iframe уже загружен');
-                }
-            };
-            
-            document.body.appendChild(iframe);
-            
-            // Открываем окно авторизации
-            const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(window.location.origin)}&embed=1&request_access=write`;
             const win = window.open(authUrl, '_blank', 'width=600,height=700,scrollbars=yes');
             
-            // Проверяем закрытие окна
             const checkWin = setInterval(() => {
                 if (win.closed) {
                     clearInterval(checkWin);
-                    document.getElementById('loadingSpinner').style.display = 'none';
-                    // Проверяем, авторизовались ли
                     setTimeout(checkAuth, 1000);
                 }
             }, 500);
-            
-            // Таймаут на случай, если окно не открылось
-            setTimeout(() => {
-                if (win.closed) {
-                    document.getElementById('loadingSpinner').style.display = 'none';
-                }
-            }, 10000);
         }
 
         function checkAuth() {
@@ -290,39 +288,13 @@
                 .then(data => {
                     if (data.authenticated) {
                         window.location.href = '/dashboard';
-                    } else {
-                        console.log('⏳ Ещё не авторизован, проверьте Telegram');
                     }
                 })
                 .catch(() => {});
         }
 
-        // ============================================================
-        // 3. ОБРАБОТКА СООБЩЕНИЙ ОТ iframe (postMessage)
-        // ============================================================
-        window.addEventListener('message', function(event) {
-            if (event.origin !== 'https://oauth.telegram.org') return;
-            
-            try {
-                const data = JSON.parse(event.data);
-                console.log('📩 Получено сообщение от Telegram:', data);
-                
-                if (data.event === 'auth_response' && data.result) {
-                    // Пользователь авторизован!
-                    const user = data.result;
-                    window.onTelegramAuth(user);
-                }
-            } catch(e) {
-                // Игнорируем невалидные сообщения
-            }
-        });
-
-        // ============================================================
-        // 4. ЛОГИ ДЛЯ ОТЛАДКИ
-        // ============================================================
-        console.log('🔑 Bot ID:', '{{ BOT_TOKEN }}'.split(':')[0]);
-        console.log('🌐 Origin:', window.location.origin);
-        console.log('✅ Функция onTelegramAuth зарегистрирована глобально');
+        // Загружаем виджет при загрузке страницы
+        document.addEventListener('DOMContentLoaded', loadTelegramWidget);
     </script>
 </body>
 </html>
