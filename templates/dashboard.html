@@ -188,7 +188,6 @@
             color: #555;
         }
 
-        /* Тёмные таблицы */
         .table-container {
             background: #141414;
             border: 1px solid #2a2a2a;
@@ -375,7 +374,6 @@
             border: 4px solid #333;
         }
 
-        /* ===== ПРОФИЛЬ С БАННЕРОМ ===== */
         .profile-card {
             background: #141414;
             border: 1px solid #2a2a2a;
@@ -464,7 +462,6 @@
             font-size: 14px;
         }
 
-        /* Ярко-жёлтый овал для Создателя */
         .badge-creator {
             background: #f5a623;
             color: #1a1a1a;
@@ -881,6 +878,76 @@
             background: #222;
         }
 
+        /* Стили для вкладок настроек */
+        .settings-tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid #2a2a2a;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .settings-tabs .tab-btn {
+            background: none;
+            border: none;
+            color: #888;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            border-bottom: 2px solid transparent;
+            transition: 0.2s;
+            font-weight: 400;
+        }
+        .settings-tabs .tab-btn:hover {
+            color: #ccc;
+        }
+        .settings-tabs .tab-btn.active {
+            color: #e8e8e8;
+            border-bottom-color: #e8c84a;
+        }
+        .settings-tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .settings-tab-content.active {
+            display: block;
+        }
+
+        /* Стили для загрузки файлов */
+        .file-upload-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+        }
+        .file-upload-wrapper .file-upload-btn {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 10px 16px;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+            width: 100%;
+            justify-content: center;
+        }
+        .file-upload-wrapper .file-upload-btn:hover {
+            background: #2a2a2a;
+            border-color: #555;
+        }
+        .file-upload-wrapper .file-upload-btn i {
+            font-size: 18px;
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
@@ -998,6 +1065,10 @@
             .profile-scroll {
                 max-height: 150px;
             }
+            .settings-tabs .tab-btn {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
         }
 
         @media (min-width: 1025px) {
@@ -1100,11 +1171,6 @@
             padding: 4px 10px;
             width: 100%;
         }
-
-        /* Убираем загрузку с ПК */
-        .file-input-wrapper {
-            display: none !important;
-        }
     </style>
 </head>
 <body>
@@ -1135,6 +1201,9 @@
             <i class="fas fa-ban"></i> Баны
         </a>
         {% endif %}
+        <a class="nav-link" href="#" data-page="settings">
+            <i class="fas fa-cog"></i> Настройки
+        </a>
     </nav>
 </div>
 
@@ -1149,14 +1218,13 @@
             <h4 id="pageTitle">Главная</h4>
         </div>
         <div class="user-info" onclick="toggleDropdown()" id="userMenu">
-            <!-- Фото слева, ник справа -->
             <img src="{{ photo_url or 'https://ui-avatars.com/api/?name=' + user_id|string + '&background=2a2a2a&color=cccccc&size=34&rounded=true' }}" class="avatar-sm" id="topBarAvatar" onerror="this.style.display='none'">
             <span class="user-name" id="topBarName">{{ display_name or 'Загрузка...' }}</span>
             <div class="dropdown-menu-custom" id="userDropdown">
                 <button class="dropdown-item" onclick="showProfilePage()">
                     <i class="fas fa-user"></i> Мой профиль
                 </button>
-                <button class="dropdown-item" onclick="showSettings()">
+                <button class="dropdown-item" onclick="showPage('settings')">
                     <i class="fas fa-cog"></i> Настройки
                 </button>
                 <button class="dropdown-item" onclick="showSupport()">
@@ -1409,75 +1477,98 @@
 
     <!-- ====== НАСТРОЙКИ ====== -->
     <div id="page-settings" style="display:none" class="fade-in">
-        <div class="profile-card" style="max-width:600px;">
-            <h3 style="font-weight:300;color:#e8e8e8;"><i class="fas fa-cog"></i> Настройки</h3>
-            <hr style="border-color:#2a2a2a;">
-
-            <h6 style="color:#999;font-weight:300;margin-bottom:15px;"><i class="fas fa-user"></i> Аккаунт</h6>
-            <div class="mb-3">
-                <label class="form-label" style="color:#999;">Отображаемое имя</label>
-                <input type="text" class="form-control" id="settingsDisplayName" placeholder="Ваше имя" value="{{ display_name or '' }}">
+        <div class="profile-card" style="max-width:900px;min-height:80vh;">
+            <h3 style="font-weight:300;color:#e8e8e8;padding:20px 30px 0;">
+                <i class="fas fa-cog"></i> Настройки
+            </h3>
+            
+            <div class="settings-tabs" style="padding:0 30px;">
+                <button class="tab-btn active" data-tab="tab-account"><i class="fas fa-user"></i> Аккаунт</button>
+                <button class="tab-btn" data-tab="tab-appearance"><i class="fas fa-palette"></i> Внешний вид</button>
+                <button class="tab-btn" data-tab="tab-privacy"><i class="fas fa-lock"></i> Конфиденциальность</button>
             </div>
-            <div class="mb-3">
-                <label class="form-label" style="color:#999;">Юзернейм (без @)</label>
-                <input type="text" class="form-control" id="settingsUsername" placeholder="username" value="{{ username or '' }}">
+            
+            <div style="padding:0 30px 30px;">
+                <!-- Аккаунт -->
+                <div class="settings-tab-content active" id="tab-account">
+                    <div class="mb-3">
+                        <label class="form-label" style="color:#999;">Отображаемое имя</label>
+                        <input type="text" class="form-control" id="settingsDisplayName" placeholder="Ваше имя" value="{{ display_name or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:#999;">Юзернейм (без @)</label>
+                        <input type="text" class="form-control" id="settingsUsername" placeholder="username" value="{{ username or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:#999;">Аватарка</label>
+                        <div class="file-upload-wrapper">
+                            <div class="file-upload-btn">
+                                <i class="fas fa-upload"></i> Выбрать файл
+                                <input type="file" accept="image/*" id="settingsPhotoFile" onchange="previewImageFile(this, 'photoPreview', 'settingsPhotoUrl')">
+                            </div>
+                        </div>
+                        <input type="text" class="form-control mt-2" id="settingsPhotoUrl" placeholder="Или вставьте ссылку" value="{{ photo_url or '' }}" oninput="document.getElementById('photoPreview').src=this.value;document.getElementById('photoPreview').style.display=this.value?'block':'none'">
+                        <img id="photoPreview" class="image-preview" src="{{ photo_url or '' }}" style="display:{{ 'block' if photo_url else 'none' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:#999;">Баннер</label>
+                        <div class="file-upload-wrapper">
+                            <div class="file-upload-btn">
+                                <i class="fas fa-upload"></i> Выбрать файл
+                                <input type="file" accept="image/*" id="settingsBannerFile" onchange="previewImageFile(this, 'bannerPreview', 'settingsBannerUrl')">
+                            </div>
+                        </div>
+                        <input type="text" class="form-control mt-2" id="settingsBannerUrl" placeholder="Или вставьте ссылку" value="{{ banner_url or '' }}" oninput="document.getElementById('bannerPreview').src=this.value;document.getElementById('bannerPreview').style.display=this.value?'block':'none'">
+                        <img id="bannerPreview" class="banner-preview" src="{{ banner_url or '' }}" style="display:{{ 'block' if banner_url else 'none' }}">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveProfileSettings()">
+                        <i class="fas fa-save"></i> Сохранить профиль
+                    </button>
+                </div>
+                
+                <!-- Внешний вид -->
+                <div class="settings-tab-content" id="tab-appearance">
+                    <div class="mb-3">
+                        <label class="form-label" style="color:#999;">Тема</label>
+                        <select class="form-control" id="settingsTheme" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                            <option value="dark">Тёмная</option>
+                            <option value="light">Светлая</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:#999;">Язык</label>
+                        <select class="form-control" id="settingsLanguage" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                            <option value="ru">Русский</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveAppSettings()">
+                        <i class="fas fa-save"></i> Сохранить настройки
+                    </button>
+                </div>
+                
+                <!-- Конфиденциальность -->
+                <div class="settings-tab-content" id="tab-privacy">
+                    <div class="mb-3">
+                        <label class="form-label" style="color:#999;">Комментарии к профилю</label>
+                        <select class="form-control" id="settingsPrivacyComments" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                            <option value="true">Разрешены</option>
+                            <option value="false">Запрещены</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:#999;">Показывать онлайн-статус</label>
+                        <select class="form-control" id="settingsPrivacyOnline" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                            <option value="true">Всем</option>
+                            <option value="friends">Только друзьям</option>
+                            <option value="false">Никому</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="savePrivacySettings()">
+                        <i class="fas fa-save"></i> Сохранить
+                    </button>
+                </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label" style="color:#999;">Аватарка (ссылка)</label>
-                <input type="text" class="form-control" id="settingsPhotoUrl" placeholder="Вставьте ссылку" value="{{ photo_url or '' }}">
-                <img id="photoPreview" class="image-preview" src="{{ photo_url or '' }}" style="display:{{ 'block' if photo_url else 'none' }}">
-            </div>
-            <div class="mb-3">
-                <label class="form-label" style="color:#999;">Баннер (ссылка)</label>
-                <input type="text" class="form-control" id="settingsBannerUrl" placeholder="Вставьте ссылку" value="{{ banner_url or '' }}">
-                <img id="bannerPreview" class="banner-preview" src="{{ banner_url or '' }}" style="display:{{ 'block' if banner_url else 'none' }}">
-            </div>
-            <button class="btn btn-primary" onclick="saveProfileSettings()">
-                <i class="fas fa-save"></i> Сохранить профиль
-            </button>
-
-            <hr style="border-color:#2a2a2a;margin-top:25px;">
-
-            <h6 style="color:#999;font-weight:300;margin-bottom:15px;"><i class="fas fa-palette"></i> Внешний вид</h6>
-            <div class="mb-3">
-                <label class="form-label" style="color:#999;">Тема</label>
-                <select class="form-control" id="settingsTheme" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                    <option value="dark">Тёмная</option>
-                    <option value="light">Светлая</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label class="form-label" style="color:#999;">Язык</label>
-                <select class="form-control" id="settingsLanguage" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                    <option value="ru">Русский</option>
-                    <option value="en">English</option>
-                </select>
-            </div>
-            <button class="btn btn-primary" onclick="saveAppSettings()">
-                <i class="fas fa-save"></i> Сохранить настройки
-            </button>
-
-            <hr style="border-color:#2a2a2a;margin-top:25px;">
-
-            <h6 style="color:#999;font-weight:300;margin-bottom:15px;"><i class="fas fa-lock"></i> Конфиденциальность</h6>
-            <div class="mb-3">
-                <label class="form-label" style="color:#999;">Комментарии к профилю</label>
-                <select class="form-control" id="settingsPrivacyComments" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                    <option value="true">Разрешены</option>
-                    <option value="false">Запрещены</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label class="form-label" style="color:#999;">Показывать онлайн-статус</label>
-                <select class="form-control" id="settingsPrivacyOnline" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                    <option value="true">Всем</option>
-                    <option value="friends">Только друзьям</option>
-                    <option value="false">Никому</option>
-                </select>
-            </div>
-            <button class="btn btn-primary" onclick="savePrivacySettings()">
-                <i class="fas fa-save"></i> Сохранить
-            </button>
         </div>
     </div>
 
@@ -1542,16 +1633,37 @@
                 <div class="mb-3"><label class="form-label">Код</label><input type="text" class="form-control" id="movieCode" placeholder="the-matrix"></div>
                 <div class="mb-3"><label class="form-label">Название</label><input type="text" class="form-control" id="movieTitle" placeholder="Матрица"></div>
                 <div class="mb-3"><label class="form-label">Год</label><input type="number" class="form-control" id="movieYear" placeholder="1999"></div>
-                <div class="mb-3"><label class="form-label">Постер (ссылка)</label>
-                    <input type="text" class="form-control" id="moviePoster" placeholder="https://example.com/poster.jpg">
+                <div class="mb-3">
+                    <label class="form-label">Постер</label>
+                    <div class="file-upload-wrapper">
+                        <div class="file-upload-btn">
+                            <i class="fas fa-upload"></i> Выбрать файл
+                            <input type="file" accept="image/*" id="moviePosterFile" onchange="previewImageFile(this, 'moviePosterPreview', 'moviePoster')">
+                        </div>
+                    </div>
+                    <input type="text" class="form-control mt-2" id="moviePoster" placeholder="Или вставьте ссылку" oninput="document.getElementById('moviePosterPreview').src=this.value;document.getElementById('moviePosterPreview').style.display=this.value?'block':'none'">
                     <img id="moviePosterPreview" class="image-preview" style="display:none;">
                 </div>
-                <div class="mb-3"><label class="form-label">Баннер (ссылка)</label>
-                    <input type="text" class="form-control" id="movieBanner" placeholder="https://example.com/banner.jpg">
+                <div class="mb-3">
+                    <label class="form-label">Баннер</label>
+                    <div class="file-upload-wrapper">
+                        <div class="file-upload-btn">
+                            <i class="fas fa-upload"></i> Выбрать файл
+                            <input type="file" accept="image/*" id="movieBannerFile" onchange="previewImageFile(this, 'movieBannerPreview', 'movieBanner')">
+                        </div>
+                    </div>
+                    <input type="text" class="form-control mt-2" id="movieBanner" placeholder="Или вставьте ссылку" oninput="document.getElementById('movieBannerPreview').src=this.value;document.getElementById('movieBannerPreview').style.display=this.value?'block':'none'">
                     <img id="movieBannerPreview" class="banner-preview" style="display:none;">
                 </div>
                 <div class="mb-3"><label class="form-label">Описание</label><textarea class="form-control" id="movieDescription" rows="3"></textarea></div>
                 <div class="mb-3"><label class="form-label">IMDb</label><input type="text" class="form-control" id="movieRating" placeholder="8.7"></div>
+                <div class="mb-3"><label class="form-label">Режиссер</label><input type="text" class="form-control" id="movieDirector" placeholder="Режиссер"></div>
+                <div class="mb-3"><label class="form-label">Сценарий</label><input type="text" class="form-control" id="movieWriters" placeholder="Сценаристы"></div>
+                <div class="mb-3"><label class="form-label">Жанры</label><input type="text" class="form-control" id="movieGenres" placeholder="Фантастика, Боевик"></div>
+                <div class="mb-3"><label class="form-label">Бюджет</label><input type="text" class="form-control" id="movieBudget" placeholder="$100,000,000"></div>
+                <div class="mb-3"><label class="form-label">Сборы в США</label><input type="text" class="form-control" id="movieBoxOfficeUS" placeholder="$100,000,000"></div>
+                <div class="mb-3"><label class="form-label">Сборы в мире</label><input type="text" class="form-control" id="movieBoxOfficeWorld" placeholder="$500,000,000"></div>
+                <div class="mb-3"><label class="form-label">В главных ролях (через запятую)</label><input type="text" class="form-control" id="movieCast" placeholder="Том Холланд, Зендея"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -1687,6 +1799,22 @@ let currentReviewMovieCode = null;
 let isEditingMode = false;
 
 // ==================== ФУНКЦИИ ПРЕДПРОСМОТРА ====================
+function previewImageFile(input, previewId, urlInputId) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById(previewId);
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+            const urlInput = document.getElementById(urlInputId);
+            if (urlInput) {
+                urlInput.value = e.target.result;
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
 function previewImage(input, previewId) {
     const preview = document.getElementById(previewId);
     if (input.files && input.files[0]) {
@@ -1754,6 +1882,16 @@ document.querySelectorAll('.sidebar .nav-link[data-page]').forEach(link => {
         if (page === 'bans') loadBans();
         if (page === 'dashboard') loadStats();
         if (page === 'profile') loadProfile(CURRENT_USER);
+    });
+});
+
+// ==================== ВКЛАДКИ НАСТРОЕК ====================
+document.querySelectorAll('.settings-tabs .tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.settings-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(this.dataset.tab).classList.add('active');
     });
 });
 
@@ -1873,21 +2011,22 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
     const data = {
         code: document.getElementById('movieCode').value.trim(),
         title: document.getElementById('movieTitle').value.trim(),
-        year: parseInt(document.getElementById('movieYear').value),
+        year: parseInt(document.getElementById('movieYear').value) || 0,
         poster: document.getElementById('moviePoster').value.trim() || '',
         banner: document.getElementById('movieBanner').value.trim() || '',
         description: document.getElementById('movieDescription').value.trim(),
-        rating: document.getElementById('movieRating').value.trim()
+        rating: document.getElementById('movieRating').value.trim(),
+        director: document.getElementById('movieDirector').value.trim(),
+        writers: document.getElementById('movieWriters').value.trim(),
+        genres: document.getElementById('movieGenres').value.trim(),
+        budget: document.getElementById('movieBudget').value.trim(),
+        box_office_us: document.getElementById('movieBoxOfficeUS').value.trim(),
+        box_office_world: document.getElementById('movieBoxOfficeWorld').value.trim(),
+        cast_list: document.getElementById('movieCast').value.trim()
     };
-    for (let key in data) {
-        if (!data[key] && key !== 'year' && key !== 'poster' && key !== 'banner') {
-            showToast('⚠️ Заполните все поля', 'warning');
-            return;
-        }
-        if (key === 'year' && isNaN(data[key])) {
-            showToast('⚠️ Год должен быть числом', 'warning');
-            return;
-        }
+    if (!data.code || !data.title || !data.year || !data.description || !data.rating) {
+        showToast('⚠️ Заполните обязательные поля (код, название, год, описание, рейтинг)', 'warning');
+        return;
     }
     try {
         const res = await apiRequest('/api/movies', { method: 'POST', body: JSON.stringify(data) });
@@ -1900,6 +2039,13 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
             document.getElementById('movieBanner').value = '';
             document.getElementById('movieDescription').value = '';
             document.getElementById('movieRating').value = '';
+            document.getElementById('movieDirector').value = '';
+            document.getElementById('movieWriters').value = '';
+            document.getElementById('movieGenres').value = '';
+            document.getElementById('movieBudget').value = '';
+            document.getElementById('movieBoxOfficeUS').value = '';
+            document.getElementById('movieBoxOfficeWorld').value = '';
+            document.getElementById('movieCast').value = '';
             document.getElementById('moviePosterPreview').style.display = 'none';
             document.getElementById('movieBannerPreview').style.display = 'none';
             loadMovies(); loadStats();
@@ -2026,16 +2172,34 @@ async function showMoviePage(code) {
             }
         }
         
+        // Только реальные данные из БД
         const details = [
-            { key: 'year', label: 'Год производства', value: m.year },
-            { key: 'country', label: 'Страна', value: 'США' },
-            { key: 'genres', label: 'Жанр', value: m.genres || 'Фантастика, Боевик' },
+            { key: 'year', label: 'Год производства', value: m.year || '-' },
+            { key: 'country', label: 'Страна', value: m.country || '-' },
+            { key: 'genres', label: 'Жанр', value: m.genres || '-' },
             { key: 'director', label: 'Режиссер', value: m.director || '-' },
             { key: 'writers', label: 'Сценарий', value: m.writers || '-' },
             { key: 'budget', label: 'Бюджет', value: m.budget || '-' },
             { key: 'box_office_us', label: 'Сборы в США', value: m.box_office_us || '-' },
             { key: 'box_office_world', label: 'Сборы в мире', value: m.box_office_world || '-' }
         ];
+        
+        // Только реальный каст
+        let castHtml = '';
+        if (m.cast_list) {
+            try {
+                const castArray = typeof m.cast_list === 'string' ? m.cast_list.split(',').map(s => s.trim()).filter(s => s) : m.cast_list;
+                if (Array.isArray(castArray) && castArray.length) {
+                    castHtml = castArray.map(c => `<span class="cast-item">${c}</span>`).join('');
+                } else {
+                    castHtml = '<span class="text-secondary-light">Не указаны</span>';
+                }
+            } catch(e) {
+                castHtml = '<span class="text-secondary-light">Не указаны</span>';
+            }
+        } else {
+            castHtml = '<span class="text-secondary-light">Не указаны</span>';
+        }
         
         let reviewsHtml = '';
         if (reviews && reviews.length) {
@@ -2070,10 +2234,12 @@ async function showMoviePage(code) {
         container.innerHTML = `
             ${IS_ADMIN ? `
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;flex-wrap:wrap;gap:10px;">
-                    <label style="color:#999;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;">
-                        <input type="checkbox" ${isEditingMode ? 'checked' : ''} onchange="toggleEditMode()">
-                        <i class="fas fa-edit"></i> Режим редактирования
-                    </label>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <button class="btn btn-warning btn-sm" onclick="toggleEditMode()">
+                            <i class="fas fa-edit"></i> ${isEditingMode ? 'Отключить редактирование' : 'Режим редактирования'}
+                        </button>
+                        ${isEditingMode ? '<span style="color:#e8c84a;font-size:12px;"><i class="fas fa-circle" style="font-size:8px;"></i> Редактирование активно</span>' : ''}
+                    </div>
                     <button class="btn btn-secondary btn-sm" onclick="showPage('movies')">
                         <i class="fas fa-arrow-left"></i> Назад к списку
                     </button>
@@ -2089,7 +2255,7 @@ async function showMoviePage(code) {
                 <div class="banner-upload-placeholder">
                     <i class="fas fa-image" style="font-size:32px;color:#555;"></i>
                     <span style="color:#777;font-size:13px;">Загрузить баннер</span>
-                    <div class="file-input-wrapper">
+                    <div class="file-upload-wrapper" style="width:auto;">
                         <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Выбрать файл</button>
                         <input type="file" accept="image/*" onchange="uploadMovieImage('${code}','banner',this)">
                     </div>
@@ -2100,12 +2266,12 @@ async function showMoviePage(code) {
             <div class="movie-content">
                 <div class="movie-title-section">
                     ${m.poster ? `<img src="${m.poster}" class="movie-poster-large" onerror="this.style.display='none'">` : (IS_ADMIN && isEditingMode ? `
-                        <div class="poster-upload-placeholder" onclick="document.getElementById('posterUpload_${code}').click()">
+                        <div class="poster-upload-placeholder">
                             <i class="fas fa-image"></i>
                             <span style="color:#777;font-size:13px;">Загрузить постер</span>
-                            <div class="file-input-wrapper">
+                            <div class="file-upload-wrapper" style="width:auto;">
                                 <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Выбрать файл</button>
-                                <input type="file" id="posterUpload_${code}" accept="image/*" onchange="uploadMovieImage('${code}','poster',this)">
+                                <input type="file" accept="image/*" onchange="uploadMovieImage('${code}','poster',this)">
                             </div>
                             <input type="text" class="editable-input" style="width:100%;" 
                                 placeholder="Или ссылка" onchange="saveMovieField('${code}','poster',this.value)">
@@ -2163,13 +2329,8 @@ async function showMoviePage(code) {
                     <h6><i class="fas fa-users"></i> В главных ролях</h6>
                     <div class="cast-grid">
                         ${IS_ADMIN && isEditingMode ? 
-                            makeEditable(code, 'cast', m.cast, 'array') 
-                            : (m.cast ? m.cast.split(',').map(c => `<span class="cast-item">${c.trim()}</span>`).join('') : 
-                                `<span class="cast-item">Том Холланд</span>
-                                 <span class="cast-item">Зендея</span>
-                                 <span class="cast-item">Сэди Синк</span>
-                                 <span class="cast-item">Джейкоб Баталон</span>`)
-                        }
+                            makeEditable(code, 'cast_list', m.cast_list, 'array') 
+                            : castHtml}
                     </div>
                 </div>
                 
@@ -2625,6 +2786,11 @@ function applyTheme(theme) {
             el.style.background = '#f5f5f5';
             el.style.borderColor = '#ddd';
         });
+        document.querySelectorAll('.file-upload-btn').forEach(el => {
+            el.style.background = '#f0f0f0';
+            el.style.borderColor = '#ddd';
+            el.style.color = '#333';
+        });
     } else {
         document.body.style.background = '#0d0d0d';
         document.body.style.color = '#d4d4d4';
@@ -2635,6 +2801,11 @@ function applyTheme(theme) {
         });
         document.querySelectorAll('.table, .table th, .table td, .table tr').forEach(el => {
             el.style.background = '';
+            el.style.color = '';
+        });
+        document.querySelectorAll('.file-upload-btn').forEach(el => {
+            el.style.background = '';
+            el.style.borderColor = '';
             el.style.color = '';
         });
     }
