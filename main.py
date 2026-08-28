@@ -1639,10 +1639,13 @@ async def google_auth(request: Request, data: dict):
         
         user_id = await get_or_create_user_from_google(email, name, picture)
         
+        # Проверяем, является ли пользователь суперадмином
         if user_id in SUPER_ADMIN_IDS:
             await add_admin(user_id)
         
         await update_user_online(user_id)
+        
+        # Устанавливаем cookie
         response = JSONResponse({"success": True, "user_id": user_id})
         response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
         return response
