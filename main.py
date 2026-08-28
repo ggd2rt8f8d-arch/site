@@ -50,18 +50,35 @@ async def init_db():
     pool = await asyncpg.create_pool(DATABASE_URL)
     async with pool.acquire() as conn:
         # Основные таблицы
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS movies (
-                code TEXT PRIMARY KEY,
-                title TEXT NOT NULL,
-                year INTEGER,
-                poster TEXT,
-                description TEXT,
-                rating TEXT,
-                added_by BIGINT,
-                banner TEXT
-            )
-        """)
+await conn.execute("""
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='director') THEN
+            ALTER TABLE movies ADD COLUMN director TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='writers') THEN
+            ALTER TABLE movies ADD COLUMN writers TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='genres') THEN
+            ALTER TABLE movies ADD COLUMN genres TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='budget') THEN
+            ALTER TABLE movies ADD COLUMN budget TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='box_office_us') THEN
+            ALTER TABLE movies ADD COLUMN box_office_us TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='box_office_world') THEN
+            ALTER TABLE movies ADD COLUMN box_office_world TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='cast') THEN
+            ALTER TABLE movies ADD COLUMN cast TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_names' AND column_name='privacy_comments') THEN
+            ALTER TABLE user_names ADD COLUMN privacy_comments BOOLEAN DEFAULT TRUE;
+        END IF;
+    END $$;
+""")
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS admins (user_id BIGINT PRIMARY KEY)
         """)
