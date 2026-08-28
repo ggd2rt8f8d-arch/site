@@ -69,6 +69,17 @@ async def init_db():
             )
         """)
         await conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                user_id BIGINT PRIMARY KEY,
+                username TEXT,
+                first_name TEXT,
+                last_name TEXT,
+                photo_url TEXT,
+                is_admin BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        await conn.execute("""
             CREATE TABLE IF NOT EXISTS bans (
                 user_id BIGINT PRIMARY KEY,
                 reason TEXT DEFAULT '',
@@ -136,6 +147,13 @@ async def init_db():
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS movie_ratings (
+                movie_code TEXT PRIMARY KEY,
+                total_rating INTEGER DEFAULT 0,
+                votes_count INTEGER DEFAULT 0
+            )
+        """)
 
         # Добавляем колонки если их нет
         await conn.execute("""
@@ -200,6 +218,11 @@ bot = Bot(token=BOT_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
+# ---------- FSM для отзывов в боте ----------
+class ReviewState(StatesGroup):
+    waiting_review = State()
+    waiting_rating = State()
+
 # ---------- FSM ----------
 class AddMovie(StatesGroup):
     code = State()
@@ -261,6 +284,22 @@ async def is_admin(user_id: int) -> bool:
 
 async def is_super_admin(user_id: int) -> bool:
     return user_id in SUPER_ADMIN_IDS
+
+async def is_user_exists(user_id: int) -> bool:
+    async with pool.acquire() as conn:
+        return await conn.fetchval("SELECT 1 FROM users WHERE user_id = $1", user_id) is not None
+
+async def add_user(user_id: int, username: str = None, first_name: str = None, last_name: str = None, photo_url: str = None):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO users (user_id, username, first_name, last_name, photo_url)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (user_id) DO UPDATE
+            SET username = $2, first_name = $3, last_name = $4, photo_url = $5
+            """,
+            user_id, username, first_name, last_name, photo_url
+        )
 
 async def add_admin(user_id: int):
     async with pool.acquire() as conn:
@@ -334,7 +373,6 @@ async def check_sub(user_id: int) -> bool:
 async def get_telegram_user(user_id: int):
     """Получает данные пользователя из Telegram API"""
     try:
-        # Используем aiogram для получения информации
         chat = await bot.get_chat(user_id)
         user_info = {
             "id": user_id,
@@ -344,7 +382,6 @@ async def get_telegram_user(user_id: int):
             "photo_url": None
         }
         
-        # Пробуем получить фото профиля
         try:
             photos = await bot.get_user_profile_photos(user_id, limit=1)
             if photos.photos:
@@ -379,6 +416,52 @@ async def send_verification_code(user_id: int):
     except Exception as e:
         logger.error(f"Ошибка отправки кода: {e}")
         return False
+
+# ==================== ФУНКЦИИ ДЛЯ ОТЗЫВОВ ====================
+async def add_review(movie_code: str, user_id: int, rating: int, text: str):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO movie_reviews (movie_code, user_id, rating, text) VALUES ($1, $2, $3, $4)",
+            movie_code, user_id, rating, text
+        )
+        # Обновляем среднюю оценку
+        await conn.execute("""
+            INSERT INTO movie_ratings (movie_code, total_rating, votes_count)
+            VALUES ($1, $2, 1)
+            ON CONFLICT (movie_code) DO UPDATE
+            SET total_rating = movie_ratings.total_rating + $2,
+                votes_count = movie_ratings.votes_count + 1
+        """, movie_code, rating)
+
+async def get_reviews(movie_code: str, limit: int = 10):
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM movie_reviews WHERE movie_code = $1 ORDER BY created_at DESC LIMIT $2",
+            movie_code, limit
+        )
+        return [dict(r) for r in rows]
+
+async def get_movie_tpz(movie_code: str):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT total_rating, votes_count FROM movie_ratings WHERE movie_code = $1",
+            movie_code
+        )
+        if row and row["votes_count"] > 0:
+            return round(row["total_rating"] / row["votes_count"], 1), row["votes_count"]
+        return None, 0
+
+async def delete_review(review_id: int):
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM movie_reviews WHERE id = $1", review_id)
+
+async def delete_profile_comment(comment_id: int):
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM profile_comments WHERE id = $1", comment_id)
+
+async def get_reviews_count(movie_code: str):
+    async with pool.acquire() as conn:
+        return await conn.fetchval("SELECT COUNT(*) FROM movie_reviews WHERE movie_code = $1", movie_code) or 0
 
 # ==================== КЛАВИАТУРЫ ====================
 def subscribe_kb():
@@ -417,6 +500,22 @@ def movie_actions_kb(code: str, user_id: int):
         buttons.append([InlineKeyboardButton(text="🗑 Удалить фильм", callback_data=f"delete_movie:{code}")])
     buttons.append([InlineKeyboardButton(text="◀️ Назад", callback_data="admin_list")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def movie_review_kb(code: str):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⭐ Отзывы", callback_data=f"reviews:{code}")]
+    ])
+
+def review_back_kb(code: str):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀️ Назад", callback_data=f"movie_back:{code}")],
+        [InlineKeyboardButton(text="✏️ Оставить отзыв", callback_data=f"write_review:{code}")]
+    ])
+
+def review_only_back_kb(code: str):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀️ Назад", callback_data=f"movie_back:{code}")]
+    ])
 
 # ==================== ХЭНДЛЕРЫ БОТА ====================
 @dp.message(CommandStart())
@@ -500,56 +599,134 @@ async def cb_movie(callback: CallbackQuery):
     if not movie:
         await callback.answer("Фильм не найден", show_alert=True)
         return
-    text = f"<b>{movie['title']} ({movie['year']})</b>\nКод: <code>{movie['code']}</code>\nIMDb: {movie['rating']}\n\n{movie['description'][:180]}..."
-    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=movie_actions_kb(code, callback.from_user.id))
+    
+    tpz, votes = await get_movie_tpz(code)
+    tpz_text = f"⭐ TPZ: {tpz} ({votes} оценок)" if tpz else "⭐ Оценок пока нет"
+    
+    text = (
+        f"<b>{movie['title']} ({movie['year']})</b>\n"
+        f"Код: <code>{movie['code']}</code>\n"
+        f"IMDb: {movie['rating']}\n"
+        f"{tpz_text}\n\n"
+        f"{movie['description'][:180]}..."
+    )
+    await callback.message.edit_text(
+        text,
+        parse_mode="HTML",
+        reply_markup=movie_review_kb(code)
+    )
 
-@dp.callback_query(F.data.startswith("delete_movie:"))
-async def cb_delete_movie(callback: CallbackQuery):
-    if not await is_super_admin(callback.from_user.id):
-        return await callback.answer("Недостаточно прав", show_alert=True)
+@dp.callback_query(F.data.startswith("reviews:"))
+async def cb_reviews(callback: CallbackQuery):
     code = callback.data.split(":", 1)[1]
-    await delete_movie(code)
-    await callback.answer("Фильм удалён ✅")
-    await cb_list(callback)
-
-@dp.callback_query(F.data.startswith("edit_"))
-async def cb_edit_start(callback: CallbackQuery, state: FSMContext):
-    if not await is_admin(callback.from_user.id):
+    reviews = await get_reviews(code, 3)
+    
+    if not reviews:
+        await callback.message.edit_text(
+            "📝 Отзывов пока нет. Будь первым!",
+            reply_markup=review_back_kb(code)
+        )
         return
-    parts = callback.data.split(":", 1)
-    field = parts[0].replace("edit_", "")
-    code = parts[1]
-    await state.update_data(edit_code=code, edit_field=field)
-    await callback.message.edit_text(f"Введи новое значение для <b>{field}</b>:", parse_mode="HTML")
-    await state.set_state(EditMovie.waiting_value)
-
-@dp.message(EditMovie.waiting_value)
-async def process_edit(message: Message, state: FSMContext):
-    data = await state.get_data()
-    code = data["edit_code"]
-    field = data["edit_field"]
-    if field == "poster":
-        if message.photo:
-            value = message.photo[-1].file_id
-        elif message.text:
-            value = message.text.strip()
-        else:
-            return await message.answer("Отправь фото или ссылку:")
-    else:
-        if not message.text:
-            return await message.answer("Отправь текстом:")
-        value = message.text.strip()
-        if field == "year":
-            if not value.isdigit():
-                return await message.answer("Год должен быть числом:")
-            value = int(value)
-    await update_movie_field(code, field, value)
-    await state.clear()
-    await message.answer("✅ Обновлено!")
+    
+    # Отправляем 3 последних отзыва
+    for review in reviews[:3]:
+        user_name = await get_user_name(review["user_id"])
+        review_text = (
+            f"⭐ <b>{review['rating']}/10</b>\n"
+            f"👤 {user_name[0]}\n"
+            f"💬 {review['text']}\n"
+            f"🕐 {review['created_at'].strftime('%d.%m.%Y %H:%M')}"
+        )
+        await callback.message.answer(review_text, parse_mode="HTML")
+    
+    # Обновляем основное сообщение
     movie = await get_movie(code)
-    if movie:
-        text = f"<b>{movie['title']} ({movie['year']})</b>\nКод: <code>{movie['code']}</code>\nIMDb: {movie['rating']}"
-        await message.answer(text, parse_mode="HTML", reply_markup=movie_actions_kb(code, message.from_user.id))
+    tpz, votes = await get_movie_tpz(code)
+    tpz_text = f"⭐ TPZ: {tpz} ({votes} оценок)" if tpz else "⭐ Оценок пока нет"
+    
+    text = (
+        f"<b>{movie['title']} ({movie['year']})</b>\n"
+        f"Код: <code>{movie['code']}</code>\n"
+        f"IMDb: {movie['rating']}\n"
+        f"{tpz_text}\n\n"
+        f"{movie['description'][:180]}..."
+    )
+    await callback.message.edit_text(
+        text,
+        parse_mode="HTML",
+        reply_markup=review_back_kb(code)
+    )
+
+@dp.callback_query(F.data.startswith("write_review:"))
+async def cb_write_review(callback: CallbackQuery, state: FSMContext):
+    code = callback.data.split(":", 1)[1]
+    await state.update_data(movie_code=code)
+    await callback.message.edit_text(
+        "✏️ Напишите ваш отзыв на фильм (текст):",
+        reply_markup=review_only_back_kb(code)
+    )
+    await state.set_state(ReviewState.waiting_review)
+
+@dp.message(ReviewState.waiting_review)
+async def process_review_text(message: Message, state: FSMContext):
+    await state.update_data(review_text=message.text.strip())
+    data = await state.get_data()
+    code = data.get("movie_code")
+    await message.answer(
+        "⭐ Оцените фильм от 1 до 10:\n"
+        "(Просто напишите число)"
+    )
+    await state.set_state(ReviewState.waiting_rating)
+
+@dp.message(ReviewState.waiting_rating)
+async def process_review_rating(message: Message, state: FSMContext):
+    try:
+        rating = int(message.text.strip())
+        if rating < 1 or rating > 10:
+            raise ValueError
+    except:
+        await message.answer("❌ Введите число от 1 до 10:")
+        return
+    
+    data = await state.get_data()
+    code = data.get("movie_code")
+    review_text = data.get("review_text")
+    
+    await add_review(code, message.from_user.id, rating, review_text)
+    await state.clear()
+    
+    movie = await get_movie(code)
+    tpz, votes = await get_movie_tpz(code)
+    tpz_text = f"⭐ TPZ: {tpz} ({votes} оценок)" if tpz else "⭐ Оценок пока нет"
+    
+    text = (
+        f"✅ Отзыв добавлен!\n\n"
+        f"<b>{movie['title']} ({movie['year']})</b>\n"
+        f"{tpz_text}"
+    )
+    await message.answer(text, parse_mode="HTML", reply_markup=movie_review_kb(code))
+
+@dp.callback_query(F.data.startswith("movie_back:"))
+async def cb_movie_back(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    code = callback.data.split(":", 1)[1]
+    movie = await get_movie(code)
+    
+    tpz, votes = await get_movie_tpz(code)
+    tpz_text = f"⭐ TPZ: {tpz} ({votes} оценок)" if tpz else "⭐ Оценок пока нет"
+    
+    text = (
+        f"<b>{movie['title']} ({movie['year']})</b>\n"
+        f"Код: <code>{movie['code']}</code>\n"
+        f"IMDb: {movie['rating']}\n"
+        f"{tpz_text}\n\n"
+        f"{movie['description'][:180]}..."
+    )
+    await callback.message.edit_text(
+        text,
+        parse_mode="HTML",
+        reply_markup=movie_review_kb(code)
+    )
 
 @dp.callback_query(F.data == "admin_add")
 async def cb_add(callback: CallbackQuery, state: FSMContext):
@@ -614,6 +791,54 @@ async def add_rating(message: Message, state: FSMContext):
         await message.answer(f"✅ Фильм <b>{data['title']}</b> добавлен!\nВсего фильмов в базе: <b>{count}</b>", parse_mode="HTML")
     except asyncpg.UniqueViolationError:
         await message.answer("❌ Такой код уже существует. Попробуй другой.")
+
+@dp.callback_query(F.data.startswith("edit_"))
+async def cb_edit_start(callback: CallbackQuery, state: FSMContext):
+    if not await is_admin(callback.from_user.id):
+        return
+    parts = callback.data.split(":", 1)
+    field = parts[0].replace("edit_", "")
+    code = parts[1]
+    await state.update_data(edit_code=code, edit_field=field)
+    await callback.message.edit_text(f"Введи новое значение для <b>{field}</b>:", parse_mode="HTML")
+    await state.set_state(EditMovie.waiting_value)
+
+@dp.message(EditMovie.waiting_value)
+async def process_edit(message: Message, state: FSMContext):
+    data = await state.get_data()
+    code = data["edit_code"]
+    field = data["edit_field"]
+    if field == "poster":
+        if message.photo:
+            value = message.photo[-1].file_id
+        elif message.text:
+            value = message.text.strip()
+        else:
+            return await message.answer("Отправь фото или ссылку:")
+    else:
+        if not message.text:
+            return await message.answer("Отправь текстом:")
+        value = message.text.strip()
+        if field == "year":
+            if not value.isdigit():
+                return await message.answer("Год должен быть числом:")
+            value = int(value)
+    await update_movie_field(code, field, value)
+    await state.clear()
+    await message.answer("✅ Обновлено!")
+    movie = await get_movie(code)
+    if movie:
+        text = f"<b>{movie['title']} ({movie['year']})</b>\nКод: <code>{movie['code']}</code>\nIMDb: {movie['rating']}"
+        await message.answer(text, parse_mode="HTML", reply_markup=movie_actions_kb(code, message.from_user.id))
+
+@dp.callback_query(F.data.startswith("delete_movie:"))
+async def cb_delete_movie(callback: CallbackQuery):
+    if not await is_super_admin(callback.from_user.id):
+        return await callback.answer("Недостаточно прав", show_alert=True)
+    code = callback.data.split(":", 1)[1]
+    await delete_movie(code)
+    await callback.answer("Фильм удалён ✅")
+    await cb_list(callback)
 
 @dp.callback_query(F.data == "admin_admins")
 async def cb_admins(callback: CallbackQuery):
@@ -739,8 +964,17 @@ async def handle_code(message: Message):
     if not movie:
         return await message.answer("❌ Код не найден.")
     await increment_requests()
-    caption = f"<b>{movie['title']} ({movie['year']})</b>\n\n⭐ <b>IMDb:</b> {movie['rating']}\n\n{movie['description']}"
-    await message.answer_photo(photo=movie["poster"], caption=caption, parse_mode="HTML")
+    
+    tpz, votes = await get_movie_tpz(code)
+    tpz_text = f"⭐ TPZ: {tpz} ({votes} оценок)" if tpz else "⭐ Оценок пока нет"
+    
+    caption = (
+        f"<b>{movie['title']} ({movie['year']})</b>\n\n"
+        f"⭐ <b>IMDb:</b> {movie['rating']}\n"
+        f"{tpz_text}\n\n"
+        f"{movie['description']}"
+    )
+    await message.answer_photo(photo=movie["poster"], caption=caption, parse_mode="HTML", reply_markup=movie_review_kb(code))
 
 # ==================== ФУНКЦИИ ДЛЯ ПРОФИЛЕЙ ====================
 async def save_user_data(user_id: int, username: str = None, first_name: str = None, last_name: str = None, photo_url: str = None):
@@ -770,6 +1004,7 @@ async def get_user_profile(user_id: int):
     async with pool.acquire() as conn:
         is_admin_user = await is_admin(user_id)
         is_banned_user = await is_banned(user_id)
+        is_user = await is_user_exists(user_id)
         
         movies_count = await conn.fetchval(
             "SELECT movies_added FROM admin_stats WHERE user_id = $1", user_id
@@ -796,22 +1031,12 @@ async def get_user_profile(user_id: int):
             "photo_url": photo_url,
             "is_admin": is_admin_user,
             "is_banned": is_banned_user,
+            "is_user": is_user,
             "movies_count": movies_count,
             "warns": warns,
             "total_punishments": len(punishments),
             "punishments": [dict(p) for p in punishments]
         }
-
-async def get_user_name(user_id: int):
-    async with pool.acquire() as conn:
-        row = await conn.fetchrow(
-            "SELECT username, first_name, last_name, photo_url FROM user_names WHERE user_id = $1",
-            user_id
-        )
-        if row:
-            name = row["username"] or row["first_name"] or f"Пользователь {user_id}"
-            return name, row["photo_url"]
-        return f"Пользователь {user_id}", None
 
 async def add_punishment(user_id: int, ptype: str, reason: str, issued_by: int, duration_hours: int = 0):
     async with pool.acquire() as conn:
@@ -854,21 +1079,6 @@ async def resolve_punishment(punishment_id: int, resolved_by: int):
             return True
         return False
 
-async def add_review(movie_code: str, user_id: int, rating: int, text: str):
-    async with pool.acquire() as conn:
-        await conn.execute(
-            "INSERT INTO movie_reviews (movie_code, user_id, rating, text) VALUES ($1, $2, $3, $4)",
-            movie_code, user_id, rating, text
-        )
-
-async def get_reviews(movie_code: str):
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT * FROM movie_reviews WHERE movie_code = $1 ORDER BY created_at DESC",
-            movie_code
-        )
-        return [dict(r) for r in rows]
-
 async def add_profile_comment(target_user_id: int, author_id: int, text: str):
     async with pool.acquire() as conn:
         await conn.execute(
@@ -904,6 +1114,12 @@ def get_user_id_from_cookie(request: Request) -> Optional[int]:
         return int(user_id_str)
     return None
 
+async def check_auth(request: Request):
+    user_id = get_user_id_from_cookie(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    return user_id
+
 async def check_admin(request: Request):
     user_id = get_user_id_from_cookie(request)
     if not user_id or not await is_admin(user_id):
@@ -928,8 +1144,9 @@ async def login_page(request: Request):
 @app.post("/auth/request-code")
 async def request_code(request: Request, user_id: int = Form(...)):
     """Запрос кода подтверждения"""
-    if not await is_admin(user_id):
-        return JSONResponse(status_code=403, content={"error": "У вас нет прав администратора"})
+    # Проверяем, есть ли пользователь в базе (если нет — создаём)
+    if not await is_user_exists(user_id):
+        await add_user(user_id)
     
     # Проверяем, есть ли уже активный код
     if user_id in verification_codes:
@@ -977,10 +1194,11 @@ async def verify_code(request: Request, user_id: int = Form(...), code: str = Fo
     return response
 
 @app.get("/api/check-auth")
-async def check_auth(request: Request):
+async def check_auth_api(request: Request):
     user_id = get_user_id_from_cookie(request)
-    if user_id and await is_admin(user_id):
-        return {"authenticated": True, "user_id": user_id}
+    if user_id:
+        is_admin_user = await is_admin(user_id)
+        return {"authenticated": True, "user_id": user_id, "is_admin": is_admin_user}
     return {"authenticated": False}
 
 @app.get("/logout")
@@ -992,23 +1210,34 @@ async def logout():
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     user_id = get_user_id_from_cookie(request)
-    if not user_id or not await is_admin(user_id):
+    if not user_id:
         return RedirectResponse(url="/", status_code=302)
+    
+    is_admin_user = await is_admin(user_id)
     is_super = await is_super_admin(user_id)
+    
     async with pool.acquire() as conn:
         movies_count = await conn.fetchval("SELECT COUNT(*) FROM movies") or 0
         requests_count = await conn.fetchval("SELECT value FROM stats WHERE key = 'total_requests'") or 0
         admins_count = await conn.fetchval("SELECT COUNT(*) FROM admins") or 0
         bans_count = await conn.fetchval("SELECT COUNT(*) FROM bans") or 0
+        users_count = await conn.fetchval("SELECT COUNT(*) FROM users") or 0
+    
+    user_name_data = await get_user_name(user_id)
+    
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "user_id": user_id,
+        "username": user_name_data[0],
+        "photo_url": user_name_data[1],
+        "is_admin": is_admin_user,
         "is_super": is_super,
         "stats": {
             "movies": movies_count,
             "requests": requests_count,
             "admins": admins_count,
-            "bans": bans_count
+            "bans": bans_count,
+            "users": users_count
         }
     })
 
@@ -1057,7 +1286,19 @@ async def api_movies(request: Request):
     await check_admin(request)
     async with pool.acquire() as conn:
         rows = await conn.fetch("SELECT code, title, year, poster, rating FROM movies ORDER BY code")
-        return [dict(row) for row in rows]
+        result = []
+        for row in rows:
+            tpz, votes = await get_movie_tpz(row["code"])
+            result.append({
+                "code": row["code"],
+                "title": row["title"],
+                "year": row["year"],
+                "poster": row["poster"],
+                "rating": row["rating"],
+                "tpz": tpz,
+                "votes": votes
+            })
+        return result
 
 @app.get("/api/movies/{code}")
 async def api_movie(request: Request, code: str):
@@ -1065,7 +1306,11 @@ async def api_movie(request: Request, code: str):
     async with pool.acquire() as conn:
         row = await conn.fetchrow("SELECT * FROM movies WHERE code = $1", code)
         if row:
-            return dict(row)
+            tpz, votes = await get_movie_tpz(code)
+            result = dict(row)
+            result["tpz"] = tpz
+            result["votes"] = votes
+            return result
         raise HTTPException(status_code=404, detail="Фильм не найден")
 
 @app.post("/api/movies")
@@ -1108,6 +1353,19 @@ async def api_add_review(request: Request, code: str, data: ReviewData):
 async def api_get_reviews(request: Request, code: str):
     await check_admin(request)
     return await get_reviews(code)
+
+@app.delete("/api/reviews/{review_id}")
+async def api_delete_review(request: Request, review_id: int):
+    await check_super_admin(request)
+    await delete_review(review_id)
+    return {"success": True}
+
+# ---------- Комментарии ----------
+@app.delete("/api/profile/comments/{comment_id}")
+async def api_delete_profile_comment(request: Request, comment_id: int):
+    await check_admin(request)
+    await delete_profile_comment(comment_id)
+    return {"success": True}
 
 # ---------- Админы ----------
 @app.get("/api/admins")
@@ -1228,7 +1486,8 @@ async def api_stats(request: Request):
         requests = await conn.fetchval("SELECT value FROM stats WHERE key = 'total_requests'") or 0
         admins = await conn.fetchval("SELECT COUNT(*) FROM admins") or 0
         bans = await conn.fetchval("SELECT COUNT(*) FROM bans") or 0
-    return {"movies": movies, "requests": requests, "admins": admins, "bans": bans}
+        users = await conn.fetchval("SELECT COUNT(*) FROM users") or 0
+    return {"movies": movies, "requests": requests, "admins": admins, "bans": bans, "users": users}
 
 
 # ==================== ЗАПУСК ====================
