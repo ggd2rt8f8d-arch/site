@@ -7,7 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
     <style>
-        /* ===== СЕРЫЙ СТИЛЬ ===== */
         * { font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background: #0d0d0d; color: #d4d4d4; }
         ::-webkit-scrollbar { width: 5px; }
@@ -19,7 +18,7 @@
             border-right: 1px solid #2a2a2a;
             min-height: 100vh;
             position: fixed;
-            width: 230px;
+            width: 210px;
             left: 0;
             top: 0;
             bottom: 0;
@@ -32,17 +31,17 @@
             padding: 10px 0 25px;
             border-bottom: 1px solid #2a2a2a;
         }
-        .sidebar .brand i { font-size: 32px; color: #aaa; }
+        .sidebar .brand i { font-size: 28px; color: #aaa; }
         .sidebar .brand h3 {
             color: #e8e8e8;
             font-weight: 300;
             letter-spacing: 2px;
-            font-size: 18px;
-            margin-top: 8px;
+            font-size: 16px;
+            margin-top: 6px;
         }
         .sidebar .nav-link {
             color: #888;
-            padding: 10px 20px;
+            padding: 10px 18px;
             border-radius: 8px;
             margin: 2px 10px;
             transition: 0.2s;
@@ -50,35 +49,36 @@
             cursor: pointer;
             display: block;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 13px;
         }
         .sidebar .nav-link:hover,
         .sidebar .nav-link.active {
             background: #2a2a2a;
             color: #fff;
         }
-        .sidebar .nav-link i { width: 22px; margin-right: 10px; }
+        .sidebar .nav-link i { width: 20px; margin-right: 10px; }
 
         .main-content {
-            margin-left: 230px;
-            padding: 25px 30px;
+            margin-left: 210px;
+            padding: 20px 28px;
         }
         .top-bar {
             background: #161616;
             border: 1px solid #2a2a2a;
             border-radius: 12px;
-            padding: 14px 24px;
-            margin-bottom: 25px;
+            padding: 12px 22px;
+            margin-bottom: 22px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            cursor: default;
         }
         .top-bar h4 {
             color: #e8e8e8;
             font-weight: 300;
             letter-spacing: 1px;
             margin: 0;
-            font-size: 20px;
+            font-size: 18px;
         }
         .top-bar .user-info {
             display: flex;
@@ -86,83 +86,91 @@
             gap: 12px;
             color: #999;
             font-size: 13px;
+            cursor: pointer;
+            padding: 4px 10px 4px 14px;
+            border-radius: 30px;
+            transition: 0.2s;
+        }
+        .top-bar .user-info:hover {
+            background: #2a2a2a;
         }
         .top-bar .user-info .avatar-sm {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid #333;
+            transition: 0.2s;
+        }
+        .top-bar .user-info:hover .avatar-sm {
+            border-color: #555;
         }
         .badge-super {
             background: #3a3a3a;
             color: #ccc;
             font-weight: 400;
-            padding: 3px 12px;
+            padding: 2px 10px;
             border-radius: 30px;
-            font-size: 11px;
+            font-size: 10px;
             letter-spacing: 0.5px;
         }
 
-        /* ===== КАРТОЧКИ СТАТИСТИКИ ===== */
         .stat-card {
             background: #151515;
             border: 1px solid #2a2a2a;
             border-radius: 12px;
-            padding: 20px 22px;
+            padding: 18px 20px;
             transition: 0.2s;
         }
         .stat-card:hover { border-color: #444; transform: translateY(-2px); }
         .stat-card .number {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 300;
             color: #e8e8e8;
         }
         .stat-card .label {
             color: #777;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 300;
         }
         .stat-card .icon {
-            font-size: 26px;
+            font-size: 24px;
             color: #555;
         }
 
-        /* ===== ТАБЛИЦЫ ===== */
         .table-container {
             background: #141414;
             border: 1px solid #2a2a2a;
             border-radius: 12px;
-            padding: 18px;
+            padding: 16px;
         }
         .table {
             color: #ccc;
             border-color: #2a2a2a;
             margin-bottom: 0;
-            font-size: 14px;
+            font-size: 13px;
         }
         .table th {
             font-weight: 400;
             color: #888;
             border-bottom: 1px solid #2a2a2a;
             text-transform: uppercase;
-            font-size: 11px;
+            font-size: 10px;
             letter-spacing: 0.5px;
-            padding: 10px 8px;
+            padding: 8px 6px;
         }
         .table td {
             border-bottom: 1px solid #222;
             vertical-align: middle;
-            padding: 10px 8px;
+            padding: 8px 6px;
         }
         .table tr:hover td { background: #1a1a1a; }
 
-        /* ===== КНОПКИ ===== */
         .btn {
             border-radius: 8px;
             font-weight: 400;
-            padding: 5px 14px;
-            font-size: 13px;
+            padding: 4px 12px;
+            font-size: 12px;
             transition: 0.2s;
         }
         .btn-primary {
@@ -211,9 +219,8 @@
             background: #333;
             color: #fff;
         }
-        .btn-sm { padding: 3px 10px; font-size: 12px; }
+        .btn-sm { padding: 2px 8px; font-size: 11px; }
 
-        /* ===== ПОИСК ===== */
         .search-box {
             position: relative;
             display: inline-block;
@@ -222,10 +229,10 @@
             background: #1a1a1a;
             border: 1px solid #2a2a2a;
             border-radius: 10px;
-            padding: 9px 14px 9px 36px;
+            padding: 8px 12px 8px 34px;
             color: #ccc;
-            width: 260px;
-            font-size: 13px;
+            width: 240px;
+            font-size: 12px;
         }
         .search-box input:focus {
             outline: none;
@@ -233,14 +240,13 @@
         }
         .search-box i {
             position: absolute;
-            left: 12px;
+            left: 10px;
             top: 50%;
             transform: translateY(-50%);
             color: #555;
-            font-size: 14px;
+            font-size: 13px;
         }
 
-        /* ===== МОДАЛКИ ===== */
         .modal-content {
             background: #161616;
             border: 1px solid #2a2a2a;
@@ -259,7 +265,7 @@
             border: 1px solid #2a2a2a;
             color: #ccc;
             border-radius: 8px;
-            padding: 9px 12px;
+            padding: 8px 12px;
             font-size: 13px;
         }
         .modal .form-control:focus {
@@ -269,39 +275,26 @@
         .modal .form-label {
             color: #999;
             font-weight: 300;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .btn-close { filter: invert(0.6); }
 
-        /* ===== АВАТАРКИ ===== */
         .avatar {
-            width: 34px;
-            height: 34px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid #2a2a2a;
         }
         .avatar-sm { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
         .avatar-lg {
-            width: 80px;
-            height: 80px;
+            width: 72px;
+            height: 72px;
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid #333;
-        }
-        .avatar-placeholder {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: #2a2a2a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-            font-size: 16px;
-            border: 2px solid #2a2a2a;
         }
 
         /* ===== ПРОФИЛЬ ===== */
@@ -309,55 +302,70 @@
             background: #141414;
             border: 1px solid #2a2a2a;
             border-radius: 14px;
-            padding: 28px;
-            max-width: 550px;
+            padding: 24px 28px;
+            max-width: 580px;
             margin: 0 auto;
         }
-        .profile-card .stat-item {
+        .profile-card .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .profile-card .profile-header .profile-info h3 {
+            font-weight: 300;
+            color: #e8e8e8;
+            margin: 0;
+            font-size: 20px;
+        }
+        .profile-card .profile-header .profile-info .sub {
+            color: #777;
+            font-size: 13px;
+        }
+        .profile-card .profile-header .profile-info .badge-super {
+            font-size: 10px;
+            padding: 2px 12px;
+        }
+        .profile-card .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 18px 0;
+        }
+        .profile-card .stats-grid .stat-item {
             background: #1a1a1a;
-            border-radius: 10px;
-            padding: 12px 16px;
             border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 12px 10px;
             text-align: center;
         }
-        .profile-card .stat-item .num {
+        .profile-card .stats-grid .stat-item .num {
             font-size: 22px;
             font-weight: 300;
             color: #e8e8e8;
         }
-        .profile-card .stat-item .lbl {
+        .profile-card .stats-grid .stat-item .lbl {
             color: #777;
-            font-size: 12px;
+            font-size: 11px;
         }
-        .profile-card .stat-item .warn { color: #cc8888; }
-        .profile-card .stat-item .ok { color: #88cc88; }
+        .profile-card .stats-grid .stat-item .warn { color: #cc8888; }
+        .profile-card .stats-grid .stat-item .ok { color: #88cc88; }
 
-        /* ===== ОТЗЫВЫ ===== */
-        .review-item {
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
-            border-radius: 10px;
-            padding: 14px 18px;
-            margin-bottom: 10px;
+        .profile-card .section-title {
+            color: #999;
+            font-weight: 300;
+            font-size: 14px;
+            margin: 18px 0 10px;
+            border-bottom: 1px solid #2a2a2a;
+            padding-bottom: 8px;
         }
-        .review-item .review-header {
-            display: flex;
-            justify-content: space-between;
-            color: #777;
-            font-size: 12px;
-        }
-        .review-item .review-text {
-            margin-top: 4px;
-            color: #ccc;
-        }
-        .review-item .review-rating { color: #e8c84a; }
+        .profile-card .section-title i { margin-right: 8px; }
 
-        /* ===== НАКАЗАНИЯ ===== */
         .punishment-item {
             background: #1a1a1a;
             border-left: 3px solid #4a2222;
             border-radius: 8px;
-            padding: 10px 16px;
+            padding: 10px 14px;
             margin-bottom: 8px;
         }
         .punishment-item.resolved { border-left-color: #224422; }
@@ -365,66 +373,31 @@
             display: flex;
             justify-content: space-between;
             color: #777;
-            font-size: 12px;
+            font-size: 11px;
         }
         .punishment-item .p-reason {
             color: #ccc;
-            font-size: 14px;
+            font-size: 13px;
             margin-top: 2px;
         }
 
-        .badge-active {
-            background: #3a1a1a;
-            color: #cc8888;
-            padding: 2px 10px;
-            border-radius: 30px;
-            font-size: 10px;
-        }
-        .badge-resolved {
-            background: #1a3a1a;
-            color: #88cc88;
-            padding: 2px 10px;
-            border-radius: 30px;
-            font-size: 10px;
-        }
-
-        /* ===== АДАПТИВ ===== */
-        @media (max-width: 768px) {
-            .sidebar { position: relative; width: 100%; min-height: auto; }
-            .main-content { margin-left: 0; padding: 15px; }
-            .search-box input { width: 100%; }
-        }
-
-        .fade-in { animation: fadeIn 0.25s ease; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .clickable-row { cursor: pointer; }
-        .clickable-row:hover td { background: #1a1a1a; }
-
-        .text-secondary-light { color: #888; }
-        .border-dark { border-color: #2a2a2a; }
-
-        /* Комментарии в профиле */
         .comment-item {
             background: #1a1a1a;
             border: 1px solid #2a2a2a;
             border-radius: 10px;
-            padding: 12px 16px;
+            padding: 10px 14px;
             margin-bottom: 8px;
         }
         .comment-item .comment-header {
             display: flex;
             justify-content: space-between;
             color: #777;
-            font-size: 12px;
+            font-size: 11px;
         }
         .comment-item .comment-text {
             color: #ccc;
             margin-top: 4px;
-            font-size: 14px;
+            font-size: 13px;
         }
         .comment-input-area {
             display: flex;
@@ -443,6 +416,38 @@
         .comment-input-area input:focus {
             outline: none;
             border-color: #555;
+        }
+
+        .badge-active {
+            background: #3a1a1a;
+            color: #cc8888;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 10px;
+        }
+        .badge-resolved {
+            background: #1a3a1a;
+            color: #88cc88;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 10px;
+        }
+
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover td { background: #1a1a1a; }
+        .text-secondary-light { color: #888; }
+
+        @media (max-width: 768px) {
+            .sidebar { position: relative; width: 100%; min-height: auto; }
+            .main-content { margin-left: 0; padding: 15px; }
+            .search-box input { width: 100%; }
+            .profile-card .profile-header { flex-direction: column; text-align: center; }
+            .profile-card .stats-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .fade-in { animation: fadeIn 0.25s ease; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -467,9 +472,6 @@
         <a class="nav-link" href="#" data-page="bans" id="bansTab" {% if not is_super %}style="display:none"{% endif %}>
             <i class="fas fa-ban"></i> Баны
         </a>
-        <a class="nav-link" href="#" data-page="profile">
-            <i class="fas fa-user"></i> Мой профиль
-        </a>
         <a class="nav-link" href="/logout">
             <i class="fas fa-sign-out-alt"></i> Выйти
         </a>
@@ -481,11 +483,11 @@
 
     <div class="top-bar">
         <h4 id="pageTitle">Главная</h4>
-        <div class="user-info">
-            <img src="https://ui-avatars.com/api/?name={{ user_id }}&background=2a2a2a&color=cccccc&size=32&rounded=true" class="avatar-sm" onerror="this.style.display='none'">
-            <span>ID: {{ user_id }}</span>
+        <div class="user-info" onclick="showProfilePage()">
+            <span id="topBarName">Загрузка...</span>
+            <img src="https://ui-avatars.com/api/?name={{ user_id }}&background=2a2a2a&color=cccccc&size=34&rounded=true" class="avatar-sm" id="topBarAvatar" onerror="this.style.display='none'">
             {% if is_super %}
-                <span class="badge-super"><i class="fas fa-star"></i> Суперадмин</span>
+                <span class="badge-super"><i class="fas fa-star"></i></span>
             {% endif %}
         </div>
     </div>
@@ -627,45 +629,45 @@
         </div>
     </div>
 
-    <!-- ====== МОЙ ПРОФИЛЬ ====== -->
+    <!-- ====== ПРОФИЛЬ ====== -->
     <div id="page-profile" style="display:none" class="fade-in">
         <div class="profile-card" id="profileCard">
-            <div class="text-center">
-                <img src="https://ui-avatars.com/api/?name={{ user_id }}&background=2a2a2a&color=cccccc&size=80&rounded=true" class="avatar-lg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23222%22 width=%2280%22 height=%2280%22/%3E%3Ctext x=%2240%22 y=%2248%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2232%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
-                <h4 class="mt-3" style="font-weight:300;color:#e8e8e8;" id="profileName">Загрузка...</h4>
-                <p class="text-secondary-light" id="profileId"><i class="fas fa-id-badge"></i> ID: {{ user_id }}</p>
-                {% if is_super %}
-                    <span class="badge-super"><i class="fas fa-star"></i> Суперадмин</span>
-                {% endif %}
-            </div>
-            <hr style="border-color:#2a2a2a;">
-            <div class="row g-3 text-center" id="profileStats">
-                <div class="col-4">
-                    <div class="stat-item">
-                        <div class="num" id="pMovies">-</div>
-                        <div class="lbl"><i class="fas fa-film"></i> Фильмов</div>
-                    </div>
-                </div>
-                <div class="col-4">
-                    <div class="stat-item">
-                        <div class="num warn" id="pWarns">0</div>
-                        <div class="lbl"><i class="fas fa-exclamation-triangle"></i> Выговоров</div>
-                    </div>
-                </div>
-                <div class="col-4">
-                    <div class="stat-item">
-                        <div class="num ok" id="pPunishments">0</div>
-                        <div class="lbl"><i class="fas fa-gavel"></i> Наказаний</div>
-                    </div>
+            <!-- Шапка -->
+            <div class="profile-header">
+                <img src="https://ui-avatars.com/api/?name={{ user_id }}&background=2a2a2a&color=cccccc&size=72&rounded=true" class="avatar-lg" id="profileAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2272%22 height=%2272%22%3E%3Crect fill=%22%23222%22 width=%2272%22 height=%2272%22/%3E%3Ctext x=%2236%22 y=%2244%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2230%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
+                <div class="profile-info">
+                    <h3 id="profileName">Загрузка...</h3>
+                    <div class="sub" id="profileId"><i class="fas fa-id-badge"></i> ID: {{ user_id }}</div>
+                    {% if is_super %}
+                        <span class="badge-super"><i class="fas fa-crown"></i> Суперадмин</span>
+                    {% endif %}
                 </div>
             </div>
 
-            <h6 class="mt-4" style="font-weight:300;color:#999;"><i class="fas fa-history"></i> История наказаний</h6>
+            <!-- Статистика -->
+            <div class="stats-grid" id="profileStats">
+                <div class="stat-item">
+                    <div class="num" id="pMovies">-</div>
+                    <div class="lbl"><i class="fas fa-film"></i> Фильмов</div>
+                </div>
+                <div class="stat-item">
+                    <div class="num warn" id="pWarns">0</div>
+                    <div class="lbl"><i class="fas fa-exclamation-triangle"></i> Выговоров</div>
+                </div>
+                <div class="stat-item">
+                    <div class="num ok" id="pPunishments">0</div>
+                    <div class="lbl"><i class="fas fa-gavel"></i> Наказаний</div>
+                </div>
+            </div>
+
+            <!-- История наказаний -->
+            <div class="section-title"><i class="fas fa-history"></i> История наказаний</div>
             <div id="pHistory">
                 <p class="text-secondary-light text-center py-3">Нет наказаний</p>
             </div>
 
-            <h6 class="mt-4" style="font-weight:300;color:#999;"><i class="fas fa-comments"></i> Комментарии</h6>
+            <!-- Комментарии -->
+            <div class="section-title"><i class="fas fa-comments"></i> Комментарии</div>
             <div id="pComments">
                 <p class="text-secondary-light text-center py-3">Нет комментариев</p>
             </div>
@@ -690,32 +692,30 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="addMovieForm">
-                    <div class="mb-3">
-                        <label class="form-label">Код (уникальный)</label>
-                        <input type="text" class="form-control" id="movieCode" name="code" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Название</label>
-                        <input type="text" class="form-control" id="movieTitle" name="title" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Год</label>
-                        <input type="number" class="form-control" id="movieYear" name="year" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Обложка (file_id или URL)</label>
-                        <input type="text" class="form-control" id="moviePoster" name="poster" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Описание</label>
-                        <textarea class="form-control" id="movieDescription" name="description" rows="3" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Рейтинг (IMDb)</label>
-                        <input type="text" class="form-control" id="movieRating" name="rating" placeholder="8.5" required>
-                    </div>
-                </form>
+                <div class="mb-3">
+                    <label class="form-label">Код (уникальный)</label>
+                    <input type="text" class="form-control" id="movieCode" placeholder="например: the-matrix">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Название</label>
+                    <input type="text" class="form-control" id="movieTitle" placeholder="Матрица">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Год</label>
+                    <input type="number" class="form-control" id="movieYear" placeholder="1999">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Обложка (file_id или URL)</label>
+                    <input type="text" class="form-control" id="moviePoster" placeholder="https://example.com/poster.jpg">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-control" id="movieDescription" rows="3" placeholder="Краткое описание фильма..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Рейтинг (IMDb)</label>
+                    <input type="text" class="form-control" id="movieRating" placeholder="8.7">
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -734,32 +734,30 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editMovieForm">
-                    <div class="mb-3">
-                        <label class="form-label">Код</label>
-                        <input type="text" class="form-control" id="editCode" disabled>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Название</label>
-                        <input type="text" class="form-control" id="editTitle" name="title">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Год</label>
-                        <input type="number" class="form-control" id="editYear" name="year">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Обложка (file_id или URL)</label>
-                        <input type="text" class="form-control" id="editPoster" name="poster">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Описание</label>
-                        <textarea class="form-control" id="editDescription" name="description" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Рейтинг (IMDb)</label>
-                        <input type="text" class="form-control" id="editRating" name="rating">
-                    </div>
-                </form>
+                <div class="mb-3">
+                    <label class="form-label">Код</label>
+                    <input type="text" class="form-control" id="editCode" disabled>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Название</label>
+                    <input type="text" class="form-control" id="editTitle">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Год</label>
+                    <input type="number" class="form-control" id="editYear">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Обложка (file_id или URL)</label>
+                    <input type="text" class="form-control" id="editPoster">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-control" id="editDescription" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Рейтинг (IMDb)</label>
+                    <input type="text" class="form-control" id="editRating" placeholder="8.7">
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -824,7 +822,7 @@
 <!-- Модалка просмотра профиля -->
 <div class="modal fade" id="profileModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content" id="profileModalContent">
+        <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-user"></i> <span id="profileModalName">Профиль</span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -856,10 +854,10 @@
                 <div class="mb-3">
                     <label class="form-label">Тип наказания</label>
                     <select class="form-control" id="punishType">
-                        <option value="warning"><i class="fas fa-exclamation-triangle"></i> Выговор</option>
-                        <option value="mute"><i class="fas fa-microphone-slash"></i> Мут (1 день)</option>
-                        <option value="ban"><i class="fas fa-ban"></i> Бан (3 дня)</option>
-                        <option value="permanent_ban"><i class="fas fa-ban"></i> Перманентный бан</option>
+                        <option value="warning">⚠️ Выговор</option>
+                        <option value="mute">🔇 Мут (1 день)</option>
+                        <option value="ban">🚫 Бан (3 дня)</option>
+                        <option value="permanent_ban">🚫 Перманентный бан</option>
                     </select>
                 </div>
                 <div class="mb-3">
@@ -1060,7 +1058,7 @@ document.getElementById('movieSearch')?.addEventListener('input', function() {
     renderMovies(filtered);
 });
 
-// Добавление фильма - ИСПРАВЛЕНО
+// Добавление фильма
 document.getElementById('saveMovieBtn')?.addEventListener('click', async function() {
     const data = {
         code: document.getElementById('movieCode').value.trim(),
@@ -1071,7 +1069,6 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
         rating: document.getElementById('movieRating').value.trim()
     };
     
-    // Проверка на пустые поля
     for (let key in data) {
         if (!data[key] && key !== 'year') {
             showToast('⚠️ Заполните все поля', 'warning');
@@ -1090,7 +1087,12 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
         });
         if (res.ok) {
             bootstrap.Modal.getInstance(document.getElementById('addMovieModal')).hide();
-            document.getElementById('addMovieForm').reset();
+            document.getElementById('movieCode').value = '';
+            document.getElementById('movieTitle').value = '';
+            document.getElementById('movieYear').value = '';
+            document.getElementById('moviePoster').value = '';
+            document.getElementById('movieDescription').value = '';
+            document.getElementById('movieRating').value = '';
             loadMovies();
             loadStats();
             showToast('✅ Фильм добавлен', 'success');
@@ -1199,13 +1201,13 @@ async function loadReviews(code) {
             return;
         }
         container.innerHTML = data.map(r => `
-            <div class="review-item">
-                <div class="review-header">
+            <div class="review-item" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px 14px;margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;color:#777;font-size:11px;">
                     <span><i class="fas fa-user"></i> ${r.user_id}</span>
-                    <span class="review-rating"><i class="fas fa-star"></i> ${r.rating}/10</span>
+                    <span style="color:#e8c84a;"><i class="fas fa-star"></i> ${r.rating}/10</span>
                 </div>
-                <div class="review-text">${r.text || ''}</div>
-                <div class="text-secondary-light" style="font-size:11px;">${new Date(r.created_at).toLocaleString()}</div>
+                <div style="color:#ccc;margin-top:4px;font-size:13px;">${r.text || ''}</div>
+                <div style="color:#777;font-size:10px;margin-top:4px;">${new Date(r.created_at).toLocaleString()}</div>
             </div>
         `).join('');
     } catch(e) { console.error(e); }
@@ -1245,7 +1247,7 @@ async function loadAdmins() {
         tbody.innerHTML = data.map(a => `
             <tr class="clickable-row" onclick="showProfileModal(${a.user_id})">
                 <td>
-                    <img src="https://ui-avatars.com/api/?name=${a.user_id}&background=2a2a2a&color=cccccc&size=34&rounded=true" class="avatar" onerror="this.style.display='none'">
+                    <img src="https://ui-avatars.com/api/?name=${a.user_id}&background=2a2a2a&color=cccccc&size=32&rounded=true" class="avatar" onerror="this.style.display='none'">
                 </td>
                 <td>
                     <div style="font-weight:400;color:#ddd;">${a.username || 'Пользователь'}</div>
@@ -1309,7 +1311,7 @@ async function loadBans() {
         tbody.innerHTML = data.map(b => `
             <tr class="clickable-row" onclick="showProfileModal(${b.user_id})">
                 <td>
-                    <img src="https://ui-avatars.com/api/?name=${b.user_id}&background=2a2a2a&color=cccccc&size=34&rounded=true" class="avatar" onerror="this.style.display='none'">
+                    <img src="https://ui-avatars.com/api/?name=${b.user_id}&background=2a2a2a&color=cccccc&size=32&rounded=true" class="avatar" onerror="this.style.display='none'">
                 </td>
                 <td>
                     <div style="font-weight:400;color:#ddd;">${b.username || 'Пользователь'}</div>
@@ -1364,7 +1366,16 @@ async function unbanUser(user_id) {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-// ==================== ПРОФИЛЬ (страница) ====================
+// ==================== ПРОФИЛЬ ====================
+function showProfilePage() {
+    document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelector('[data-page="profile"]')?.classList.add('active');
+    document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
+    document.getElementById('page-profile').style.display = 'block';
+    document.getElementById('pageTitle').textContent = 'Мой профиль';
+    loadProfile(CURRENT_USER);
+}
+
 async function loadProfile(user_id) {
     try {
         const res = await apiRequest(`/api/profile/${user_id}`);
@@ -1374,6 +1385,9 @@ async function loadProfile(user_id) {
         document.getElementById('pMovies').textContent = data.movies_count || 0;
         document.getElementById('pWarns').textContent = data.warns || 0;
         document.getElementById('pPunishments').textContent = data.total_punishments || 0;
+        
+        // Обновляем верхнюю панель
+        document.getElementById('topBarName').textContent = data.username || `Пользователь ${user_id}`;
         
         // История наказаний
         const history = document.getElementById('pHistory');
@@ -1396,7 +1410,7 @@ async function loadProfile(user_id) {
         }
         
         // Комментарии
-        await loadProfileComments(user_id);
+        loadProfileComments(user_id);
         
     } catch(e) { console.error(e); }
 }
@@ -1418,21 +1432,21 @@ async function showProfileModal(user_id) {
                 <hr style="border-color:#2a2a2a;">
                 <div class="row g-3 text-center">
                     <div class="col-4">
-                        <div class="stat-item">
-                            <div class="num">${data.movies_count || 0}</div>
-                            <div class="lbl"><i class="fas fa-film"></i> Фильмов</div>
+                        <div class="stat-item" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px;">
+                            <div class="num" style="font-size:20px;font-weight:300;color:#e8e8e8;">${data.movies_count || 0}</div>
+                            <div class="lbl" style="color:#777;font-size:11px;"><i class="fas fa-film"></i> Фильмов</div>
                         </div>
                     </div>
                     <div class="col-4">
-                        <div class="stat-item">
-                            <div class="num warn">${data.warns || 0}</div>
-                            <div class="lbl"><i class="fas fa-exclamation-triangle"></i> Выговоров</div>
+                        <div class="stat-item" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px;">
+                            <div class="num warn" style="font-size:20px;font-weight:300;color:#cc8888;">${data.warns || 0}</div>
+                            <div class="lbl" style="color:#777;font-size:11px;"><i class="fas fa-exclamation-triangle"></i> Выговоров</div>
                         </div>
                     </div>
                     <div class="col-4">
-                        <div class="stat-item">
-                            <div class="num ok">${data.total_punishments || 0}</div>
-                            <div class="lbl"><i class="fas fa-gavel"></i> Наказаний</div>
+                        <div class="stat-item" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px;">
+                            <div class="num ok" style="font-size:20px;font-weight:300;color:#88cc88;">${data.total_punishments || 0}</div>
+                            <div class="lbl" style="color:#777;font-size:11px;"><i class="fas fa-gavel"></i> Наказаний</div>
                         </div>
                     </div>
                 </div>
@@ -1480,7 +1494,7 @@ async function showProfileModal(user_id) {
         new bootstrap.Modal(document.getElementById('profileModal')).show();
         
         // Загружаем комментарии в модалку
-        await loadModalComments(user_id);
+        loadModalComments(user_id);
         
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
@@ -1593,7 +1607,6 @@ document.getElementById('savePunishBtn')?.addEventListener('click', async functi
             bootstrap.Modal.getInstance(document.getElementById('punishModal')).hide();
             document.getElementById('punishReason').value = '';
             showToast('✅ Наказание выдано', 'success');
-            // Обновляем данные
             if (currentProfileUserId) {
                 loadProfile(currentProfileUserId);
                 showProfileModal(currentProfileUserId);
