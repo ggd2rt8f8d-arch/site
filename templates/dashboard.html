@@ -1265,9 +1265,10 @@ async function apiRequest(url, options = {}) {
             ...(options.headers || {})
         }
     });
+    // НЕ ПЕРЕНАПРАВЛЯЕМ на /, а просто возвращаем ошибку
     if (res.status === 401 || res.status === 403) {
-        window.location.href = '/';
-        throw new Error('Не авторизован');
+        console.warn('⚠️ Нет доступа к API:', url);
+        throw new Error('Доступ запрещён');
     }
     return res;
 }
