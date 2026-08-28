@@ -137,7 +137,6 @@
         <h1>Movie Admin</h1>
         <p>Войдите через Telegram, чтобы управлять фильмами</p>
 
-        <!-- ВСТРОЕННЫЙ ВИДЖЕТ TELEGRAM -->
         <div class="telegram-widget-container" id="telegramWidget">
             <div class="loading-text">
                 <span class="spinner"></span> Загрузка виджета...
@@ -161,7 +160,13 @@
 
     <script>
         // ============================================================
-        // 1. ГЛОБАЛЬНАЯ ФУНКЦИЯ — её вызывает Telegram Widget
+        // ПЕРЕМЕННЫЕ ИЗ RAILWAY
+        // ============================================================
+        const BOT_TOKEN = '{{ BOT_TOKEN }}';
+        const BOT_ID = '{{ BOT_ID }}';  // ← теперь читаем из переменной окружения
+
+        // ============================================================
+        // ГЛОБАЛЬНАЯ ФУНКЦИЯ — её вызывает Telegram Widget
         // ============================================================
         window.onTelegramAuth = function(user) {
             console.log('✅ Авторизация через Telegram:', user);
@@ -171,7 +176,6 @@
             document.getElementById('telegramWidget').innerHTML = '<div class="loading-text"><span class="spinner"></span> Вход...</div>';
             document.getElementById('errorBox').classList.remove('show');
             
-            // Отправляем данные на сервер
             fetch('/auth/telegram', {
                 method: 'POST',
                 headers: {
@@ -221,31 +225,26 @@
         };
 
         // ============================================================
-        // 2. ЗАГРУЗКА ВИДЖЕТА
+        // ЗАГРУЗКА ВИДЖЕТА
         // ============================================================
         function loadTelegramWidget() {
             const container = document.getElementById('telegramWidget');
             
-            // Получаем bot_id из переменной окружения
-            const botToken = '{{ BOT_TOKEN }}';
+            // Используем BOT_ID из переменной окружения, если есть
+            // Иначе парсим из BOT_TOKEN
+            let botId = BOT_ID && BOT_ID !== 'None' ? BOT_ID : null;
             
-            if (!botToken || botToken === 'None' || botToken === '') {
-                container.innerHTML = `
-                    <div style="color:rgba(255,255,255,0.5);font-size:14px;padding:20px;">
-                        <i class="fas fa-exclamation-triangle"></i> BOT_TOKEN не настроен
-                    </div>
-                `;
-                return;
+            if (!botId && BOT_TOKEN && BOT_TOKEN !== 'None') {
+                botId = BOT_TOKEN.split(':')[0];
             }
-
-            const botId = botToken.split(':')[0];
             
-            if (!botId || botId === 'None') {
+            if (!botId || botId === 'None' || botId === '') {
                 container.innerHTML = `
                     <div style="color:rgba(255,255,255,0.5);font-size:14px;padding:20px;">
-                        <i class="fas fa-exclamation-triangle"></i> Неверный формат BOT_TOKEN
+                        <i class="fas fa-exclamation-triangle"></i> BOT_ID не настроен
                     </div>
                 `;
+                console.error('❌ BOT_ID не задан! Добавьте переменную BOT_ID в Railway.');
                 return;
             }
 
@@ -253,7 +252,6 @@
             console.log('🌐 Origin:', window.location.origin);
             console.log('📡 Загрузка виджета...');
 
-            // Создаём скрипт виджета
             const script = document.createElement('script');
             script.src = 'https://telegram.org/js/telegram-widget.js?22';
             script.setAttribute('data-telegram-login', botId);
@@ -276,11 +274,9 @@
                 `;
             };
             
-            // Очищаем и добавляем скрипт
             container.innerHTML = '';
             container.appendChild(script);
             
-            // Таймаут на случай, если виджет не загрузился
             setTimeout(() => {
                 if (container.querySelector('iframe') === null && container.querySelector('button') === null) {
                     console.warn('⚠️ Виджет не загрузился, показываем кнопку');
@@ -294,15 +290,18 @@
         }
 
         // ============================================================
-        // 3. ЗАПАСНОЙ СПОСОБ — OAuth в отдельном окне
+        // ЗАПАСНОЙ СПОСОБ — OAuth в отдельном окне
         // ============================================================
         function redirectToTelegram() {
-            const botToken = '{{ BOT_TOKEN }}';
-            const botId = botToken ? botToken.split(':')[0] : '';
+            let botId = BOT_ID && BOT_ID !== 'None' ? BOT_ID : null;
+            
+            if (!botId && BOT_TOKEN && BOT_TOKEN !== 'None') {
+                botId = BOT_TOKEN.split(':')[0];
+            }
             
             if (!botId) {
                 document.getElementById('errorBox').classList.add('show');
-                document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> BOT_TOKEN не настроен!';
+                document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> BOT_ID не настроен!';
                 return;
             }
             
@@ -356,10 +355,9 @@
         }
 
         // ============================================================
-        // 4. ЗАПУСК
+        // ЗАПУСК
         // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
-            // Небольшая задержка для уверенности
             setTimeout(loadTelegramWidget, 500);
         });
     </script>
