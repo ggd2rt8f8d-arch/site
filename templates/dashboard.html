@@ -885,6 +885,7 @@
             border-bottom: 1px solid #2a2a2a;
             margin-bottom: 25px;
             flex-wrap: wrap;
+            padding: 0 30px;
         }
         .settings-tabs .tab-btn {
             background: none;
@@ -907,6 +908,7 @@
         .settings-tab-content {
             display: none;
             animation: fadeIn 0.3s ease;
+            padding: 0 30px 30px;
         }
         .settings-tab-content.active {
             display: block;
@@ -946,6 +948,12 @@
         }
         .file-upload-wrapper .file-upload-btn i {
             font-size: 18px;
+        }
+
+        /* Ярко-жёлтый цвет для создателя в комментариях */
+        .creator-name {
+            color: #f5a623 !important;
+            font-weight: bold !important;
         }
 
         @media (max-width: 768px) {
@@ -1069,6 +1077,12 @@
                 font-size: 12px;
                 padding: 8px 12px;
             }
+            .settings-tab-content {
+                padding: 0 16px 20px;
+            }
+            .settings-tabs {
+                padding: 0 16px;
+            }
         }
 
         @media (min-width: 1025px) {
@@ -1170,6 +1184,17 @@
             border-radius: 8px;
             padding: 4px 10px;
             width: 100%;
+        }
+
+        /* Стиль для активного режима редактирования */
+        .edit-mode-active {
+            border: 2px solid #f5a623 !important;
+            border-radius: 8px;
+            padding: 4px;
+        }
+        .edit-mode-active .editable-input,
+        .edit-mode-active .editable-textarea {
+            border-color: #f5a623;
         }
     </style>
 </head>
@@ -1482,92 +1507,90 @@
                 <i class="fas fa-cog"></i> Настройки
             </h3>
             
-            <div class="settings-tabs" style="padding:0 30px;">
+            <div class="settings-tabs">
                 <button class="tab-btn active" data-tab="tab-account"><i class="fas fa-user"></i> Аккаунт</button>
                 <button class="tab-btn" data-tab="tab-appearance"><i class="fas fa-palette"></i> Внешний вид</button>
                 <button class="tab-btn" data-tab="tab-privacy"><i class="fas fa-lock"></i> Конфиденциальность</button>
             </div>
             
-            <div style="padding:0 30px 30px;">
-                <!-- Аккаунт -->
-                <div class="settings-tab-content active" id="tab-account">
-                    <div class="mb-3">
-                        <label class="form-label" style="color:#999;">Отображаемое имя</label>
-                        <input type="text" class="form-control" id="settingsDisplayName" placeholder="Ваше имя" value="{{ display_name or '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" style="color:#999;">Юзернейм (без @)</label>
-                        <input type="text" class="form-control" id="settingsUsername" placeholder="username" value="{{ username or '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" style="color:#999;">Аватарка</label>
-                        <div class="file-upload-wrapper">
-                            <div class="file-upload-btn">
-                                <i class="fas fa-upload"></i> Выбрать файл
-                                <input type="file" accept="image/*" id="settingsPhotoFile" onchange="previewImageFile(this, 'photoPreview', 'settingsPhotoUrl')">
-                            </div>
+            <!-- Аккаунт -->
+            <div class="settings-tab-content active" id="tab-account">
+                <div class="mb-3">
+                    <label class="form-label" style="color:#999;">Отображаемое имя</label>
+                    <input type="text" class="form-control" id="settingsDisplayName" placeholder="Ваше имя" value="{{ display_name or '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" style="color:#999;">Юзернейм (без @)</label>
+                    <input type="text" class="form-control" id="settingsUsername" placeholder="username" value="{{ username or '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" style="color:#999;">Аватарка</label>
+                    <div class="file-upload-wrapper">
+                        <div class="file-upload-btn">
+                            <i class="fas fa-upload"></i> Выбрать файл
+                            <input type="file" accept="image/*" id="settingsPhotoFile" onchange="previewImageFile(this, 'photoPreview', 'settingsPhotoUrl')">
                         </div>
-                        <input type="text" class="form-control mt-2" id="settingsPhotoUrl" placeholder="Или вставьте ссылку" value="{{ photo_url or '' }}" oninput="document.getElementById('photoPreview').src=this.value;document.getElementById('photoPreview').style.display=this.value?'block':'none'">
-                        <img id="photoPreview" class="image-preview" src="{{ photo_url or '' }}" style="display:{{ 'block' if photo_url else 'none' }}">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label" style="color:#999;">Баннер</label>
-                        <div class="file-upload-wrapper">
-                            <div class="file-upload-btn">
-                                <i class="fas fa-upload"></i> Выбрать файл
-                                <input type="file" accept="image/*" id="settingsBannerFile" onchange="previewImageFile(this, 'bannerPreview', 'settingsBannerUrl')">
-                            </div>
+                    <input type="text" class="form-control mt-2" id="settingsPhotoUrl" placeholder="Или вставьте ссылку" value="{{ photo_url or '' }}" oninput="document.getElementById('photoPreview').src=this.value;document.getElementById('photoPreview').style.display=this.value?'block':'none'">
+                    <img id="photoPreview" class="image-preview" src="{{ photo_url or '' }}" style="display:{{ 'block' if photo_url else 'none' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" style="color:#999;">Баннер</label>
+                    <div class="file-upload-wrapper">
+                        <div class="file-upload-btn">
+                            <i class="fas fa-upload"></i> Выбрать файл
+                            <input type="file" accept="image/*" id="settingsBannerFile" onchange="previewImageFile(this, 'bannerPreview', 'settingsBannerUrl')">
                         </div>
-                        <input type="text" class="form-control mt-2" id="settingsBannerUrl" placeholder="Или вставьте ссылку" value="{{ banner_url or '' }}" oninput="document.getElementById('bannerPreview').src=this.value;document.getElementById('bannerPreview').style.display=this.value?'block':'none'">
-                        <img id="bannerPreview" class="banner-preview" src="{{ banner_url or '' }}" style="display:{{ 'block' if banner_url else 'none' }}">
                     </div>
-                    <button class="btn btn-primary" onclick="saveProfileSettings()">
-                        <i class="fas fa-save"></i> Сохранить профиль
-                    </button>
+                    <input type="text" class="form-control mt-2" id="settingsBannerUrl" placeholder="Или вставьте ссылку" value="{{ banner_url or '' }}" oninput="document.getElementById('bannerPreview').src=this.value;document.getElementById('bannerPreview').style.display=this.value?'block':'none'">
+                    <img id="bannerPreview" class="banner-preview" src="{{ banner_url or '' }}" style="display:{{ 'block' if banner_url else 'none' }}">
                 </div>
-                
-                <!-- Внешний вид -->
-                <div class="settings-tab-content" id="tab-appearance">
-                    <div class="mb-3">
-                        <label class="form-label" style="color:#999;">Тема</label>
-                        <select class="form-control" id="settingsTheme" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                            <option value="dark">Тёмная</option>
-                            <option value="light">Светлая</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" style="color:#999;">Язык</label>
-                        <select class="form-control" id="settingsLanguage" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                            <option value="ru">Русский</option>
-                            <option value="en">English</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" onclick="saveAppSettings()">
-                        <i class="fas fa-save"></i> Сохранить настройки
-                    </button>
+                <button class="btn btn-primary" onclick="saveProfileSettings()">
+                    <i class="fas fa-save"></i> Сохранить профиль
+                </button>
+            </div>
+            
+            <!-- Внешний вид -->
+            <div class="settings-tab-content" id="tab-appearance">
+                <div class="mb-3">
+                    <label class="form-label" style="color:#999;">Тема</label>
+                    <select class="form-control" id="settingsTheme" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                        <option value="dark">Тёмная</option>
+                        <option value="light">Светлая</option>
+                    </select>
                 </div>
-                
-                <!-- Конфиденциальность -->
-                <div class="settings-tab-content" id="tab-privacy">
-                    <div class="mb-3">
-                        <label class="form-label" style="color:#999;">Комментарии к профилю</label>
-                        <select class="form-control" id="settingsPrivacyComments" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                            <option value="true">Разрешены</option>
-                            <option value="false">Запрещены</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" style="color:#999;">Показывать онлайн-статус</label>
-                        <select class="form-control" id="settingsPrivacyOnline" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                            <option value="true">Всем</option>
-                            <option value="friends">Только друзьям</option>
-                            <option value="false">Никому</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" onclick="savePrivacySettings()">
-                        <i class="fas fa-save"></i> Сохранить
-                    </button>
+                <div class="mb-3">
+                    <label class="form-label" style="color:#999;">Язык</label>
+                    <select class="form-control" id="settingsLanguage" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                        <option value="ru">Русский</option>
+                        <option value="en">English</option>
+                    </select>
                 </div>
+                <button class="btn btn-primary" onclick="saveAppSettings()">
+                    <i class="fas fa-save"></i> Сохранить настройки
+                </button>
+            </div>
+            
+            <!-- Конфиденциальность -->
+            <div class="settings-tab-content" id="tab-privacy">
+                <div class="mb-3">
+                    <label class="form-label" style="color:#999;">Комментарии к профилю</label>
+                    <select class="form-control" id="settingsPrivacyComments" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                        <option value="true">Разрешены</option>
+                        <option value="false">Запрещены</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" style="color:#999;">Показывать онлайн-статус</label>
+                    <select class="form-control" id="settingsPrivacyOnline" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                        <option value="true">Всем</option>
+                        <option value="friends">Только друзьям</option>
+                        <option value="false">Никому</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="savePrivacySettings()">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
             </div>
         </div>
     </div>
@@ -1630,38 +1653,52 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3"><label class="form-label">Код</label><input type="text" class="form-control" id="movieCode" placeholder="the-matrix"></div>
-                <div class="mb-3"><label class="form-label">Название</label><input type="text" class="form-control" id="movieTitle" placeholder="Матрица"></div>
-                <div class="mb-3"><label class="form-label">Год</label><input type="number" class="form-control" id="movieYear" placeholder="1999"></div>
-                <div class="mb-3">
-                    <label class="form-label">Постер</label>
-                    <div class="file-upload-wrapper">
-                        <div class="file-upload-btn">
-                            <i class="fas fa-upload"></i> Выбрать файл
-                            <input type="file" accept="image/*" id="moviePosterFile" onchange="previewImageFile(this, 'moviePosterPreview', 'moviePoster')">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3"><label class="form-label">Код *</label><input type="text" class="form-control" id="movieCode" placeholder="the-matrix"></div>
+                        <div class="mb-3"><label class="form-label">Название *</label><input type="text" class="form-control" id="movieTitle" placeholder="Матрица"></div>
+                        <div class="mb-3"><label class="form-label">Год *</label><input type="number" class="form-control" id="movieYear" placeholder="1999"></div>
+                        <div class="mb-3"><label class="form-label">IMDb *</label><input type="text" class="form-control" id="movieRating" placeholder="8.7"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Постер</label>
+                            <div class="file-upload-wrapper">
+                                <div class="file-upload-btn">
+                                    <i class="fas fa-upload"></i> Выбрать файл
+                                    <input type="file" accept="image/*" id="moviePosterFile" onchange="previewImageFile(this, 'moviePosterPreview', 'moviePoster')">
+                                </div>
+                            </div>
+                            <input type="text" class="form-control mt-2" id="moviePoster" placeholder="Или вставьте ссылку" oninput="document.getElementById('moviePosterPreview').src=this.value;document.getElementById('moviePosterPreview').style.display=this.value?'block':'none'">
+                            <img id="moviePosterPreview" class="image-preview" style="display:none;">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Баннер</label>
+                            <div class="file-upload-wrapper">
+                                <div class="file-upload-btn">
+                                    <i class="fas fa-upload"></i> Выбрать файл
+                                    <input type="file" accept="image/*" id="movieBannerFile" onchange="previewImageFile(this, 'movieBannerPreview', 'movieBanner')">
+                                </div>
+                            </div>
+                            <input type="text" class="form-control mt-2" id="movieBanner" placeholder="Или вставьте ссылку" oninput="document.getElementById('movieBannerPreview').src=this.value;document.getElementById('movieBannerPreview').style.display=this.value?'block':'none'">
+                            <img id="movieBannerPreview" class="banner-preview" style="display:none;">
                         </div>
                     </div>
-                    <input type="text" class="form-control mt-2" id="moviePoster" placeholder="Или вставьте ссылку" oninput="document.getElementById('moviePosterPreview').src=this.value;document.getElementById('moviePosterPreview').style.display=this.value?'block':'none'">
-                    <img id="moviePosterPreview" class="image-preview" style="display:none;">
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Баннер</label>
-                    <div class="file-upload-wrapper">
-                        <div class="file-upload-btn">
-                            <i class="fas fa-upload"></i> Выбрать файл
-                            <input type="file" accept="image/*" id="movieBannerFile" onchange="previewImageFile(this, 'movieBannerPreview', 'movieBanner')">
-                        </div>
+                <div class="mb-3"><label class="form-label">Описание *</label><textarea class="form-control" id="movieDescription" rows="3"></textarea></div>
+                <hr style="border-color:#2a2a2a;">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3"><label class="form-label">Режиссер</label><input type="text" class="form-control" id="movieDirector" placeholder="Режиссер"></div>
+                        <div class="mb-3"><label class="form-label">Сценарий</label><input type="text" class="form-control" id="movieWriters" placeholder="Сценаристы"></div>
+                        <div class="mb-3"><label class="form-label">Страна</label><input type="text" class="form-control" id="movieCountry" placeholder="США"></div>
                     </div>
-                    <input type="text" class="form-control mt-2" id="movieBanner" placeholder="Или вставьте ссылку" oninput="document.getElementById('movieBannerPreview').src=this.value;document.getElementById('movieBannerPreview').style.display=this.value?'block':'none'">
-                    <img id="movieBannerPreview" class="banner-preview" style="display:none;">
+                    <div class="col-md-6">
+                        <div class="mb-3"><label class="form-label">Жанры</label><input type="text" class="form-control" id="movieGenres" placeholder="Фантастика, Боевик"></div>
+                        <div class="mb-3"><label class="form-label">Бюджет</label><input type="text" class="form-control" id="movieBudget" placeholder="$100,000,000"></div>
+                        <div class="mb-3"><label class="form-label">Сборы в США</label><input type="text" class="form-control" id="movieBoxOfficeUS" placeholder="$100,000,000"></div>
+                    </div>
                 </div>
-                <div class="mb-3"><label class="form-label">Описание</label><textarea class="form-control" id="movieDescription" rows="3"></textarea></div>
-                <div class="mb-3"><label class="form-label">IMDb</label><input type="text" class="form-control" id="movieRating" placeholder="8.7"></div>
-                <div class="mb-3"><label class="form-label">Режиссер</label><input type="text" class="form-control" id="movieDirector" placeholder="Режиссер"></div>
-                <div class="mb-3"><label class="form-label">Сценарий</label><input type="text" class="form-control" id="movieWriters" placeholder="Сценаристы"></div>
-                <div class="mb-3"><label class="form-label">Жанры</label><input type="text" class="form-control" id="movieGenres" placeholder="Фантастика, Боевик"></div>
-                <div class="mb-3"><label class="form-label">Бюджет</label><input type="text" class="form-control" id="movieBudget" placeholder="$100,000,000"></div>
-                <div class="mb-3"><label class="form-label">Сборы в США</label><input type="text" class="form-control" id="movieBoxOfficeUS" placeholder="$100,000,000"></div>
                 <div class="mb-3"><label class="form-label">Сборы в мире</label><input type="text" class="form-control" id="movieBoxOfficeWorld" placeholder="$500,000,000"></div>
                 <div class="mb-3"><label class="form-label">В главных ролях (через запятую)</label><input type="text" class="form-control" id="movieCast" placeholder="Том Холланд, Зендея"></div>
             </div>
@@ -1810,18 +1847,6 @@ function previewImageFile(input, previewId, urlInputId) {
             if (urlInput) {
                 urlInput.value = e.target.result;
             }
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-function previewImage(input, previewId) {
-    const preview = document.getElementById(previewId);
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            preview.src = e.target.result;
-            preview.style.display = 'block';
         };
         reader.readAsDataURL(input.files[0]);
     }
@@ -2019,11 +2044,13 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
         director: document.getElementById('movieDirector').value.trim(),
         writers: document.getElementById('movieWriters').value.trim(),
         genres: document.getElementById('movieGenres').value.trim(),
+        country: document.getElementById('movieCountry').value.trim(),
         budget: document.getElementById('movieBudget').value.trim(),
         box_office_us: document.getElementById('movieBoxOfficeUS').value.trim(),
         box_office_world: document.getElementById('movieBoxOfficeWorld').value.trim(),
         cast_list: document.getElementById('movieCast').value.trim()
     };
+    
     if (!data.code || !data.title || !data.year || !data.description || !data.rating) {
         showToast('⚠️ Заполните обязательные поля (код, название, год, описание, рейтинг)', 'warning');
         return;
@@ -2042,6 +2069,7 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
             document.getElementById('movieDirector').value = '';
             document.getElementById('movieWriters').value = '';
             document.getElementById('movieGenres').value = '';
+            document.getElementById('movieCountry').value = '';
             document.getElementById('movieBudget').value = '';
             document.getElementById('movieBoxOfficeUS').value = '';
             document.getElementById('movieBoxOfficeWorld').value = '';
@@ -2075,22 +2103,21 @@ function toggleEditMode() {
     if (currentMovieCode) showMoviePage(currentMovieCode);
 }
 
-async function saveMovieField(code, field, value) {
-    if (!IS_ADMIN || !isEditingMode) return;
+async function saveAllMovieFields(code, data) {
+    if (!IS_ADMIN) return;
     try {
-        const data = {};
-        data[field] = value;
         const res = await apiRequest(`/api/movies/${code}`, {
             method: 'PUT',
             body: JSON.stringify(data)
         });
         if (res.ok) {
-            showToast('✅ Сохранено', 'success');
+            showToast('✅ Все изменения сохранены', 'success');
             loadMovies();
+            if (currentMovieCode) showMoviePage(currentMovieCode);
         } else {
-            showToast('❌ Ошибка', 'danger');
+            showToast('❌ Ошибка сохранения', 'danger');
         }
-    } catch(e) { showToast('❌ Ошибка', 'danger'); }
+    } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
 }
 
 function makeEditable(code, field, value, type = 'text') {
@@ -2098,36 +2125,23 @@ function makeEditable(code, field, value, type = 'text') {
     
     if (type === 'textarea') {
         return `<textarea class="editable-textarea" 
-            onchange="saveMovieField('${code}', '${field}', this.value)"
-            onblur="saveMovieField('${code}', '${field}', this.value)">${value || ''}</textarea>`;
+            data-field="${field}"
+            data-code="${code}">${value || ''}</textarea>`;
     }
     if (type === 'array') {
         const items = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
         return `
-            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;" data-field="${field}" data-code="${code}">
                 ${items.map(item => `<span class="cast-item">${item}</span>`).join('')}
                 <input type="text" class="editable-input" style="flex:1;min-width:100px;" 
-                    placeholder="Добавить..."
-                    onkeydown="if(event.key==='Enter'){const val=this.value.trim();if(val){const current='${value || ''}';const newVal=current?current+', '+val:val;saveMovieField('${code}','${field}',newVal);this.value='';}}">
+                    placeholder="Добавить актёра...">
             </div>
         `;
     }
-    if (type === 'select') {
-        return `<select class="editable-select" onchange="saveMovieField('${code}','${field}',this.value)">
-            <option value="">Выберите</option>
-            <option value="Фантастика" ${value === 'Фантастика' ? 'selected' : ''}>Фантастика</option>
-            <option value="Боевик" ${value === 'Боевик' ? 'selected' : ''}>Боевик</option>
-            <option value="Драма" ${value === 'Драма' ? 'selected' : ''}>Драма</option>
-            <option value="Комедия" ${value === 'Комедия' ? 'selected' : ''}>Комедия</option>
-            <option value="Ужасы" ${value === 'Ужасы' ? 'selected' : ''}>Ужасы</option>
-            <option value="Триллер" ${value === 'Триллер' ? 'selected' : ''}>Триллер</option>
-            <option value="Мелодрама" ${value === 'Мелодрама' ? 'selected' : ''}>Мелодрама</option>
-        </select>`;
-    }
     return `<input type="text" class="editable-input" 
-        value="${value || ''}" 
-        onchange="saveMovieField('${code}', '${field}', this.value)"
-        onblur="saveMovieField('${code}', '${field}', this.value)">`;
+        data-field="${field}"
+        data-code="${code}"
+        value="${value || ''}">`;
 }
 
 async function uploadMovieImage(code, field, input) {
@@ -2137,9 +2151,11 @@ async function uploadMovieImage(code, field, input) {
     reader.onload = async function(e) {
         const dataUrl = e.target.result;
         try {
-            const res = await apiRequest(`/api/upload-${field}`, {
-                method: 'POST',
-                body: JSON.stringify({ code, image: dataUrl })
+            const data = {};
+            data[field] = dataUrl;
+            const res = await apiRequest(`/api/movies/${code}`, {
+                method: 'PUT',
+                body: JSON.stringify(data)
             });
             if (res.ok) {
                 showToast('✅ Изображение загружено', 'success');
@@ -2161,6 +2177,7 @@ async function showMoviePage(code) {
         const reviewsRes = await apiRequest(`/api/movies/${code}/reviews`);
         const reviews = await reviewsRes.json();
         
+        // Получаем информацию о создателях для отзывов
         const reviewUsers = {};
         if (reviews && reviews.length) {
             for (const r of reviews) {
@@ -2172,7 +2189,6 @@ async function showMoviePage(code) {
             }
         }
         
-        // Только реальные данные из БД
         const details = [
             { key: 'year', label: 'Год производства', value: m.year || '-' },
             { key: 'country', label: 'Страна', value: m.country || '-' },
@@ -2184,7 +2200,7 @@ async function showMoviePage(code) {
             { key: 'box_office_world', label: 'Сборы в мире', value: m.box_office_world || '-' }
         ];
         
-        // Только реальный каст
+        // Каст
         let castHtml = '';
         if (m.cast_list) {
             try {
@@ -2201,6 +2217,7 @@ async function showMoviePage(code) {
             castHtml = '<span class="text-secondary-light">Не указаны</span>';
         }
         
+        // Отзывы
         let reviewsHtml = '';
         if (reviews && reviews.length) {
             reviewsHtml = reviews.map(r => {
@@ -2210,13 +2227,15 @@ async function showMoviePage(code) {
                 const deleteLabel = isAdmin ? 'Удалить отзыв' : 'Удалить свой';
                 const userData = reviewUsers[r.user_id] || {};
                 const displayName = userData.display_name || r.user_id;
+                const isSuperUser = userData.is_super || false;
+                const nameClass = isSuperUser ? 'creator-name' : '';
                 const photoUrl = userData.photo_url || `https://ui-avatars.com/api/?name=${r.user_id}&background=2a2a2a&color=cccccc&size=24&rounded=true`;
                 return `
                     <div class="review-item">
                         <div class="review-header">
                             <div class="review-user" onclick="showProfileModal(${r.user_id})">
                                 <img src="${photoUrl}" class="review-avatar" onerror="this.style.display='none'">
-                                <span>${displayName}</span>
+                                <span class="${nameClass}">${displayName}</span>
                             </div>
                             <span class="review-rating"><i class="fas fa-star"></i> ${r.rating}/10</span>
                             ${showDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteReview(${r.id}, '${code}')" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i> ${deleteLabel}</button>` : ''}
@@ -2234,11 +2253,16 @@ async function showMoviePage(code) {
         container.innerHTML = `
             ${IS_ADMIN ? `
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;flex-wrap:wrap;gap:10px;">
-                    <div style="display:flex;gap:10px;align-items:center;">
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                         <button class="btn btn-warning btn-sm" onclick="toggleEditMode()">
                             <i class="fas fa-edit"></i> ${isEditingMode ? 'Отключить редактирование' : 'Режим редактирования'}
                         </button>
-                        ${isEditingMode ? '<span style="color:#e8c84a;font-size:12px;"><i class="fas fa-circle" style="font-size:8px;"></i> Редактирование активно</span>' : ''}
+                        ${isEditingMode ? `
+                            <button class="btn btn-success btn-sm" onclick="saveEditChanges('${code}')">
+                                <i class="fas fa-save"></i> Сохранить изменения
+                            </button>
+                            <span style="color:#e8c84a;font-size:12px;"><i class="fas fa-circle" style="font-size:8px;"></i> Редактирование активно</span>
+                        ` : ''}
                     </div>
                     <button class="btn btn-secondary btn-sm" onclick="showPage('movies')">
                         <i class="fas fa-arrow-left"></i> Назад к списку
@@ -2260,10 +2284,10 @@ async function showMoviePage(code) {
                         <input type="file" accept="image/*" onchange="uploadMovieImage('${code}','banner',this)">
                     </div>
                     <input type="text" class="editable-input" style="max-width:300px;" 
-                        placeholder="Или ссылка" onchange="saveMovieField('${code}','banner',this.value)">
+                        placeholder="Или ссылка" data-field="banner" data-code="${code}" value="${m.banner || ''}">
                 </div>
             ` : '')}
-            <div class="movie-content">
+            <div class="movie-content ${isEditingMode ? 'edit-mode-active' : ''}">
                 <div class="movie-title-section">
                     ${m.poster ? `<img src="${m.poster}" class="movie-poster-large" onerror="this.style.display='none'">` : (IS_ADMIN && isEditingMode ? `
                         <div class="poster-upload-placeholder">
@@ -2274,24 +2298,24 @@ async function showMoviePage(code) {
                                 <input type="file" accept="image/*" onchange="uploadMovieImage('${code}','poster',this)">
                             </div>
                             <input type="text" class="editable-input" style="width:100%;" 
-                                placeholder="Или ссылка" onchange="saveMovieField('${code}','poster',this.value)">
+                                placeholder="Или ссылка" data-field="poster" data-code="${code}" value="${m.poster || ''}">
                         </div>
                     ` : '')}
                     <div class="movie-info">
                         <h1>${IS_ADMIN && isEditingMode ? 
                             `<input type="text" class="editable-input" style="font-size:28px;font-weight:300;color:#e8e8e8;" 
-                                value="${m.title}" onchange="saveMovieField('${code}','title',this.value)">` 
+                                data-field="title" data-code="${code}" value="${m.title}">` 
                             : m.title}
                         </h1>
                         <div class="original-title">${IS_ADMIN && isEditingMode ? 
                             `<input type="text" class="editable-input" style="font-size:16px;color:#777;" 
-                                value="${m.title} (${m.year})" onchange="saveMovieField('${code}','title',this.value)">` 
+                                data-field="title" data-code="${code}" value="${m.title} (${m.year})">` 
                             : `${m.title} (${m.year})`}
                         </div>
                         <div class="movie-meta">
                             <span><i class="fas fa-star" style="color:#e8c84a;"></i> IMDb: ${IS_ADMIN && isEditingMode ? 
                                 `<input type="text" class="editable-input" style="display:inline;width:60px;font-size:13px;" 
-                                    value="${m.rating || ''}" onchange="saveMovieField('${code}','rating',this.value)">` 
+                                    data-field="rating" data-code="${code}" value="${m.rating || ''}">` 
                                 : m.rating || '-'}
                             </span>
                             <span><i class="fas fa-star" style="color:#e8c84a;"></i> TPZ: ${m.tpz || '-'} (${m.votes || 0} оценок)</span>
@@ -2299,15 +2323,13 @@ async function showMoviePage(code) {
                         </div>
                         <div class="movie-description">${IS_ADMIN && isEditingMode ? 
                             `<textarea class="editable-textarea" 
-                                onchange="saveMovieField('${code}','description',this.value)"
-                                onblur="saveMovieField('${code}','description',this.value)">${m.description || ''}</textarea>` 
+                                data-field="description" data-code="${code}">${m.description || ''}</textarea>` 
                             : m.description || 'Нет описания'}
                         </div>
                         <div class="movie-actions">
                             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal" onclick="setReviewMovie('${m.code}')">
                                 <i class="fas fa-star"></i> Оставить отзыв
                             </button>
-                            ${IS_ADMIN ? `<button class="btn btn-warning" onclick="editMovieInline('${m.code}')"><i class="fas fa-edit"></i> Редактировать</button>` : ''}
                         </div>
                     </div>
                 </div>
@@ -2318,7 +2340,7 @@ async function showMoviePage(code) {
                             <span class="label">${d.label}</span>
                             <span class="value">${IS_ADMIN && isEditingMode ? 
                                 `<input type="text" class="editable-input" style="text-align:right;" 
-                                    value="${d.value || ''}" onchange="saveMovieField('${code}','${d.key}',this.value)">` 
+                                    data-field="${d.key}" data-code="${code}" value="${d.value || ''}">` 
                                 : d.value}
                             </span>
                         </div>
@@ -2348,6 +2370,59 @@ async function showMoviePage(code) {
     }
 }
 
+function saveEditChanges(code) {
+    if (!IS_ADMIN || !isEditingMode) return;
+    
+    // Собираем все изменённые поля
+    const data = {};
+    const editFields = document.querySelectorAll('.editable-input, .editable-textarea');
+    editFields.forEach(el => {
+        const field = el.dataset.field;
+        if (field) {
+            data[field] = el.value;
+        }
+    });
+    
+    // Собираем cast_list из массива
+    const castContainer = document.querySelector('.cast-grid [data-field="cast_list"]');
+    if (castContainer) {
+        const items = castContainer.querySelectorAll('.cast-item');
+        const castValues = Array.from(items).map(el => el.textContent.trim());
+        // Добавляем значения из поля ввода
+        const input = castContainer.querySelector('input');
+        if (input && input.value.trim()) {
+            castValues.push(input.value.trim());
+        }
+        if (castValues.length) {
+            data.cast_list = castValues.join(', ');
+        }
+    }
+    
+    if (Object.keys(data).length === 0) {
+        showToast('⚠️ Нет изменений для сохранения', 'warning');
+        return;
+    }
+    
+    saveAllMovieFields(code, data);
+}
+
+async function saveAllMovieFields(code, data) {
+    if (!IS_ADMIN) return;
+    try {
+        const res = await apiRequest(`/api/movies/${code}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            showToast('✅ Все изменения сохранены', 'success');
+            loadMovies();
+            showMoviePage(code);
+        } else {
+            showToast('❌ Ошибка сохранения', 'danger');
+        }
+    } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
+}
+
 function setReviewMovie(code) { currentReviewMovieCode = code; }
 
 async function deleteReview(reviewId, movieCode) {
@@ -2368,6 +2443,7 @@ document.getElementById('saveReviewBtn')?.addEventListener('click', async functi
     const rating = parseInt(document.getElementById('reviewRating').value);
     const text = document.getElementById('reviewText').value.trim();
     if (!text) return showToast('⚠️ Введите текст', 'warning');
+    if (rating < 1 || rating > 10) return showToast('⚠️ Оценка от 1 до 10', 'warning');
     try {
         const res = await apiRequest(`/api/movies/${currentReviewMovieCode}/reviews`, {
             method: 'POST',
@@ -2380,10 +2456,14 @@ document.getElementById('saveReviewBtn')?.addEventListener('click', async functi
             if (currentReviewMovieCode) showMoviePage(currentReviewMovieCode);
             loadMovies();
             loadStats();
-        } else { showToast('❌ Ошибка', 'danger'); }
+        } else { 
+            const err = await res.json();
+            showToast('❌ ' + (err.detail || 'Ошибка'), 'danger');
+        }
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 });
 
+// ==================== АДМИНЫ ====================
 async function loadAdmins() {
     if (!IS_ADMIN) return;
     try {
@@ -2437,6 +2517,7 @@ async function removeAdmin(user_id) {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
+// ==================== БАНЫ ====================
 async function loadBans() {
     if (!IS_SUPER) return;
     try {
@@ -2499,6 +2580,7 @@ async function unbanUser(user_id) {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
+// ==================== ПРОФИЛЬ ====================
 async function loadProfile(user_id) {
     try {
         const res = await apiRequest(`/api/profile/${user_id}`);
@@ -2550,7 +2632,8 @@ async function showProfileModal(user_id) {
                 <h4 class="mt-3" style="font-weight:300;color:#e8e8e8;">${data.display_name || 'Пользователь'}</h4>
                 <p class="text-secondary-light"><i class="fas fa-id-badge"></i> ID: ${user_id}</p>
                 <p class="text-secondary-light">@${data.username || user_id}</p>
-                ${data.is_admin ? '<span class="badge-super"><i class="fas fa-crown"></i> Админ</span>' : ''}
+                ${data.is_super_admin ? '<span class="badge-creator"><i class="fas fa-crown"></i> Создатель</span>' : ''}
+                ${data.is_admin && !data.is_super_admin ? '<span class="badge-super"><i class="fas fa-user-shield"></i> Админ</span>' : ''}
                 ${data.is_banned ? '<span class="badge-active" style="margin-left:8px;"><i class="fas fa-ban"></i> Забанен</span>' : ''}
                 <hr style="border-color:#2a2a2a;">
                 <div class="row g-3 text-center">
@@ -2565,7 +2648,7 @@ async function showProfileModal(user_id) {
                             onchange="updateRole(${user_id}, this.value)">
                             <option value="user" ${!data.is_admin ? 'selected' : ''}>👤 Пользователь</option>
                             <option value="admin" ${data.is_admin && !data.is_super_admin ? 'selected' : ''}>👑 Админ</option>
-                            <option value="super_admin" ${data.is_super_admin ? 'selected' : ''}>⭐ Суперадмин</option>
+                            <option value="super_admin" ${data.is_super_admin ? 'selected' : ''}>⭐ Создатель</option>
                         </select>
                     </div>
                 ` : ''}
@@ -2758,6 +2841,7 @@ document.getElementById('savePunishBtn')?.addEventListener('click', async functi
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 });
 
+// ==================== НАСТРОЙКИ ====================
 function loadSettings() {
     const theme = localStorage.getItem('theme') || 'dark';
     const lang = localStorage.getItem('lang') || 'ru';
