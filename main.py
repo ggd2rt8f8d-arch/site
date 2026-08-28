@@ -1166,6 +1166,40 @@ async def api_stats(request: Request):
         bans = await conn.fetchval("SELECT COUNT(*) FROM bans") or 0
     return {"movies": movies, "requests": requests, "admins": admins, "bans": bans}
 
+@app.post("/auth/telegram")
+async def auth_telegram(request: Request):
+    form = await request.form()
+    data = dict(form)
+    
+    # Логируем полученные данные
+    logger.info(f"📩 Получены данные от Telegram: {data}")
+    
+    user_id = verify_telegram_auth(data)
+    
+    logger.info(f"🔍 Проверка подписи: user_id={user_id}")
+    
+    if not user_id:
+        logger.error("❌ Неверная подпись!")
+        raise HTTPException(status_code=401, detail="Неверная подпись")
+    
+    if not await is_admin(user_id):
+        logger.warning(f"⛔ Пользователь {user_id} не админ")
+        return JSONResponse(status_code=403, content={"error": "У вас нет прав администратора"})
+    
+    logger.info(f"✅ Авторизация успешна: {user_id}")
+    
+    await save_user_name(
+        user_id,
+        data.get("username", ""),
+        data.get("first_name", ""),
+        data.get("last_name", ""),
+        None
+    )
+    
+    response = JSONResponse({"success": True, "user_id": user_id})
+    response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
+    return response
+
 
 # ==================== ЗАПУСК ====================
 if __name__ == "__main__":
