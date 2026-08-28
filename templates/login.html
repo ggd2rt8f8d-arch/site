@@ -42,7 +42,53 @@
             color: #0088cc;
             margin-bottom: 20px;
         }
-        .telegram-btn {
+        .error-msg {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 15px;
+            display: none;
+        }
+        .success-msg {
+            color: #88dd88;
+            font-size: 14px;
+            margin-top: 15px;
+            display: none;
+        }
+        .footer-text {
+            color: rgba(255,255,255,0.3);
+            font-size: 12px;
+            margin-top: 30px;
+        }
+        .telegram-widget-container {
+            margin: 10px 0;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .telegram-widget-container iframe {
+            border-radius: 50px !important;
+        }
+        .loading-text {
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: #0088cc;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .btn-telegram {
             background: #0088cc;
             border: none;
             border-radius: 50px;
@@ -56,83 +102,30 @@
             align-items: center;
             gap: 12px;
             text-decoration: none;
-            width: 100%;
-            justify-content: center;
         }
-        .telegram-btn:hover {
+        .btn-telegram:hover {
             background: #006699;
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(0,136,204,0.3);
             color: #fff;
         }
-        .telegram-btn i {
+        .btn-telegram i {
             font-size: 24px;
         }
-        .error-msg {
-            color: #ff6b6b;
-            font-size: 14px;
-            margin-top: 15px;
-            display: none;
-        }
-        .footer-text {
-            color: rgba(255,255,255,0.3);
-            font-size: 12px;
-            margin-top: 30px;
-        }
-        .divider {
-            border: none;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            margin: 25px 0;
-        }
-        .id-input {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+        .error-box {
+            background: rgba(255,0,0,0.1);
+            border: 1px solid rgba(255,0,0,0.2);
             border-radius: 12px;
             padding: 12px 16px;
-            width: 100%;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-        .id-input:focus {
-            outline: none;
-            border-color: #0088cc;
-            background: rgba(255,255,255,0.12);
-        }
-        .id-input::placeholder {
-            color: rgba(255,255,255,0.4);
-        }
-        .btn-outline-light {
-            border-radius: 50px;
-            padding: 10px 30px;
-            width: 100%;
-            border-color: rgba(255,255,255,0.2);
-            color: rgba(255,255,255,0.7);
-            transition: all 0.3s;
-        }
-        .btn-outline-light:hover {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-        }
-        .id-label {
-            color: rgba(255,255,255,0.4);
-            font-size: 12px;
-            margin-bottom: 8px;
-            display: block;
-            text-align: left;
-        }
-        .success-msg {
-            color: #88dd88;
-            font-size: 14px;
-            margin-top: 15px;
+            margin-top: 12px;
             display: none;
         }
-        .telegram-widget-container {
-            margin: 10px 0;
-            min-height: 70px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .error-box.show {
+            display: block;
+        }
+        .error-box .text {
+            color: #ff6b6b;
+            font-size: 13px;
         }
     </style>
 </head>
@@ -142,24 +135,19 @@
             <i class="fas fa-film"></i>
         </div>
         <h1>Movie Admin</h1>
-        <p>Войдите, чтобы управлять фильмами</p>
+        <p>Войдите через Telegram, чтобы управлять фильмами</p>
 
         <!-- ВСТРОЕННЫЙ ВИДЖЕТ TELEGRAM -->
-        <div class="telegram-widget-container" id="telegramWidget"></div>
+        <div class="telegram-widget-container" id="telegramWidget">
+            <div class="loading-text">
+                <span class="spinner"></span> Загрузка виджета...
+            </div>
+        </div>
 
-        <hr class="divider">
-
-        <!-- Запасной вход по ID -->
-        <form method="post" action="/auth/id">
-            <label class="id-label"><i class="fas fa-key"></i> Или введите Telegram ID</label>
-            <input type="number" name="user_id" placeholder="Например: 123456789" class="id-input" required>
-            <button type="submit" class="btn btn-outline-light mt-3">
-                <i class="fas fa-sign-in-alt"></i> Войти по ID
-            </button>
-        </form>
-
-        <div id="errorMsg" class="error-msg">
-            <i class="fas fa-exclamation-circle"></i> <span id="errorText">Ошибка авторизации</span>
+        <div id="errorBox" class="error-box">
+            <div class="text" id="errorText">
+                <i class="fas fa-exclamation-circle"></i> Ошибка авторизации
+            </div>
         </div>
 
         <div id="successMsg" class="success-msg">
@@ -167,19 +155,21 @@
         </div>
 
         <div class="footer-text">
-            <i class="fas fa-shield-alt"></i> Безопасный вход
+            <i class="fas fa-shield-alt"></i> Безопасный вход через Telegram
         </div>
     </div>
 
     <script>
         // ============================================================
-        // ГЛОБАЛЬНАЯ ФУНКЦИЯ — её вызывает Telegram Widget
+        // 1. ГЛОБАЛЬНАЯ ФУНКЦИЯ — её вызывает Telegram Widget
         // ============================================================
         window.onTelegramAuth = function(user) {
             console.log('✅ Авторизация через Telegram:', user);
             
             document.getElementById('successMsg').style.display = 'block';
             document.getElementById('successText').textContent = 'Авторизация успешна! Перенаправление...';
+            document.getElementById('telegramWidget').innerHTML = '<div class="loading-text"><span class="spinner"></span> Вход...</div>';
+            document.getElementById('errorBox').classList.remove('show');
             
             // Отправляем данные на сервер
             fetch('/auth/telegram', {
@@ -207,31 +197,61 @@
                 if (data.success) {
                     window.location.href = '/dashboard';
                 } else {
-                    document.getElementById('errorMsg').style.display = 'block';
-                    document.getElementById('errorText').textContent = data.error || 'Ошибка авторизации';
+                    document.getElementById('errorBox').classList.add('show');
+                    document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (data.error || 'Ошибка авторизации');
                     document.getElementById('successMsg').style.display = 'none';
+                    document.getElementById('telegramWidget').innerHTML = '<div class="loading-text">⚠️ Попробуйте снова</div>';
+                    setTimeout(() => {
+                        document.getElementById('telegramWidget').innerHTML = '';
+                        loadTelegramWidget();
+                    }, 2000);
                 }
             })
             .catch((err) => {
                 console.error('❌ Ошибка:', err);
-                document.getElementById('errorMsg').style.display = 'block';
-                document.getElementById('errorText').textContent = err.message || 'Ошибка соединения с сервером';
+                document.getElementById('errorBox').classList.add('show');
+                document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (err.message || 'Ошибка соединения с сервером');
                 document.getElementById('successMsg').style.display = 'none';
+                document.getElementById('telegramWidget').innerHTML = '<div class="loading-text">⚠️ Попробуйте снова</div>';
+                setTimeout(() => {
+                    document.getElementById('telegramWidget').innerHTML = '';
+                    loadTelegramWidget();
+                }, 2000);
             });
         };
 
         // ============================================================
-        // ЗАГРУЗКА ВИДЖЕТА
+        // 2. ЗАГРУЗКА ВИДЖЕТА
         // ============================================================
         function loadTelegramWidget() {
             const container = document.getElementById('telegramWidget');
-            const botToken = '{{ BOT_TOKEN }}';
-            const botId = botToken ? botToken.split(':')[0] : '';
             
-            if (!botId) {
-                container.innerHTML = '<p style="color:rgba(255,255,255,0.5);font-size:14px;">⚠️ BOT_TOKEN не настроен</p>';
+            // Получаем bot_id из переменной окружения
+            const botToken = '{{ BOT_TOKEN }}';
+            
+            if (!botToken || botToken === 'None' || botToken === '') {
+                container.innerHTML = `
+                    <div style="color:rgba(255,255,255,0.5);font-size:14px;padding:20px;">
+                        <i class="fas fa-exclamation-triangle"></i> BOT_TOKEN не настроен
+                    </div>
+                `;
                 return;
             }
+
+            const botId = botToken.split(':')[0];
+            
+            if (!botId || botId === 'None') {
+                container.innerHTML = `
+                    <div style="color:rgba(255,255,255,0.5);font-size:14px;padding:20px;">
+                        <i class="fas fa-exclamation-triangle"></i> Неверный формат BOT_TOKEN
+                    </div>
+                `;
+                return;
+            }
+
+            console.log('🔑 Bot ID:', botId);
+            console.log('🌐 Origin:', window.location.origin);
+            console.log('📡 Загрузка виджета...');
 
             // Создаём скрипт виджета
             const script = document.createElement('script');
@@ -245,41 +265,75 @@
             script.async = true;
             
             script.onerror = function() {
+                console.error('❌ Ошибка загрузки виджета');
                 container.innerHTML = `
-                    <button class="telegram-btn" onclick="redirectToTelegram()">
+                    <button class="btn-telegram" onclick="redirectToTelegram()">
                         <i class="fab fa-telegram"></i> Войти через Telegram
                     </button>
+                    <div style="color:rgba(255,255,255,0.3);font-size:12px;margin-top:8px;">
+                        Если кнопка не работает, попробуйте обновить страницу
+                    </div>
                 `;
             };
             
+            // Очищаем и добавляем скрипт
+            container.innerHTML = '';
             container.appendChild(script);
-            console.log('🔑 Bot ID:', botId);
-            console.log('🌐 Origin:', window.location.origin);
-            console.log('✅ Виджет загружается...');
+            
+            // Таймаут на случай, если виджет не загрузился
+            setTimeout(() => {
+                if (container.querySelector('iframe') === null && container.querySelector('button') === null) {
+                    console.warn('⚠️ Виджет не загрузился, показываем кнопку');
+                    container.innerHTML = `
+                        <button class="btn-telegram" onclick="redirectToTelegram()">
+                            <i class="fab fa-telegram"></i> Войти через Telegram
+                        </button>
+                    `;
+                }
+            }, 5000);
         }
 
-        // Запасной способ — открыть окно OAuth
+        // ============================================================
+        // 3. ЗАПАСНОЙ СПОСОБ — OAuth в отдельном окне
+        // ============================================================
         function redirectToTelegram() {
             const botToken = '{{ BOT_TOKEN }}';
             const botId = botToken ? botToken.split(':')[0] : '';
             
             if (!botId) {
-                document.getElementById('errorMsg').style.display = 'block';
-                document.getElementById('errorText').textContent = 'BOT_TOKEN не настроен!';
+                document.getElementById('errorBox').classList.add('show');
+                document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> BOT_TOKEN не настроен!';
                 return;
             }
             
             const origin = encodeURIComponent(window.location.origin);
             const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${origin}&embed=1&request_access=write`;
             
+            document.getElementById('telegramWidget').innerHTML = '<div class="loading-text"><span class="spinner"></span> Открываем окно авторизации...</div>';
+            
             const win = window.open(authUrl, '_blank', 'width=600,height=700,scrollbars=yes');
+            
+            if (!win) {
+                document.getElementById('errorBox').classList.add('show');
+                document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> Браузер заблокировал всплывающее окно. Разрешите всплывающие окна для этого сайта.';
+                document.getElementById('telegramWidget').innerHTML = '';
+                loadTelegramWidget();
+                return;
+            }
             
             const checkWin = setInterval(() => {
                 if (win.closed) {
                     clearInterval(checkWin);
+                    document.getElementById('telegramWidget').innerHTML = '<div class="loading-text"><span class="spinner"></span> Проверка авторизации...</div>';
                     setTimeout(checkAuth, 1000);
                 }
             }, 500);
+            
+            setTimeout(() => {
+                if (!win.closed) {
+                    document.getElementById('telegramWidget').innerHTML = '<div class="loading-text">⏳ Ожидание завершения авторизации в Telegram...</div>';
+                }
+            }, 3000);
         }
 
         function checkAuth() {
@@ -288,13 +342,26 @@
                 .then(data => {
                     if (data.authenticated) {
                         window.location.href = '/dashboard';
+                    } else {
+                        document.getElementById('telegramWidget').innerHTML = '';
+                        loadTelegramWidget();
+                        document.getElementById('errorBox').classList.add('show');
+                        document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> Авторизация не выполнена. Попробуйте снова.';
                     }
                 })
-                .catch(() => {});
+                .catch(() => {
+                    document.getElementById('telegramWidget').innerHTML = '';
+                    loadTelegramWidget();
+                });
         }
 
-        // Загружаем виджет при загрузке страницы
-        document.addEventListener('DOMContentLoaded', loadTelegramWidget);
+        // ============================================================
+        // 4. ЗАПУСК
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Небольшая задержка для уверенности
+            setTimeout(loadTelegramWidget, 500);
+        });
     </script>
 </body>
 </html>
