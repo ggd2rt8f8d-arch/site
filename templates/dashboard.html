@@ -3401,18 +3401,27 @@ async function loadProfile(user_id) {
 
 async function getFriendStatus(user_id) {
     try {
+        // Проверяем друзей
         const res = await apiRequest('/api/friends');
         const friends = await res.json();
         const isFriend = friends.some(f => f.friend_id == user_id);
         if (isFriend) return 'accepted';
         
+        // Проверяем входящие запросы
         const reqRes = await apiRequest('/api/friends/requests');
         const requests = await reqRes.json();
         const isPending = requests.some(r => r.user_id == user_id);
         if (isPending) return 'received';
         
+        // Проверяем отправленные запросы
+        const sentRes = await apiRequest('/api/friends/sent');
+        const sentRequests = await sentRes.json();
+        const isSent = sentRequests.some(r => r.friend_id == user_id);
+        if (isSent) return 'pending';
+        
         return 'none';
     } catch(e) {
+        console.error('getFriendStatus error:', e);
         return 'none';
     }
 }
