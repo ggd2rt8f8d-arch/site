@@ -51,24 +51,24 @@ async def init_db():
     async with pool.acquire() as conn:
         # Основные таблицы
         await conn.execute("""
-                    CREATE TABLE IF NOT EXISTS movies (
-                        code TEXT PRIMARY KEY,
-                        title TEXT NOT NULL,
-                        year INTEGER,
-                        poster TEXT,
-                        description TEXT,
-                        rating TEXT,
-                        banner TEXT,
-                        added_by BIGINT,
-                        director TEXT,
-                        writers TEXT,
-                        genres TEXT,
-                        budget TEXT,
-                        box_office_us TEXT,
-                        box_office_world TEXT,
-                        cast TEXT
-                    )
-                """)
+            CREATE TABLE IF NOT EXISTS movies (
+                code TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                year INTEGER,
+                poster TEXT,
+                description TEXT,
+                rating TEXT,
+                banner TEXT,
+                added_by BIGINT,
+                director TEXT,
+                writers TEXT,
+                genres TEXT,
+                budget TEXT,
+                box_office_us TEXT,
+                box_office_world TEXT,
+                cast TEXT
+            )
+        """)
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS admins (user_id BIGINT PRIMARY KEY)
         """)
