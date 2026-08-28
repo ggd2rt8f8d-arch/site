@@ -20,9 +20,13 @@ from aiogram.enums import ChatMemberStatus
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
+
 
 # ==================== ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ ====================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+TELEGRAM_API_BASE = os.getenv("TELEGRAM_API_BASE", "https://api.telegram.org")
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "@topzfilmz")
 DATABASE_URL = os.getenv("DATABASE_URL")
 BOT_ID = os.getenv("BOT_ID")  # ← добавить эту переменную
@@ -35,6 +39,15 @@ if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан!")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL не задан!")
+
+session = AiohttpSession(api=TELEGRAM_API_BASE)
+
+# Создаём бота
+bot = Bot(
+    token=BOT_TOKEN,
+    session=session,
+    default=DefaultBotProperties(parse_mode="HTML")
+)
 
 # ==================== ЛОГИРОВАНИЕ ====================
 logging.basicConfig(level=logging.INFO)
