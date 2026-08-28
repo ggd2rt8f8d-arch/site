@@ -45,6 +45,9 @@
             margin: 4px 15px;
             transition: all 0.3s;
             font-weight: 500;
+            cursor: pointer;
+            display: block;
+            text-decoration: none;
         }
         .sidebar .nav-link:hover, .sidebar .nav-link.active {
             background: rgba(255,255,255,0.1);
@@ -108,21 +111,6 @@
             align-items: center;
             gap: 12px;
         }
-        .top-bar .user-info img {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-        }
-        .modal-content {
-            border-radius: 16px;
-        }
-        .modal-header {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-        .modal-footer {
-            border-top: none;
-        }
         .badge-super {
             background: #ffd700;
             color: #1a1a2e;
@@ -142,15 +130,28 @@
             transform: translateY(-50%);
             color: #aaa;
         }
+        .movie-poster {
+            width: 50px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+        .movie-poster-placeholder {
+            width: 50px;
+            height: 70px;
+            background: #e9ecef;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #adb5bd;
+            font-size: 20px;
+        }
         .admin-tabs {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
             flex-wrap: wrap;
-        }
-        .admin-tabs .btn {
-            border-radius: 10px;
-            padding: 8px 20px;
         }
         @media (max-width: 768px) {
             .sidebar {
@@ -163,11 +164,15 @@
                 padding: 15px;
             }
         }
-        .movie-poster {
-            width: 50px;
-            height: 70px;
-            object-fit: cover;
-            border-radius: 6px;
+        .modal-content {
+            border-radius: 16px;
+        }
+        .modal-header {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .modal-footer {
+            border-top: none;
         }
     </style>
 </head>
@@ -341,7 +346,7 @@
     </div>
 </div>
 
-<!-- Модалка добавления фильма -->
+<!-- Модалки -->
 <div class="modal fade" id="addMovieModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -385,7 +390,6 @@
     </div>
 </div>
 
-<!-- Модалка редактирования фильма -->
 <div class="modal fade" id="editMovieModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -429,7 +433,6 @@
     </div>
 </div>
 
-<!-- Модалка добавления админа -->
 <div class="modal fade" id="addAdminModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -451,7 +454,6 @@
     </div>
 </div>
 
-<!-- Модалка бана -->
 <div class="modal fade" id="addBanModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -503,10 +505,27 @@ document.querySelectorAll('.sidebar .nav-link[data-page]').forEach(link => {
     });
 });
 
+// ==================== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ====================
+async function apiRequest(url, options = {}) {
+    const res = await fetch(url, {
+        ...options,
+        credentials: 'same-origin',  // Отправляем куки
+        headers: {
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
+        }
+    });
+    if (res.status === 401 || res.status === 403) {
+        window.location.href = '/';
+        throw new Error('Не авторизован');
+    }
+    return res;
+}
+
 // ==================== СТАТИСТИКА ====================
 async function loadStats() {
     try {
-        const res = await fetch('/api/stats');
+        const res = await apiRequest('/api/stats');
         const data = await res.json();
         document.getElementById('statMovies').textContent = data.movies;
         document.getElementById('statRequests').textContent = data.requests;
@@ -520,16 +539,22 @@ let moviesData = [];
 
 async function loadMovies() {
     try {
-        const res = await fetch('/api/movies');
+        const tbody = document.getElementById('moviesBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Загрузка...</td></tr>';
+        
+        const res = await apiRequest('/api/movies');
         moviesData = await res.json();
         renderMovies(moviesData);
-    } catch(e) { console.error(e); }
+    } catch(e) {
+        console.error(e);
+        document.getElementById('moviesBody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">❌ Ошибка загрузки</td></tr>';
+    }
 }
 
 function renderMovies(data) {
     const tbody = document.getElementById('moviesBody');
-    if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">Фильмов пока нет</td></tr>';
+    if (!data || !data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">📭 Фильмов пока нет</td></tr>';
         return;
     }
     tbody.innerHTML = data.map(m => `
@@ -537,7 +562,9 @@ function renderMovies(data) {
             <td><code>${m.code}</code></td>
             <td>${m.title}</td>
             <td>${m.year}</td>
-            <td>${m.poster ? `<img src="${m.poster}" class="movie-poster" onerror="this.style.display='none'">` : '-'}</td>
+            <td>
+                ${m.poster ? `<img src="${m.poster}" class="movie-poster" onerror="this.style.display='none'">` : '<div class="movie-poster-placeholder"><i class="fas fa-image"></i></div>'}
+            </td>
             <td>⭐ ${m.rating || '-'}</td>
             <td>
                 <button class="btn btn-warning btn-action btn-sm" onclick="editMovie('${m.code}')">
@@ -566,9 +593,8 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
     const obj = Object.fromEntries(data);
     obj.year = parseInt(obj.year);
     try {
-        const res = await fetch('/api/movies', {
+        const res = await apiRequest('/api/movies', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(obj)
         });
         if (res.ok) {
@@ -576,18 +602,18 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
             form.reset();
             loadMovies();
             loadStats();
-            showToast('Фильм добавлен!', 'success');
+            showToast('✅ Фильм добавлен!', 'success');
         } else {
             const err = await res.json();
-            showToast(err.detail || 'Ошибка', 'danger');
+            showToast('❌ ' + (err.detail || 'Ошибка'), 'danger');
         }
-    } catch(e) { showToast('Ошибка соединения', 'danger'); }
+    } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
 });
 
 // Редактирование
 async function editMovie(code) {
     try {
-        const res = await fetch(`/api/movies/${code}`);
+        const res = await apiRequest(`/api/movies/${code}`);
         const m = await res.json();
         document.getElementById('editCode').value = m.code;
         document.getElementById('editTitle').value = m.title;
@@ -596,7 +622,7 @@ async function editMovie(code) {
         document.getElementById('editDescription').value = m.description || '';
         document.getElementById('editRating').value = m.rating || '';
         new bootstrap.Modal(document.getElementById('editMovieModal')).show();
-    } catch(e) { showToast('Ошибка загрузки', 'danger'); }
+    } catch(e) { showToast('❌ Ошибка загрузки', 'danger'); }
 }
 
 document.getElementById('updateMovieBtn')?.addEventListener('click', async function() {
@@ -609,45 +635,44 @@ document.getElementById('updateMovieBtn')?.addEventListener('click', async funct
         rating: document.getElementById('editRating').value
     };
     try {
-        const res = await fetch(`/api/movies/${code}`, {
+        const res = await apiRequest(`/api/movies/${code}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
         if (res.ok) {
             bootstrap.Modal.getInstance(document.getElementById('editMovieModal')).hide();
             loadMovies();
             loadStats();
-            showToast('Фильм обновлён!', 'success');
+            showToast('✅ Фильм обновлён!', 'success');
         } else {
-            showToast('Ошибка обновления', 'danger');
+            showToast('❌ Ошибка обновления', 'danger');
         }
-    } catch(e) { showToast('Ошибка соединения', 'danger'); }
+    } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
 });
 
 // Удаление
 async function deleteMovie(code) {
-    if (!confirm(`Удалить фильм ${code}?`)) return;
+    if (!confirm(`🗑 Удалить фильм "${code}"?`)) return;
     try {
-        const res = await fetch(`/api/movies/${code}`, { method: 'DELETE' });
+        const res = await apiRequest(`/api/movies/${code}`, { method: 'DELETE' });
         if (res.ok) {
             loadMovies();
             loadStats();
-            showToast('Фильм удалён', 'success');
+            showToast('✅ Фильм удалён', 'success');
         } else {
-            showToast('Ошибка удаления', 'danger');
+            showToast('❌ Ошибка удаления', 'danger');
         }
-    } catch(e) { showToast('Ошибка соединения', 'danger'); }
+    } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
 }
 
 // ==================== АДМИНЫ ====================
 async function loadAdmins() {
     try {
-        const res = await fetch('/api/admins');
+        const res = await apiRequest('/api/admins');
         const data = await res.json();
         const tbody = document.getElementById('adminsBody');
         if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4">Админов пока нет</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4">👤 Админов пока нет</td></tr>';
             return;
         }
         tbody.innerHTML = data.map(a => `
@@ -665,11 +690,10 @@ async function loadAdmins() {
 
 document.getElementById('saveAdminBtn')?.addEventListener('click', async function() {
     const user_id = parseInt(document.getElementById('adminIdInput').value);
-    if (!user_id) return showToast('Введите ID', 'warning');
+    if (!user_id) return showToast('⚠️ Введите ID', 'warning');
     try {
-        const res = await fetch('/api/admins', {
+        const res = await apiRequest('/api/admins', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id })
         });
         if (res.ok) {
@@ -677,33 +701,33 @@ document.getElementById('saveAdminBtn')?.addEventListener('click', async functio
             document.getElementById('adminIdInput').value = '';
             loadAdmins();
             loadStats();
-            showToast('Админ добавлен!', 'success');
+            showToast('✅ Админ добавлен!', 'success');
         } else {
-            showToast('Ошибка', 'danger');
+            showToast('❌ Ошибка', 'danger');
         }
-    } catch(e) { showToast('Ошибка соединения', 'danger'); }
+    } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
 });
 
 async function removeAdmin(user_id) {
     if (!confirm(`Снять админа ${user_id}?`)) return;
     try {
-        const res = await fetch(`/api/admins/${user_id}`, { method: 'DELETE' });
+        const res = await apiRequest(`/api/admins/${user_id}`, { method: 'DELETE' });
         if (res.ok) {
             loadAdmins();
             loadStats();
-            showToast('Админ снят', 'success');
+            showToast('✅ Админ снят', 'success');
         }
-    } catch(e) { showToast('Ошибка', 'danger'); }
+    } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
 // ==================== БАНЫ ====================
 async function loadBans() {
     try {
-        const res = await fetch('/api/bans');
+        const res = await apiRequest('/api/bans');
         const data = await res.json();
         const tbody = document.getElementById('bansBody');
         if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4">Забаненных нет</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4">✅ Забаненных нет</td></tr>';
             return;
         }
         tbody.innerHTML = data.map(b => `
@@ -723,11 +747,10 @@ async function loadBans() {
 document.getElementById('saveBanBtn')?.addEventListener('click', async function() {
     const user_id = parseInt(document.getElementById('banIdInput').value);
     const reason = document.getElementById('banReasonInput').value;
-    if (!user_id) return showToast('Введите ID', 'warning');
+    if (!user_id) return showToast('⚠️ Введите ID', 'warning');
     try {
-        const res = await fetch('/api/bans', {
+        const res = await apiRequest('/api/bans', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id, reason })
         });
         if (res.ok) {
@@ -736,23 +759,23 @@ document.getElementById('saveBanBtn')?.addEventListener('click', async function(
             document.getElementById('banReasonInput').value = '';
             loadBans();
             loadStats();
-            showToast('Пользователь забанен!', 'success');
+            showToast('✅ Пользователь забанен!', 'success');
         } else {
-            showToast('Ошибка', 'danger');
+            showToast('❌ Ошибка', 'danger');
         }
-    } catch(e) { showToast('Ошибка соединения', 'danger'); }
+    } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
 });
 
 async function unbanUser(user_id) {
     if (!confirm(`Разбанить ${user_id}?`)) return;
     try {
-        const res = await fetch(`/api/bans/${user_id}`, { method: 'DELETE' });
+        const res = await apiRequest(`/api/bans/${user_id}`, { method: 'DELETE' });
         if (res.ok) {
             loadBans();
             loadStats();
-            showToast('Пользователь разбанен', 'success');
+            showToast('✅ Пользователь разбанен', 'success');
         }
-    } catch(e) { showToast('Ошибка', 'danger'); }
+    } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
 // ==================== TOAST ====================
@@ -768,7 +791,7 @@ function showToast(msg, type = 'info') {
         position: fixed; bottom: 30px; right: 30px; background: ${colors[type] || '#333'};
         color: #fff; padding: 14px 28px; border-radius: 12px; 
         z-index: 9999; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-        font-weight: 500; animation: slideUp 0.3s ease;
+        font-weight: 500; animation: slideUp 0.3s ease; max-width: 400px;
     `;
     toast.textContent = msg;
     document.body.appendChild(toast);
@@ -791,6 +814,7 @@ document.head.appendChild(style);
 
 // Загрузка по умолчанию
 loadStats();
+loadMovies();
 </script>
 
 </body>
