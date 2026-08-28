@@ -21,7 +21,7 @@
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 24px;
             padding: 50px 40px;
-            max-width: 420px;
+            max-width: 440px;
             width: 100%;
             box-shadow: 0 25px 50px rgba(0,0,0,0.5);
             text-align: center;
@@ -42,13 +42,6 @@
             color: #0088cc;
             margin-bottom: 20px;
         }
-        #telegram-login {
-            display: flex;
-            justify-content: center;
-            margin-top: 10px;
-            min-height: 70px;
-            width: 100%;
-        }
         .telegram-btn {
             background: #0088cc;
             border: none;
@@ -63,11 +56,14 @@
             align-items: center;
             gap: 12px;
             text-decoration: none;
+            width: 100%;
+            justify-content: center;
         }
         .telegram-btn:hover {
             background: #006699;
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(0,136,204,0.3);
+            color: #fff;
         }
         .telegram-btn i {
             font-size: 24px;
@@ -83,18 +79,47 @@
             font-size: 12px;
             margin-top: 30px;
         }
-        .loading {
+        .divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin: 25px 0;
+        }
+        .id-input {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
             color: #fff;
-            font-size: 14px;
-        }
-        .telegram-widget-placeholder {
+            border-radius: 12px;
+            padding: 12px 16px;
             width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-size: 16px;
+            transition: all 0.3s;
         }
-        #widget-container iframe {
-            border-radius: 50px !important;
+        .id-input:focus {
+            outline: none;
+            border-color: #0088cc;
+            background: rgba(255,255,255,0.12);
+        }
+        .id-input::placeholder {
+            color: rgba(255,255,255,0.4);
+        }
+        .btn-outline-light {
+            border-radius: 50px;
+            padding: 10px 30px;
+            width: 100%;
+            border-color: rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.7);
+            transition: all 0.3s;
+        }
+        .btn-outline-light:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .id-label {
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
+            margin-bottom: 8px;
+            display: block;
+            text-align: left;
         }
     </style>
 </head>
@@ -104,101 +129,77 @@
             <i class="fas fa-film"></i>
         </div>
         <h1>Movie Admin</h1>
-        <p>Войдите через Telegram, чтобы управлять фильмами</p>
+        <p>Войдите, чтобы управлять фильмами</p>
 
-        <div id="telegram-login">
-            <div id="widget-container" class="telegram-widget-placeholder">
-                <div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>
-            </div>
-        </div>
+        <!-- Кнопка входа через Telegram (работает всегда) -->
+        <button class="telegram-btn" onclick="redirectToTelegram()">
+            <i class="fab fa-telegram"></i> Войти через Telegram
+        </button>
+
+        <hr class="divider">
+
+        <!-- Запасной вход по ID -->
+        <form method="post" action="/auth/id">
+            <label class="id-label"><i class="fas fa-key"></i> Или введите Telegram ID</label>
+            <input type="number" name="user_id" placeholder="Например: 123456789" class="id-input" required>
+            <button type="submit" class="btn btn-outline-light mt-3">
+                <i class="fas fa-sign-in-alt"></i> Войти по ID
+            </button>
+        </form>
 
         <div id="errorMsg" class="error-msg">
             <i class="fas fa-exclamation-circle"></i> <span id="errorText">Ошибка авторизации</span>
         </div>
 
         <div class="footer-text">
-            <i class="fas fa-shield-alt"></i> Безопасный вход через Telegram
+            <i class="fas fa-shield-alt"></i> Безопасный вход
         </div>
     </div>
 
     <script>
-        // Извлекаем bot_id из токена (числовая часть до двоеточия)
         const botToken = '{{ BOT_TOKEN }}';
-        const botId = botToken.split(':')[0];
+        const botId = botToken ? botToken.split(':')[0] : '';
 
-        function loadTelegramWidget() {
-            const container = document.getElementById('widget-container');
-            
-            // Очищаем контейнер
-            container.innerHTML = '';
-
-            // Создаём скрипт виджета с правильным bot_id
-            const script = document.createElement('script');
-            script.src = 'https://telegram.org/js/telegram-widget.js?22';
-            script.setAttribute('data-telegram-login', botId);
-            script.setAttribute('data-size', 'large');
-            script.setAttribute('data-radius', '50');
-            script.setAttribute('data-request-access', 'write');
-            script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-            script.setAttribute('data-userpic', 'false');
-            script.async = true;
-            
-            script.onerror = function() {
-                container.innerHTML = `
-                    <button class="telegram-btn" onclick="redirectToTelegram()">
-                        <i class="fab fa-telegram"></i> Войти через Telegram
-                    </button>
-                `;
-            };
-            
-            container.appendChild(script);
-        }
-
-        // Функция обратного вызова при успешной авторизации
-        function onTelegramAuth(user) {
-            console.log('User authorized:', user);
-            
-            // Отправляем данные на сервер
-            fetch('/auth/telegram', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    id: user.id,
-                    first_name: user.first_name || '',
-                    last_name: user.last_name || '',
-                    username: user.username || '',
-                    photo_url: user.photo_url || '',
-                    auth_date: user.auth_date,
-                    hash: user.hash
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.href = '/dashboard';
-                } else {
-                    document.getElementById('errorMsg').style.display = 'block';
-                    document.getElementById('errorText').textContent = data.error || 'Ошибка авторизации';
-                }
-            })
-            .catch((err) => {
-                console.error(err);
-                document.getElementById('errorMsg').style.display = 'block';
-                document.getElementById('errorText').textContent = 'Ошибка соединения с сервером';
-            });
-        }
-
-        // Запасной вариант — редирект на OAuth
         function redirectToTelegram() {
-            const redirectUrl = encodeURIComponent(window.location.origin);
-            const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${redirectUrl}&embed=1&request_access=write`;
-            window.open(authUrl, '_blank', 'width=600,height=700');
+            if (!botId) {
+                document.getElementById('errorMsg').style.display = 'block';
+                document.getElementById('errorText').textContent = 'BOT_TOKEN не настроен!';
+                return;
+            }
+            
+            const origin = encodeURIComponent(window.location.origin);
+            const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${origin}&embed=1&request_access=write`;
+            
+            // Открываем окно авторизации
+            const win = window.open(authUrl, '_blank', 'width=600,height=700,scrollbars=yes');
+            
+            // Проверяем закрытие окна
+            const checkWin = setInterval(() => {
+                if (win.closed) {
+                    clearInterval(checkWin);
+                    // Проверяем, авторизовались ли
+                    checkAuth();
+                }
+            }, 500);
         }
 
-        // Загружаем виджет при загрузке страницы
-        document.addEventListener('DOMContentLoaded', loadTelegramWidget);
+        function checkAuth() {
+            fetch('/api/check-auth')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.authenticated) {
+                        window.location.href = '/dashboard';
+                    }
+                })
+                .catch(() => {});
+        }
+
+        // Если есть сообщение об ошибке в URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('error')) {
+            document.getElementById('errorMsg').style.display = 'block';
+            document.getElementById('errorText').textContent = decodeURIComponent(urlParams.get('error'));
+        }
     </script>
 </body>
 </html>
