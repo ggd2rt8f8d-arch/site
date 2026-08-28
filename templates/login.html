@@ -121,6 +121,12 @@
             display: block;
             text-align: left;
         }
+        .success-msg {
+            color: #88dd88;
+            font-size: 14px;
+            margin-top: 15px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -131,7 +137,7 @@
         <h1>Movie Admin</h1>
         <p>Войдите, чтобы управлять фильмами</p>
 
-        <!-- Кнопка входа через Telegram (работает всегда) -->
+        <!-- Кнопка входа через Telegram -->
         <button class="telegram-btn" onclick="redirectToTelegram()">
             <i class="fab fa-telegram"></i> Войти через Telegram
         </button>
@@ -151,16 +157,62 @@
             <i class="fas fa-exclamation-circle"></i> <span id="errorText">Ошибка авторизации</span>
         </div>
 
+        <div id="successMsg" class="success-msg">
+            <i class="fas fa-check-circle"></i> <span id="successText">Авторизация успешна! Перенаправление...</span>
+        </div>
+
         <div class="footer-text">
             <i class="fas fa-shield-alt"></i> Безопасный вход
         </div>
     </div>
 
     <script>
-        const botToken = '{{ BOT_TOKEN }}';
-        const botId = botToken ? botToken.split(':')[0] : '';
+        // Глобальная функция для Telegram Widget
+        function onTelegramAuth(user) {
+            console.log('✅ Авторизация через Telegram:', user);
+            
+            document.getElementById('successMsg').style.display = 'block';
+            document.getElementById('successText').textContent = 'Авторизация успешна! Перенаправление...';
+            
+            // Отправляем данные на сервер
+            fetch('/auth/telegram', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    id: user.id,
+                    first_name: user.first_name || '',
+                    last_name: user.last_name || '',
+                    username: user.username || '',
+                    photo_url: user.photo_url || '',
+                    auth_date: user.auth_date,
+                    hash: user.hash
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    document.getElementById('errorMsg').style.display = 'block';
+                    document.getElementById('errorText').textContent = data.error || 'Ошибка авторизации';
+                    document.getElementById('successMsg').style.display = 'none';
+                }
+            })
+            .catch((err) => {
+                console.error('❌ Ошибка:', err);
+                document.getElementById('errorMsg').style.display = 'block';
+                document.getElementById('errorText').textContent = 'Ошибка соединения с сервером';
+                document.getElementById('successMsg').style.display = 'none';
+            });
+        }
 
+        // Запасной способ — открыть окно OAuth
         function redirectToTelegram() {
+            const botToken = '{{ BOT_TOKEN }}';
+            const botId = botToken ? botToken.split(':')[0] : '';
+            
             if (!botId) {
                 document.getElementById('errorMsg').style.display = 'block';
                 document.getElementById('errorText').textContent = 'BOT_TOKEN не настроен!';
@@ -200,6 +252,9 @@
             document.getElementById('errorMsg').style.display = 'block';
             document.getElementById('errorText').textContent = decodeURIComponent(urlParams.get('error'));
         }
+        
+        console.log('🔑 Bot ID:', '{{ BOT_TOKEN }}'.split(':')[0]);
+        console.log('🌐 Origin:', window.location.origin);
     </script>
 </body>
 </html>
