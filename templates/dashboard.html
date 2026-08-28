@@ -521,14 +521,13 @@
             display: block;
         }
 
-        /* ===== СТРАНИЦА ФИЛЬМА В СТИЛЕ КИНОПОИСКА ===== */
+        /* ===== СТРАНИЦА ФИЛЬМА ===== */
         .movie-page-container {
             max-width: 1000px;
             margin: 0 auto;
             background: #141414;
             border: 1px solid #2a2a2a;
             border-radius: 14px;
-            padding: 0;
             overflow: hidden;
         }
         .movie-page-container .movie-banner {
@@ -550,6 +549,9 @@
             border-radius: 12px;
             border: 1px solid #333;
             flex-shrink: 0;
+            min-height: 260px;
+            object-fit: cover;
+            background: #1a1a1a;
         }
         .movie-page-container .movie-title-section .movie-info h1 {
             font-weight: 300;
@@ -661,8 +663,25 @@
         .movie-page-container .reviews-section .review-item .review-header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             color: #777;
             font-size: 12px;
+        }
+        .movie-page-container .reviews-section .review-item .review-header .review-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .movie-page-container .reviews-section .review-item .review-header .review-user:hover {
+            color: #fff;
+        }
+        .movie-page-container .reviews-section .review-item .review-header .review-user .review-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #2a2a2a;
         }
         .movie-page-container .reviews-section .review-item .review-text {
             color: #ccc;
@@ -679,6 +698,81 @@
         .movie-page-container .tpz-rating {
             font-size: 18px;
             color: #e8c84a;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .image-preview {
+            max-width: 150px;
+            max-height: 100px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+            margin-top: 8px;
+        }
+        .banner-preview {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+            margin-top: 8px;
+            object-fit: cover;
+        }
+        .poster-upload-placeholder {
+            width: 180px;
+            min-height: 260px;
+            background: #1a1a1a;
+            border: 2px dashed #333;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-shrink: 0;
+            padding: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .poster-upload-placeholder:hover {
+            border-color: #555;
+            background: #222;
+        }
+        .poster-upload-placeholder i {
+            font-size: 32px;
+            color: #555;
+        }
+        .poster-upload-placeholder .btn {
+            font-size: 12px;
+        }
+        .banner-upload-placeholder {
+            height: 200px;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #333;
+            margin: 10px 20px;
+            border-radius: 8px;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .banner-upload-placeholder:hover {
+            border-color: #555;
+            background: #222;
         }
 
         @media (max-width: 768px) {
@@ -753,6 +847,7 @@
             }
             .movie-page-container .movie-title-section .movie-poster-large {
                 width: 140px;
+                min-height: 200px;
             }
             .movie-page-container .movie-content {
                 padding: 16px 18px;
@@ -766,6 +861,10 @@
             }
             .movie-page-container .movie-title-section .movie-info h1 {
                 font-size: 22px;
+            }
+            .poster-upload-placeholder {
+                width: 140px;
+                min-height: 200px;
             }
         }
 
@@ -797,6 +896,7 @@
             }
             .movie-page-container .movie-title-section .movie-poster-large {
                 width: 220px;
+                min-height: 320px;
             }
         }
 
@@ -806,42 +906,42 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-        }
-        .file-input-wrapper input[type=file] {
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-        .image-preview {
-            max-width: 150px;
-            max-height: 100px;
-            border-radius: 8px;
-            border: 1px solid #2a2a2a;
-            margin-top: 8px;
-        }
-        .banner-preview {
-            max-width: 100%;
-            max-height: 150px;
-            border-radius: 8px;
-            border: 1px solid #2a2a2a;
-            margin-top: 8px;
-            object-fit: cover;
-        }
-        .profile-banner {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 1px solid #2a2a2a;
+        .editable-input {
             background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            color: #ccc;
+            border-radius: 8px;
+            padding: 4px 10px;
+            width: 100%;
+            transition: 0.2s;
+        }
+        .editable-input:focus {
+            outline: none;
+            border-color: #555;
+            background: #222;
+        }
+        .editable-textarea {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            color: #ccc;
+            border-radius: 8px;
+            padding: 6px 10px;
+            width: 100%;
+            min-height: 80px;
+            transition: 0.2s;
+        }
+        .editable-textarea:focus {
+            outline: none;
+            border-color: #555;
+            background: #222;
+        }
+        .editable-select {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            color: #ccc;
+            border-radius: 8px;
+            padding: 4px 10px;
+            width: 100%;
         }
     </style>
 </head>
@@ -1116,7 +1216,7 @@
         </div>
     </div>
 
-    <!-- ====== СТРАНИЦА ФИЛЬМА (Кинопоиск-стиль) ====== -->
+    <!-- ====== СТРАНИЦА ФИЛЬМА ====== -->
     <div id="page-movie" style="display:none" class="fade-in">
         <div class="movie-page-container" id="moviePageContainer">
             <div id="moviePageContent">
@@ -1185,6 +1285,28 @@
             </div>
             <button class="btn btn-primary" onclick="saveAppSettings()">
                 <i class="fas fa-save"></i> Сохранить настройки
+            </button>
+
+            <hr style="border-color:#2a2a2a;margin-top:25px;">
+
+            <h6 style="color:#999;font-weight:300;margin-bottom:15px;"><i class="fas fa-lock"></i> Конфиденциальность</h6>
+            <div class="mb-3">
+                <label class="form-label" style="color:#999;">Комментарии к профилю</label>
+                <select class="form-control" id="settingsPrivacyComments" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                    <option value="true">Разрешены</option>
+                    <option value="false">Запрещены</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" style="color:#999;">Показывать онлайн-статус</label>
+                <select class="form-control" id="settingsPrivacyOnline" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                    <option value="true">Всем</option>
+                    <option value="friends">Только друзьям</option>
+                    <option value="false">Никому</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="savePrivacySettings()">
+                <i class="fas fa-save"></i> Сохранить
             </button>
         </div>
     </div>
@@ -1276,49 +1398,6 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" id="saveMovieBtn">Сохранить</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Редактировать фильм -->
-<div class="modal fade" id="editMovieModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-edit"></i> Редактировать</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3"><label class="form-label">Код</label><input type="text" class="form-control" id="editCode" disabled></div>
-                <div class="mb-3"><label class="form-label">Название</label><input type="text" class="form-control" id="editTitle"></div>
-                <div class="mb-3"><label class="form-label">Год</label><input type="number" class="form-control" id="editYear"></div>
-                <div class="mb-3"><label class="form-label">Постер</label>
-                    <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <div class="file-input-wrapper">
-                            <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
-                            <input type="file" id="editPosterFile" accept="image/*" onchange="previewImage(this, 'editPosterPreview')">
-                        </div>
-                        <input type="text" class="form-control" id="editPoster" placeholder="Или ссылка" style="flex:1;min-width:150px;">
-                    </div>
-                    <img id="editPosterPreview" class="image-preview" style="display:none;">
-                </div>
-                <div class="mb-3"><label class="form-label">Баннер</label>
-                    <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <div class="file-input-wrapper">
-                            <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
-                            <input type="file" id="editBannerFile" accept="image/*" onchange="previewImage(this, 'editBannerPreview')">
-                        </div>
-                        <input type="text" class="form-control" id="editBanner" placeholder="Или ссылка" style="flex:1;min-width:150px;">
-                    </div>
-                    <img id="editBannerPreview" class="banner-preview" style="display:none;">
-                </div>
-                <div class="mb-3"><label class="form-label">Описание</label><textarea class="form-control" id="editDescription" rows="3"></textarea></div>
-                <div class="mb-3"><label class="form-label">IMDb</label><input type="text" class="form-control" id="editRating"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-warning" id="updateMovieBtn">Обновить</button>
             </div>
         </div>
     </div>
@@ -1447,6 +1526,7 @@ let moviesData = [];
 let currentProfileUserId = CURRENT_USER;
 let currentMovieCode = null;
 let currentReviewMovieCode = null;
+let isEditingMode = false;
 
 // ==================== ФУНКЦИИ ПРЕДПРОСМОТРА ====================
 function previewImage(input, previewId) {
@@ -1597,7 +1677,7 @@ function renderMovies(data) {
         let actions = '';
         if (IS_ADMIN) {
             actions = `
-                <button class="btn btn-warning btn-sm" onclick="event.stopPropagation();editMovie('${m.code}')" style="padding:3px 8px;font-size:11px;">
+                <button class="btn btn-warning btn-sm" onclick="event.stopPropagation();editMovieInline('${m.code}')" style="padding:3px 8px;font-size:11px;">
                     <i class="fas fa-edit"></i>
                 </button>
             `;
@@ -1674,42 +1754,11 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
     } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
 });
 
-async function editMovie(code) {
-    try {
-        const res = await apiRequest(`/api/movies/${code}`);
-        const m = await res.json();
-        document.getElementById('editCode').value = m.code;
-        document.getElementById('editTitle').value = m.title;
-        document.getElementById('editYear').value = m.year;
-        document.getElementById('editPoster').value = m.poster || '';
-        document.getElementById('editBanner').value = m.banner || '';
-        document.getElementById('editDescription').value = m.description || '';
-        document.getElementById('editRating').value = m.rating || '';
-        document.getElementById('editPosterPreview').style.display = 'none';
-        document.getElementById('editBannerPreview').style.display = 'none';
-        new bootstrap.Modal(document.getElementById('editMovieModal')).show();
-    } catch(e) { showToast('❌ Ошибка', 'danger'); }
+// Редактирование - открываем страницу фильма в режиме редактирования
+function editMovieInline(code) {
+    isEditingMode = true;
+    showMoviePage(code);
 }
-
-document.getElementById('updateMovieBtn')?.addEventListener('click', async function() {
-    const code = document.getElementById('editCode').value;
-    const data = {
-        title: document.getElementById('editTitle').value,
-        year: parseInt(document.getElementById('editYear').value),
-        poster: document.getElementById('editPoster').value,
-        banner: document.getElementById('editBanner').value,
-        description: document.getElementById('editDescription').value,
-        rating: document.getElementById('editRating').value
-    };
-    try {
-        const res = await apiRequest(`/api/movies/${code}`, { method: 'PUT', body: JSON.stringify(data) });
-        if (res.ok) {
-            bootstrap.Modal.getInstance(document.getElementById('editMovieModal')).hide();
-            loadMovies(); loadStats();
-            showToast('✅ Обновлено', 'success');
-        } else { showToast('❌ Ошибка', 'danger'); }
-    } catch(e) { showToast('❌ Ошибка', 'danger'); }
-});
 
 async function deleteMovie(code) {
     if (!confirm(`Удалить фильм "${code}"?`)) return;
@@ -1719,7 +1768,95 @@ async function deleteMovie(code) {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-// ==================== СТРАНИЦА ФИЛЬМА (Кинопоиск-стиль) ====================
+// ==================== ИНЛАЙН-РЕДАКТИРОВАНИЕ ====================
+function toggleEditMode() {
+    isEditingMode = !isEditingMode;
+    if (currentMovieCode) showMoviePage(currentMovieCode);
+}
+
+async function saveMovieField(code, field, value) {
+    if (!IS_ADMIN || !isEditingMode) return;
+    try {
+        const data = {};
+        data[field] = value;
+        const res = await apiRequest(`/api/movies/${code}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            showToast('✅ Сохранено', 'success');
+            // Обновляем страницу без перезагрузки
+            if (currentMovieCode === code) {
+                // Просто обновляем данные
+            }
+            loadMovies();
+        } else {
+            showToast('❌ Ошибка', 'danger');
+        }
+    } catch(e) { showToast('❌ Ошибка', 'danger'); }
+}
+
+function makeEditable(code, field, value, type = 'text') {
+    if (!IS_ADMIN || !isEditingMode) return value || '-';
+    
+    if (type === 'textarea') {
+        return `<textarea class="editable-textarea" 
+            onchange="saveMovieField('${code}', '${field}', this.value)"
+            onblur="saveMovieField('${code}', '${field}', this.value)">${value || ''}</textarea>`;
+    }
+    if (type === 'array') {
+        const items = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
+        return `
+            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+                ${items.map(item => `<span class="cast-item">${item}</span>`).join('')}
+                <input type="text" class="editable-input" style="flex:1;min-width:100px;" 
+                    placeholder="Добавить..."
+                    onkeydown="if(event.key==='Enter'){const val=this.value.trim();if(val){const current='${value || ''}';const newVal=current?current+', '+val:val;saveMovieField('${code}','${field}',newVal);this.value='';}}">
+            </div>
+        `;
+    }
+    if (type === 'select') {
+        return `<select class="editable-select" onchange="saveMovieField('${code}','${field}',this.value)">
+            <option value="">Выберите</option>
+            <option value="Фантастика" ${value === 'Фантастика' ? 'selected' : ''}>Фантастика</option>
+            <option value="Боевик" ${value === 'Боевик' ? 'selected' : ''}>Боевик</option>
+            <option value="Драма" ${value === 'Драма' ? 'selected' : ''}>Драма</option>
+            <option value="Комедия" ${value === 'Комедия' ? 'selected' : ''}>Комедия</option>
+            <option value="Ужасы" ${value === 'Ужасы' ? 'selected' : ''}>Ужасы</option>
+            <option value="Триллер" ${value === 'Триллер' ? 'selected' : ''}>Триллер</option>
+            <option value="Мелодрама" ${value === 'Мелодрама' ? 'selected' : ''}>Мелодрама</option>
+        </select>`;
+    }
+    return `<input type="text" class="editable-input" 
+        value="${value || ''}" 
+        onchange="saveMovieField('${code}', '${field}', this.value)"
+        onblur="saveMovieField('${code}', '${field}', this.value)">`;
+}
+
+async function uploadMovieImage(code, field, input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const dataUrl = e.target.result;
+        try {
+            const res = await apiRequest(`/api/upload-${field}`, {
+                method: 'POST',
+                body: JSON.stringify({ code, image: dataUrl })
+            });
+            if (res.ok) {
+                showToast('✅ Изображение загружено', 'success');
+                showMoviePage(code);
+                loadMovies();
+            } else {
+                showToast('❌ Ошибка загрузки', 'danger');
+            }
+        } catch(e) { showToast('❌ Ошибка', 'danger'); }
+    };
+    reader.readAsDataURL(file);
+}
+
+// ==================== СТРАНИЦА ФИЛЬМА ====================
 async function showMoviePage(code) {
     currentMovieCode = code;
     try {
@@ -1728,24 +1865,49 @@ async function showMoviePage(code) {
         const reviewsRes = await apiRequest(`/api/movies/${code}/reviews`);
         const reviews = await reviewsRes.json();
         
-        // Проверяем, есть ли отзыв от текущего пользователя
-        let userReview = null;
-        try {
-            const userReviewRes = await apiRequest(`/api/movies/${code}/reviews?user=${CURRENT_USER}`);
-            // Если API не поддерживает фильтр, просто игнорируем
-        } catch(e) {}
+        // Получаем имена пользователей для отзывов
+        const reviewUsers = {};
+        if (reviews && reviews.length) {
+            for (const r of reviews) {
+                try {
+                    const nameRes = await apiRequest(`/api/user/${r.user_id}/name`);
+                    const nameData = await nameRes.json();
+                    reviewUsers[r.user_id] = nameData;
+                } catch(e) {}
+            }
+        }
+        
+        const details = [
+            { key: 'year', label: 'Год производства', value: m.year },
+            { key: 'country', label: 'Страна', value: 'США' },
+            { key: 'genres', label: 'Жанр', value: m.genres || 'Фантастика, Боевик' },
+            { key: 'director', label: 'Режиссер', value: m.director || '-' },
+            { key: 'writers', label: 'Сценарий', value: m.writers || '-' },
+            { key: 'budget', label: 'Бюджет', value: m.budget || '-' },
+            { key: 'box_office_us', label: 'Сборы в США', value: m.box_office_us || '-' },
+            { key: 'box_office_world', label: 'Сборы в мире', value: m.box_office_world || '-' }
+        ];
         
         let reviewsHtml = '';
         if (reviews && reviews.length) {
             reviewsHtml = reviews.map(r => {
                 const isOwner = r.user_id == CURRENT_USER;
+                const isAdmin = IS_ADMIN;
+                // Админ видит только кнопку "Удалить отзыв"
+                const showDelete = isAdmin ? true : isOwner;
+                const deleteLabel = isAdmin ? 'Удалить отзыв' : 'Удалить свой';
+                const userData = reviewUsers[r.user_id] || {};
+                const displayName = userData.display_name || r.user_id;
+                const photoUrl = userData.photo_url || `https://ui-avatars.com/api/?name=${r.user_id}&background=2a2a2a&color=cccccc&size=24&rounded=true`;
                 return `
                     <div class="review-item">
                         <div class="review-header">
-                            <span><i class="fas fa-user"></i> ${r.user_id}</span>
+                            <div class="review-user" onclick="showProfileModal(${r.user_id})">
+                                <img src="${photoUrl}" class="review-avatar" onerror="this.style.display='none'">
+                                <span>${displayName}</span>
+                            </div>
                             <span class="review-rating"><i class="fas fa-star"></i> ${r.rating}/10</span>
-                            ${isOwner ? `<button class="btn btn-danger btn-sm" onclick="deleteMyReview(${r.id}, '${code}')" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i></button>` : ''}
-                            ${IS_SUPER ? `<button class="btn btn-danger btn-sm" onclick="deleteReview(${r.id}, '${code}')" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i></button>` : ''}
+                            ${showDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteReview(${r.id}, '${code}')" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i> ${deleteLabel}</button>` : ''}
                         </div>
                         <div class="review-text">${r.text || ''}</div>
                         <div style="color:#777;font-size:10px;margin-top:4px;">${new Date(r.created_at).toLocaleString()}</div>
@@ -1756,43 +1918,82 @@ async function showMoviePage(code) {
             reviewsHtml = '<p class="text-secondary-light text-center py-3">Нет отзывов. Будьте первым!</p>';
         }
         
-        // Формируем детали фильма
-        const details = [
-            { label: 'Год производства', value: m.year || '-' },
-            { label: 'Страна', value: 'США' },
-            { label: 'Жанр', value: 'Фантастика, Боевик' },
-            { label: 'Режиссер', value: '-' },
-            { label: 'Сценарий', value: '-' },
-            { label: 'Бюджет', value: '-' },
-            { label: 'Сборы в США', value: '-' },
-            { label: 'Сборы в мире', value: '-' }
-        ];
-        
         const container = document.getElementById('moviePageContent');
         container.innerHTML = `
-            ${m.banner ? `<img src="${m.banner}" class="movie-banner" onerror="this.style.display='none'">` : ''}
+            ${IS_ADMIN ? `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;flex-wrap:wrap;gap:10px;">
+                    <label style="color:#999;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" ${isEditingMode ? 'checked' : ''} onchange="toggleEditMode()">
+                        <i class="fas fa-edit"></i> Режим редактирования
+                    </label>
+                    <button class="btn btn-secondary btn-sm" onclick="showPage('movies')">
+                        <i class="fas fa-arrow-left"></i> Назад к списку
+                    </button>
+                </div>
+            ` : `
+                <div style="display:flex;justify-content:flex-end;padding:10px 20px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;">
+                    <button class="btn btn-secondary btn-sm" onclick="showPage('movies')">
+                        <i class="fas fa-arrow-left"></i> Назад к списку
+                    </button>
+                </div>
+            `}
+            ${m.banner ? `<img src="${m.banner}" class="movie-banner" onerror="this.style.display='none'">` : (IS_ADMIN && isEditingMode ? `
+                <div class="banner-upload-placeholder">
+                    <i class="fas fa-image" style="font-size:32px;color:#555;"></i>
+                    <span style="color:#777;font-size:13px;">Загрузить баннер</span>
+                    <div class="file-input-wrapper">
+                        <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Выбрать файл</button>
+                        <input type="file" accept="image/*" onchange="uploadMovieImage('${code}','banner',this)">
+                    </div>
+                    <input type="text" class="editable-input" style="max-width:300px;" 
+                        placeholder="Или ссылка" onchange="saveMovieField('${code}','banner',this.value)">
+                </div>
+            ` : '')}
             <div class="movie-content">
                 <div class="movie-title-section">
-                    ${m.poster ? `<img src="${m.poster}" class="movie-poster-large" onerror="this.style.display='none'">` : ''}
+                    ${m.poster ? `<img src="${m.poster}" class="movie-poster-large" onerror="this.style.display='none'">` : (IS_ADMIN && isEditingMode ? `
+                        <div class="poster-upload-placeholder" onclick="document.getElementById('posterUpload_${code}').click()">
+                            <i class="fas fa-image"></i>
+                            <span style="color:#777;font-size:13px;">Загрузить постер</span>
+                            <div class="file-input-wrapper">
+                                <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Выбрать файл</button>
+                                <input type="file" id="posterUpload_${code}" accept="image/*" onchange="uploadMovieImage('${code}','poster',this)">
+                            </div>
+                            <input type="text" class="editable-input" style="width:100%;" 
+                                placeholder="Или ссылка" onchange="saveMovieField('${code}','poster',this.value)">
+                        </div>
+                    ` : '')}
                     <div class="movie-info">
-                        <h1>${m.title}</h1>
-                        <div class="original-title">${m.title} (${m.year})</div>
+                        <h1>${IS_ADMIN && isEditingMode ? 
+                            `<input type="text" class="editable-input" style="font-size:28px;font-weight:300;color:#e8e8e8;" 
+                                value="${m.title}" onchange="saveMovieField('${code}','title',this.value)">` 
+                            : m.title}
+                        </h1>
+                        <div class="original-title">${IS_ADMIN && isEditingMode ? 
+                            `<input type="text" class="editable-input" style="font-size:16px;color:#777;" 
+                                value="${m.title} (${m.year})" onchange="saveMovieField('${code}','title',this.value)">` 
+                            : `${m.title} (${m.year})`}
+                        </div>
                         <div class="movie-meta">
-                            <span><i class="fas fa-star" style="color:#e8c84a;"></i> IMDb: ${m.rating || '-'}</span>
+                            <span><i class="fas fa-star" style="color:#e8c84a;"></i> IMDb: ${IS_ADMIN && isEditingMode ? 
+                                `<input type="text" class="editable-input" style="display:inline;width:60px;font-size:13px;" 
+                                    value="${m.rating || ''}" onchange="saveMovieField('${code}','rating',this.value)">` 
+                                : m.rating || '-'}
+                            </span>
                             <span><i class="fas fa-star" style="color:#e8c84a;"></i> TPZ: ${m.tpz || '-'} (${m.votes || 0} оценок)</span>
                             <span>${m.year}</span>
                         </div>
-                        <div class="movie-description">${m.description || 'Нет описания'}</div>
+                        <div class="movie-description">${IS_ADMIN && isEditingMode ? 
+                            `<textarea class="editable-textarea" 
+                                onchange="saveMovieField('${code}','description',this.value)"
+                                onblur="saveMovieField('${code}','description',this.value)">${m.description || ''}</textarea>` 
+                            : m.description || 'Нет описания'}
+                        </div>
                         <div class="movie-actions">
-                            <button class="btn btn-primary" onclick="if(IS_ADMIN)editMovie('${m.code}')" ${!IS_ADMIN ? 'disabled' : ''}>
-                                <i class="fas fa-edit"></i> Редактировать
-                            </button>
                             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal" onclick="setReviewMovie('${m.code}')">
                                 <i class="fas fa-star"></i> Оставить отзыв
                             </button>
-                            <button class="btn btn-secondary" onclick="showPage('movies')">
-                                <i class="fas fa-arrow-left"></i> Назад
-                            </button>
+                            ${IS_ADMIN ? `<button class="btn btn-warning" onclick="editMovieInline('${m.code}')"><i class="fas fa-edit"></i> Редактировать</button>` : ''}
                         </div>
                     </div>
                 </div>
@@ -1801,7 +2002,11 @@ async function showMoviePage(code) {
                     ${details.map(d => `
                         <div class="detail-item">
                             <span class="label">${d.label}</span>
-                            <span class="value">${d.value}</span>
+                            <span class="value">${IS_ADMIN && isEditingMode ? 
+                                `<input type="text" class="editable-input" style="text-align:right;" 
+                                    value="${d.value || ''}" onchange="saveMovieField('${code}','${d.key}',this.value)">` 
+                                : d.value}
+                            </span>
                         </div>
                     `).join('')}
                 </div>
@@ -1809,10 +2014,14 @@ async function showMoviePage(code) {
                 <div class="cast-section">
                     <h6><i class="fas fa-users"></i> В главных ролях</h6>
                     <div class="cast-grid">
-                        <span class="cast-item">Том Холланд</span>
-                        <span class="cast-item">Зендея</span>
-                        <span class="cast-item">Сэди Синк</span>
-                        <span class="cast-item">Джейкоб Баталон</span>
+                        ${IS_ADMIN && isEditingMode ? 
+                            makeEditable(code, 'cast', m.cast, 'array') 
+                            : (m.cast ? m.cast.split(',').map(c => `<span class="cast-item">${c.trim()}</span>`).join('') : 
+                                `<span class="cast-item">Том Холланд</span>
+                                 <span class="cast-item">Зендея</span>
+                                 <span class="cast-item">Сэди Синк</span>
+                                 <span class="cast-item">Джейкоб Баталон</span>`)
+                        }
                     </div>
                 </div>
                 
@@ -1824,30 +2033,21 @@ async function showMoviePage(code) {
         `;
         document.getElementById('pageTitle').textContent = `🎬 ${m.title}`;
         showPage('movie');
-    } catch(e) { showToast('❌ Ошибка', 'danger'); }
+    } catch(e) { 
+        console.error(e);
+        showToast('❌ Ошибка загрузки фильма', 'danger'); 
+    }
 }
 
 function setReviewMovie(code) { currentReviewMovieCode = code; }
 
+// ==================== ОТЗЫВЫ ====================
 async function deleteReview(reviewId, movieCode) {
     if (!confirm('Удалить этот отзыв?')) return;
     try {
         const res = await apiRequest(`/api/reviews/${reviewId}`, { method: 'DELETE' });
         if (res.ok) {
             showToast('✅ Отзыв удалён', 'success');
-            showMoviePage(movieCode);
-            loadMovies();
-            loadStats();
-        }
-    } catch(e) { showToast('❌ Ошибка', 'danger'); }
-}
-
-async function deleteMyReview(reviewId, movieCode) {
-    if (!confirm('Удалить ваш отзыв?')) return;
-    try {
-        const res = await apiRequest(`/api/reviews/${reviewId}`, { method: 'DELETE' });
-        if (res.ok) {
-            showToast('✅ Ваш отзыв удалён', 'success');
             showMoviePage(movieCode);
             loadMovies();
             loadStats();
@@ -2124,16 +2324,23 @@ async function loadProfileComments(user_id) {
             container.innerHTML = '<p class="text-secondary-light text-center py-3">Нет комментариев</p>';
             return;
         }
-        container.innerHTML = data.map(c => `
-            <div class="comment-item">
-                <div class="comment-header">
-                    <span><i class="fas fa-user"></i> ${c.author_id}</span>
-                    <span>${new Date(c.created_at).toLocaleString()}</span>
-                    ${IS_SUPER || c.author_id == CURRENT_USER ? `<button class="btn btn-danger btn-sm" onclick="deleteComment(${c.id})" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i></button>` : ''}
+        container.innerHTML = data.map(c => {
+            const isOwner = c.author_id == CURRENT_USER;
+            const isAdmin = IS_ADMIN;
+            // Админ видит только "Удалить комментарий", не "Удалить свой"
+            const showDelete = isAdmin ? true : isOwner;
+            const deleteLabel = isAdmin ? 'Удалить комментарий' : 'Удалить свой';
+            return `
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <span><i class="fas fa-user"></i> ${c.author_id}</span>
+                        <span>${new Date(c.created_at).toLocaleString()}</span>
+                        ${showDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteComment(${c.id})" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i> ${deleteLabel}</button>` : ''}
+                    </div>
+                    <div class="comment-text">${c.text}</div>
                 </div>
-                <div class="comment-text">${c.text}</div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     } catch(e) { console.error(e); }
 }
 
@@ -2157,16 +2364,22 @@ async function loadModalComments(user_id) {
             container.innerHTML = '<p class="text-secondary-light text-center py-3">Нет комментариев</p>';
             return;
         }
-        container.innerHTML = data.map(c => `
-            <div class="comment-item">
-                <div class="comment-header">
-                    <span><i class="fas fa-user"></i> ${c.author_id}</span>
-                    <span>${new Date(c.created_at).toLocaleString()}</span>
-                    ${IS_SUPER || c.author_id == CURRENT_USER ? `<button class="btn btn-danger btn-sm" onclick="deleteComment(${c.id})" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i></button>` : ''}
+        container.innerHTML = data.map(c => {
+            const isOwner = c.author_id == CURRENT_USER;
+            const isAdmin = IS_ADMIN;
+            const showDelete = isAdmin ? true : isOwner;
+            const deleteLabel = isAdmin ? 'Удалить комментарий' : 'Удалить свой';
+            return `
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <span><i class="fas fa-user"></i> ${c.author_id}</span>
+                        <span>${new Date(c.created_at).toLocaleString()}</span>
+                        ${showDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteComment(${c.id})" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i> ${deleteLabel}</button>` : ''}
+                    </div>
+                    <div class="comment-text">${c.text}</div>
                 </div>
-                <div class="comment-text">${c.text}</div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     } catch(e) { console.error(e); }
 }
 
@@ -2251,6 +2464,10 @@ function loadSettings() {
     document.getElementById('settingsTheme').value = theme;
     document.getElementById('settingsLanguage').value = lang;
     applyTheme(theme);
+    
+    // Загружаем настройки конфиденциальности
+    const privacyComments = localStorage.getItem('privacyComments') || 'true';
+    document.getElementById('settingsPrivacyComments').value = privacyComments;
 }
 
 function applyTheme(theme) {
@@ -2282,14 +2499,19 @@ function saveAppSettings() {
     showToast('✅ Настройки сохранены', 'success');
 }
 
+function savePrivacySettings() {
+    const privacyComments = document.getElementById('settingsPrivacyComments').value;
+    const privacyOnline = document.getElementById('settingsPrivacyOnline').value;
+    localStorage.setItem('privacyComments', privacyComments);
+    localStorage.setItem('privacyOnline', privacyOnline);
+    showToast('✅ Настройки конфиденциальности сохранены', 'success');
+}
+
 async function saveProfileSettings() {
     const display_name = document.getElementById('settingsDisplayName').value.trim();
     const username = document.getElementById('settingsUsername').value.trim();
     const photo_url = document.getElementById('settingsPhotoUrl').value.trim();
     const banner_url = document.getElementById('settingsBannerUrl').value.trim();
-    
-    // Если загружены файлы, они уже в предпросмотре, но нужно отправить ссылки
-    // Для простоты используем URL из полей ввода
     
     try {
         const res = await apiRequest(`/api/profile/${CURRENT_USER}`, {
