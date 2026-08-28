@@ -303,7 +303,7 @@
             border: 1px solid #2a2a2a;
             border-radius: 14px;
             padding: 24px 28px;
-            max-width: 580px;
+            max-width: 620px;
             margin: 0 auto;
         }
         .profile-card .profile-header {
@@ -485,7 +485,7 @@
         <h4 id="pageTitle">Главная</h4>
         <div class="user-info" onclick="showProfilePage()">
             <span id="topBarName">Загрузка...</span>
-            <img src="https://ui-avatars.com/api/?name={{ user_id }}&background=2a2a2a&color=cccccc&size=34&rounded=true" class="avatar-sm" id="topBarAvatar" onerror="this.style.display='none'">
+            <img src="" class="avatar-sm" id="topBarAvatar" onerror="this.style.display='none'">
             {% if is_super %}
                 <span class="badge-super"><i class="fas fa-star"></i></span>
             {% endif %}
@@ -632,9 +632,9 @@
     <!-- ====== ПРОФИЛЬ ====== -->
     <div id="page-profile" style="display:none" class="fade-in">
         <div class="profile-card" id="profileCard">
-            <!-- Шапка -->
+            <!-- Шапка: аватарка + ник + должность -->
             <div class="profile-header">
-                <img src="https://ui-avatars.com/api/?name={{ user_id }}&background=2a2a2a&color=cccccc&size=72&rounded=true" class="avatar-lg" id="profileAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2272%22 height=%2272%22%3E%3Crect fill=%22%23222%22 width=%2272%22 height=%2272%22/%3E%3Ctext x=%2236%22 y=%2244%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2230%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
+                <img src="" class="avatar-lg" id="profileAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2272%22 height=%2272%22%3E%3Crect fill=%22%23222%22 width=%2272%22 height=%2272%22/%3E%3Ctext x=%2236%22 y=%2244%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2230%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
                 <div class="profile-info">
                     <h3 id="profileName">Загрузка...</h3>
                     <div class="sub" id="profileId"><i class="fas fa-id-badge"></i> ID: {{ user_id }}</div>
@@ -644,7 +644,7 @@
                 </div>
             </div>
 
-            <!-- Статистика -->
+            <!-- Статистика: фильмы, выговоры, наказания -->
             <div class="stats-grid" id="profileStats">
                 <div class="stat-item">
                     <div class="num" id="pMovies">-</div>
@@ -987,6 +987,35 @@ function showToast(msg, type = 'info') {
     }, 3000);
 }
 
+// ==================== ЗАГРУЗКА АВАТАРКИ И ИМЕНИ ====================
+async function loadUserInfo(user_id) {
+    try {
+        const res = await apiRequest(`/api/user/${user_id}/name`);
+        const data = await res.json();
+        const name = data.name || `Пользователь ${user_id}`;
+        const photo = data.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2a2a2a&color=cccccc&size=34&rounded=true`;
+        
+        // Обновляем верхнюю панель
+        document.getElementById('topBarName').textContent = name;
+        document.getElementById('topBarAvatar').src = photo;
+        
+        // Обновляем профиль
+        document.getElementById('profileName').textContent = name;
+        document.getElementById('profileAvatar').src = photo;
+        
+        return { name, photo };
+    } catch(e) {
+        console.error(e);
+        const fallback = `Пользователь ${user_id}`;
+        const fallbackPhoto = `https://ui-avatars.com/api/?name=${user_id}&background=2a2a2a&color=cccccc&size=34&rounded=true`;
+        document.getElementById('topBarName').textContent = fallback;
+        document.getElementById('topBarAvatar').src = fallbackPhoto;
+        document.getElementById('profileName').textContent = fallback;
+        document.getElementById('profileAvatar').src = fallbackPhoto;
+        return { name: fallback, photo: fallbackPhoto };
+    }
+}
+
 // ==================== СТАТИСТИКА ====================
 async function loadStats() {
     try {
@@ -1247,7 +1276,7 @@ async function loadAdmins() {
         tbody.innerHTML = data.map(a => `
             <tr class="clickable-row" onclick="showProfileModal(${a.user_id})">
                 <td>
-                    <img src="https://ui-avatars.com/api/?name=${a.user_id}&background=2a2a2a&color=cccccc&size=32&rounded=true" class="avatar" onerror="this.style.display='none'">
+                    <img src="${a.photo_url || `https://ui-avatars.com/api/?name=${a.user_id}&background=2a2a2a&color=cccccc&size=32&rounded=true`}" class="avatar" onerror="this.style.display='none'">
                 </td>
                 <td>
                     <div style="font-weight:400;color:#ddd;">${a.username || 'Пользователь'}</div>
@@ -1311,7 +1340,7 @@ async function loadBans() {
         tbody.innerHTML = data.map(b => `
             <tr class="clickable-row" onclick="showProfileModal(${b.user_id})">
                 <td>
-                    <img src="https://ui-avatars.com/api/?name=${b.user_id}&background=2a2a2a&color=cccccc&size=32&rounded=true" class="avatar" onerror="this.style.display='none'">
+                    <img src="${b.photo_url || `https://ui-avatars.com/api/?name=${b.user_id}&background=2a2a2a&color=cccccc&size=32&rounded=true`}" class="avatar" onerror="this.style.display='none'">
                 </td>
                 <td>
                     <div style="font-weight:400;color:#ddd;">${b.username || 'Пользователь'}</div>
@@ -1388,6 +1417,10 @@ async function loadProfile(user_id) {
         
         // Обновляем верхнюю панель
         document.getElementById('topBarName').textContent = data.username || `Пользователь ${user_id}`;
+        if (data.photo_url) {
+            document.getElementById('topBarAvatar').src = data.photo_url;
+            document.getElementById('profileAvatar').src = data.photo_url;
+        }
         
         // История наказаний
         const history = document.getElementById('pHistory');
@@ -1424,7 +1457,7 @@ async function showProfileModal(user_id) {
         const body = document.getElementById('profileModalBody');
         body.innerHTML = `
             <div class="text-center">
-                <img src="https://ui-avatars.com/api/?name=${user_id}&background=2a2a2a&color=cccccc&size=80&rounded=true" class="avatar-lg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23222%22 width=%2280%22 height=%2280%22/%3E%3Ctext x=%2240%22 y=%2248%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2232%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
+                <img src="${data.photo_url || `https://ui-avatars.com/api/?name=${user_id}&background=2a2a2a&color=cccccc&size=80&rounded=true`}" class="avatar-lg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23222%22 width=%2280%22 height=%2280%22/%3E%3Ctext x=%2240%22 y=%2248%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2232%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
                 <h4 class="mt-3" style="font-weight:300;color:#e8e8e8;">${data.username || `Пользователь ${user_id}`}</h4>
                 <p class="text-secondary-light"><i class="fas fa-id-badge"></i> ID: ${user_id}</p>
                 ${data.is_admin ? '<span class="badge-super"><i class="fas fa-crown"></i> Админ</span>' : ''}
@@ -1622,6 +1655,7 @@ document.getElementById('savePunishBtn')?.addEventListener('click', async functi
 });
 
 // ==================== ЗАГРУЗКА ====================
+loadUserInfo(CURRENT_USER);
 loadStats();
 loadMovies();
 </script>
