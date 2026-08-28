@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f0f2f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #0f0c29, #302b63);
+            color: #fff;
+            padding: 20px 0;
+            position: fixed;
+            width: 260px;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            overflow-y: auto;
+        }
+        .sidebar .brand {
+            text-align: center;
+            padding: 20px 0 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar .brand i {
+            font-size: 36px;
+            color: #0088cc;
+        }
+        .sidebar .brand h3 {
+            margin-top: 10px;
+            font-weight: 700;
+            font-size: 20px;
+            color: #fff;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.7);
+            padding: 12px 25px;
+            border-radius: 10px;
+            margin: 4px 15px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .sidebar .nav-link i {
+            width: 24px;
+            margin-right: 12px;
+        }
+        .main-content {
+            margin-left: 260px;
+            padding: 30px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .stat-card .icon {
+            font-size: 32px;
+            color: #0088cc;
+        }
+        .stat-card .number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .stat-card .label {
+            color: #8a8a8a;
+            font-size: 14px;
+        }
+        .table-container {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .btn-action {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .top-bar {
+            background: #fff;
+            border-radius: 16px;
+            padding: 15px 25px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-bar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .top-bar .user-info img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+        }
+        .modal-content {
+            border-radius: 16px;
+        }
+        .modal-header {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .modal-footer {
+            border-top: none;
+        }
+        .badge-super {
+            background: #ffd700;
+            color: #1a1a2e;
+        }
+        .search-box {
+            position: relative;
+        }
+        .search-box input {
+            padding-left: 38px;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+        }
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+        }
+        .admin-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .admin-tabs .btn {
+            border-radius: 10px;
+            padding: 8px 20px;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                min-height: auto;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+        }
+        .movie-poster {
+            width: 50px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="brand">
+        <i class="fas fa-film"></i>
+        <h3>Movie Admin</h3>
+    </div>
+    <nav class="nav flex-column">
+        <a class="nav-link active" href="#" data-page="dashboard">
+            <i class="fas fa-home"></i> Главная
+        </a>
+        <a class="nav-link" href="#" data-page="movies">
+            <i class="fas fa-list"></i> Фильмы
+        </a>
+        <a class="nav-link" href="#" data-page="admins" id="adminsTab" {% if not is_super %}style="display:none"{% endif %}>
+            <i class="fas fa-users-cog"></i> Админы
+        </a>
+        <a class="nav-link" href="#" data-page="bans" id="bansTab" {% if not is_super %}style="display:none"{% endif %}>
+            <i class="fas fa-ban"></i> Баны
+        </a>
+        <a class="nav-link" href="/logout">
+            <i class="fas fa-sign-out-alt"></i> Выйти
+        </a>
+    </nav>
+</div>
+
+<div class="main-content">
+    <div class="top-bar">
+        <h4 class="mb-0" id="pageTitle">Главная</h4>
+        <div class="user-info">
+            <span>ID: {{ user_id }}</span>
+            {% if is_super %}
+                <span class="badge badge-super">⭐ Суперадмин</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Страница: Главная -->
+    <div id="page-dashboard">
+        <div class="row g-4" id="statsRow">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="number" id="statMovies">{{ stats.movies }}</div>
+                            <div class="label">🎬 Фильмов</div>
+                        </div>
+                        <div class="icon"><i class="fas fa-film"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="number" id="statRequests">{{ stats.requests }}</div>
+                            <div class="label">🔍 Запросов</div>
+                        </div>
+                        <div class="icon"><i class="fas fa-search"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="number" id="statAdmins">{{ stats.admins }}</div>
+                            <div class="label">👥 Админов</div>
+                        </div>
+                        <div class="icon"><i class="fas fa-users"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="number" id="statBans">{{ stats.bans }}</div>
+                            <div class="label">🚫 Банов</div>
+                        </div>
+                        <div class="icon"><i class="fas fa-ban"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 text-center text-muted">
+            <i class="fas fa-info-circle"></i> Управляй фильмами через боковое меню
+        </div>
+    </div>
+
+    <!-- Страница: Фильмы -->
+    <div id="page-movies" style="display:none">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control" id="movieSearch" placeholder="Поиск по коду или названию..." style="width:300px">
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMovieModal">
+                <i class="fas fa-plus"></i> Добавить фильм
+            </button>
+        </div>
+        <div class="table-container">
+            <div class="table-responsive">
+                <table class="table table-hover" id="moviesTable">
+                    <thead>
+                        <tr>
+                            <th>Код</th>
+                            <th>Название</th>
+                            <th>Год</th>
+                            <th>Постер</th>
+                            <th>IMDb</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="moviesBody">
+                        <tr><td colspan="6" class="text-center py-4">Загрузка...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Страница: Админы -->
+    <div id="page-admins" style="display:none">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5>👥 Список администраторов</h5>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAdminModal">
+                <i class="fas fa-user-plus"></i> Добавить админа
+            </button>
+        </div>
+        <div class="table-container">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="adminsBody">
+                    <tr><td colspan="2" class="text-center py-4">Загрузка...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Страница: Баны -->
+    <div id="page-bans" style="display:none">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5>🚫 Забаненные пользователи</h5>
+            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addBanModal">
+                <i class="fas fa-user-slash"></i> Забанить
+            </button>
+        </div>
+        <div class="table-container">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Причина</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="bansBody">
+                    <tr><td colspan="3" class="text-center py-4">Загрузка...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка добавления фильма -->
+<div class="modal fade" id="addMovieModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus-circle text-primary"></i> Добавить фильм</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addMovieForm">
+                    <div class="mb-3">
+                        <label class="form-label">Код (уникальный)</label>
+                        <input type="text" class="form-control" name="code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Название</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Год</label>
+                        <input type="number" class="form-control" name="year" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Обложка (file_id или URL)</label>
+                        <input type="text" class="form-control" name="poster" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Рейтинг (IMDb)</label>
+                        <input type="text" class="form-control" name="rating" placeholder="8.5" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveMovieBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка редактирования фильма -->
+<div class="modal fade" id="editMovieModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit text-warning"></i> Редактировать фильм</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editMovieForm">
+                    <div class="mb-3">
+                        <label class="form-label">Код</label>
+                        <input type="text" class="form-control" id="editCode" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Название</label>
+                        <input type="text" class="form-control" id="editTitle" name="title">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Год</label>
+                        <input type="number" class="form-control" id="editYear" name="year">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Обложка (file_id или URL)</label>
+                        <input type="text" class="form-control" id="editPoster" name="poster">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control" id="editDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Рейтинг (IMDb)</label>
+                        <input type="text" class="form-control" id="editRating" name="rating" placeholder="8.5">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-warning" id="updateMovieBtn">Обновить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка добавления админа -->
+<div class="modal fade" id="addAdminModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus text-primary"></i> Добавить админа</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Telegram ID</label>
+                    <input type="number" class="form-control" id="adminIdInput" placeholder="123456789">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveAdminBtn">Добавить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка бана -->
+<div class="modal fade" id="addBanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-slash text-danger"></i> Забанить пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Telegram ID</label>
+                    <input type="number" class="form-control" id="banIdInput" placeholder="123456789">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Причина</label>
+                    <input type="text" class="form-control" id="banReasonInput" placeholder="Нарушение правил">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="saveBanBtn">Забанить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ==================== НАВИГАЦИЯ ====================
+const pageTitles = {
+    dashboard: 'Главная',
+    movies: 'Управление фильмами',
+    admins: 'Администраторы',
+    bans: 'Забаненные'
+};
+
+document.querySelectorAll('.sidebar .nav-link[data-page]').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const page = this.dataset.page;
+        document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
+        document.getElementById(`page-${page}`).style.display = 'block';
+        document.getElementById('pageTitle').textContent = pageTitles[page] || page;
+        if (page === 'movies') loadMovies();
+        if (page === 'admins') loadAdmins();
+        if (page === 'bans') loadBans();
+        if (page === 'dashboard') loadStats();
+    });
+});
+
+// ==================== СТАТИСТИКА ====================
+async function loadStats() {
+    try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        document.getElementById('statMovies').textContent = data.movies;
+        document.getElementById('statRequests').textContent = data.requests;
+        document.getElementById('statAdmins').textContent = data.admins;
+        document.getElementById('statBans').textContent = data.bans;
+    } catch(e) { console.error(e); }
+}
+
+// ==================== ФИЛЬМЫ ====================
+let moviesData = [];
+
+async function loadMovies() {
+    try {
+        const res = await fetch('/api/movies');
+        moviesData = await res.json();
+        renderMovies(moviesData);
+    } catch(e) { console.error(e); }
+}
+
+function renderMovies(data) {
+    const tbody = document.getElementById('moviesBody');
+    if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">Фильмов пока нет</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.map(m => `
+        <tr>
+            <td><code>${m.code}</code></td>
+            <td>${m.title}</td>
+            <td>${m.year}</td>
+            <td>${m.poster ? `<img src="${m.poster}" class="movie-poster" onerror="this.style.display='none'">` : '-'}</td>
+            <td>⭐ ${m.rating || '-'}</td>
+            <td>
+                <button class="btn btn-warning btn-action btn-sm" onclick="editMovie('${m.code}')">
+                    <i class="fas fa-edit"></i>
+                </button>
+                ${ {{ is_super }} ? `<button class="btn btn-danger btn-action btn-sm" onclick="deleteMovie('${m.code}')">
+                    <i class="fas fa-trash"></i>
+                </button>` : '' }
+            </td>
+        </tr>
+    `).join('');
+}
+
+document.getElementById('movieSearch')?.addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    const filtered = moviesData.filter(m => 
+        m.code.toLowerCase().includes(q) || m.title.toLowerCase().includes(q)
+    );
+    renderMovies(filtered);
+});
+
+// Добавление фильма
+document.getElementById('saveMovieBtn')?.addEventListener('click', async function() {
+    const form = document.getElementById('addMovieForm');
+    const data = new FormData(form);
+    const obj = Object.fromEntries(data);
+    obj.year = parseInt(obj.year);
+    try {
+        const res = await fetch('/api/movies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(obj)
+        });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('addMovieModal')).hide();
+            form.reset();
+            loadMovies();
+            loadStats();
+            showToast('Фильм добавлен!', 'success');
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Ошибка', 'danger');
+        }
+    } catch(e) { showToast('Ошибка соединения', 'danger'); }
+});
+
+// Редактирование
+async function editMovie(code) {
+    try {
+        const res = await fetch(`/api/movies/${code}`);
+        const m = await res.json();
+        document.getElementById('editCode').value = m.code;
+        document.getElementById('editTitle').value = m.title;
+        document.getElementById('editYear').value = m.year;
+        document.getElementById('editPoster').value = m.poster || '';
+        document.getElementById('editDescription').value = m.description || '';
+        document.getElementById('editRating').value = m.rating || '';
+        new bootstrap.Modal(document.getElementById('editMovieModal')).show();
+    } catch(e) { showToast('Ошибка загрузки', 'danger'); }
+}
+
+document.getElementById('updateMovieBtn')?.addEventListener('click', async function() {
+    const code = document.getElementById('editCode').value;
+    const data = {
+        title: document.getElementById('editTitle').value,
+        year: parseInt(document.getElementById('editYear').value),
+        poster: document.getElementById('editPoster').value,
+        description: document.getElementById('editDescription').value,
+        rating: document.getElementById('editRating').value
+    };
+    try {
+        const res = await fetch(`/api/movies/${code}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('editMovieModal')).hide();
+            loadMovies();
+            loadStats();
+            showToast('Фильм обновлён!', 'success');
+        } else {
+            showToast('Ошибка обновления', 'danger');
+        }
+    } catch(e) { showToast('Ошибка соединения', 'danger'); }
+});
+
+// Удаление
+async function deleteMovie(code) {
+    if (!confirm(`Удалить фильм ${code}?`)) return;
+    try {
+        const res = await fetch(`/api/movies/${code}`, { method: 'DELETE' });
+        if (res.ok) {
+            loadMovies();
+            loadStats();
+            showToast('Фильм удалён', 'success');
+        } else {
+            showToast('Ошибка удаления', 'danger');
+        }
+    } catch(e) { showToast('Ошибка соединения', 'danger'); }
+}
+
+// ==================== АДМИНЫ ====================
+async function loadAdmins() {
+    try {
+        const res = await fetch('/api/admins');
+        const data = await res.json();
+        const tbody = document.getElementById('adminsBody');
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4">Админов пока нет</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.map(a => `
+            <tr>
+                <td><code>${a.user_id}</code></td>
+                <td>
+                    <button class="btn btn-danger btn-action btn-sm" onclick="removeAdmin(${a.user_id})">
+                        <i class="fas fa-user-minus"></i> Снять
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) { console.error(e); }
+}
+
+document.getElementById('saveAdminBtn')?.addEventListener('click', async function() {
+    const user_id = parseInt(document.getElementById('adminIdInput').value);
+    if (!user_id) return showToast('Введите ID', 'warning');
+    try {
+        const res = await fetch('/api/admins', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id })
+        });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('addAdminModal')).hide();
+            document.getElementById('adminIdInput').value = '';
+            loadAdmins();
+            loadStats();
+            showToast('Админ добавлен!', 'success');
+        } else {
+            showToast('Ошибка', 'danger');
+        }
+    } catch(e) { showToast('Ошибка соединения', 'danger'); }
+});
+
+async function removeAdmin(user_id) {
+    if (!confirm(`Снять админа ${user_id}?`)) return;
+    try {
+        const res = await fetch(`/api/admins/${user_id}`, { method: 'DELETE' });
+        if (res.ok) {
+            loadAdmins();
+            loadStats();
+            showToast('Админ снят', 'success');
+        }
+    } catch(e) { showToast('Ошибка', 'danger'); }
+}
+
+// ==================== БАНЫ ====================
+async function loadBans() {
+    try {
+        const res = await fetch('/api/bans');
+        const data = await res.json();
+        const tbody = document.getElementById('bansBody');
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4">Забаненных нет</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.map(b => `
+            <tr>
+                <td><code>${b.user_id}</code></td>
+                <td>${b.reason || '-'}</td>
+                <td>
+                    <button class="btn btn-success btn-action btn-sm" onclick="unbanUser(${b.user_id})">
+                        <i class="fas fa-user-check"></i> Разбанить
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) { console.error(e); }
+}
+
+document.getElementById('saveBanBtn')?.addEventListener('click', async function() {
+    const user_id = parseInt(document.getElementById('banIdInput').value);
+    const reason = document.getElementById('banReasonInput').value;
+    if (!user_id) return showToast('Введите ID', 'warning');
+    try {
+        const res = await fetch('/api/bans', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id, reason })
+        });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('addBanModal')).hide();
+            document.getElementById('banIdInput').value = '';
+            document.getElementById('banReasonInput').value = '';
+            loadBans();
+            loadStats();
+            showToast('Пользователь забанен!', 'success');
+        } else {
+            showToast('Ошибка', 'danger');
+        }
+    } catch(e) { showToast('Ошибка соединения', 'danger'); }
+});
+
+async function unbanUser(user_id) {
+    if (!confirm(`Разбанить ${user_id}?`)) return;
+    try {
+        const res = await fetch(`/api/bans/${user_id}`, { method: 'DELETE' });
+        if (res.ok) {
+            loadBans();
+            loadStats();
+            showToast('Пользователь разбанен', 'success');
+        }
+    } catch(e) { showToast('Ошибка', 'danger'); }
+}
+
+// ==================== TOAST ====================
+function showToast(msg, type = 'info') {
+    const colors = {
+        success: '#28a745',
+        danger: '#dc3545',
+        warning: '#ffc107',
+        info: '#17a2b8'
+    };
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed; bottom: 30px; right: 30px; background: ${colors[type] || '#333'};
+        color: #fff; padding: 14px 28px; border-radius: 12px; 
+        z-index: 9999; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        font-weight: 500; animation: slideUp 0.3s ease;
+    `;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
+}
+
+// Добавляем стили для тоста
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideUp {
+        from { transform: translateY(30px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+`;
+document.head.appendChild(style);
+
+// Загрузка по умолчанию
+loadStats();
+</script>
+
+</body>
+</html>
