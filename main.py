@@ -130,6 +130,19 @@ async def init_db():
             )
         """)
 
+        # Добавляем колонку expires_at в bans если её нет
+        await conn.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='bans' AND column_name='expires_at'
+                ) THEN
+                    ALTER TABLE bans ADD COLUMN expires_at TIMESTAMP;
+                END IF;
+            END $$;
+        """)
+
         # Триггер для обновления статистики админов
         await conn.execute("""
             CREATE OR REPLACE FUNCTION update_admin_stats()
@@ -151,25 +164,6 @@ async def init_db():
             AFTER INSERT ON movies
             FOR EACH ROW
             EXECUTE FUNCTION update_admin_stats();
-        """)
-
-        # Триггер для автоснятия истёкших банов
-        await conn.execute("""
-            CREATE OR REPLACE FUNCTION auto_unban_expired()
-            RETURNS TRIGGER AS $$
-            BEGIN
-                DELETE FROM bans WHERE expires_at IS NOT NULL AND expires_at < NOW();
-                RETURN NULL;
-            END;
-            $$ LANGUAGE plpgsql;
-        """)
-        await conn.execute("""
-            DROP TRIGGER IF EXISTS trigger_auto_unban ON bans;
-        """)
-        await conn.execute("""
-            CREATE TRIGGER trigger_auto_unban
-            AFTER INSERT OR UPDATE ON bans
-            EXECUTE FUNCTION auto_unban_expired();
         """)
 
     logger.info("База данных инициализирована")
@@ -276,16 +270,14 @@ async def get_admins_with_stats():
 
 async def ban_user(user_id: int, reason: str = "", duration_hours: int = 0):
     async with pool.acquire() as conn:
-        expires_at = None
         if duration_hours > 0:
-            expires_at = f"NOW() + INTERVAL '{duration_hours} hours'"
             await conn.execute(
-                f"INSERT INTO bans (user_id, reason, expires_at) VALUES ($1, $2, {expires_at}) ON CONFLICT (user_id) DO UPDATE SET reason = $2, expires_at = {expires_at}",
-                user_id, reason
+                "INSERT INTO bans (user_id, reason, expires_at) VALUES ($1, $2, NOW() + ($3 || ' hours')::INTERVAL) ON CONFLICT (user_id) DO UPDATE SET reason = $2, expires_at = NOW() + ($3 || ' hours')::INTERVAL",
+                user_id, reason, duration_hours
             )
         else:
             await conn.execute(
-                "INSERT INTO bans (user_id, reason) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET reason = $2",
+                "INSERT INTO bans (user_id, reason, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (user_id) DO UPDATE SET reason = $2, expires_at = NULL",
                 user_id, reason
             )
 
@@ -295,11 +287,13 @@ async def unban_user(user_id: int):
 
 async def is_banned(user_id: int) -> bool:
     async with pool.acquire() as conn:
+        # Удаляем истёкшие баны
         await conn.execute("DELETE FROM bans WHERE expires_at IS NOT NULL AND expires_at < NOW()")
         return await conn.fetchval("SELECT 1 FROM bans WHERE user_id = $1", user_id) is not None
 
 async def get_banned_users():
     async with pool.acquire() as conn:
+        # Удаляем истёкшие
         await conn.execute("DELETE FROM bans WHERE expires_at IS NOT NULL AND expires_at < NOW()")
         rows = await conn.fetch("SELECT user_id, reason, expires_at FROM bans")
         return [dict(r) for r in rows]
@@ -363,15 +357,13 @@ async def get_user_profile(user_id: int):
 
 async def add_punishment(user_id: int, ptype: str, reason: str, issued_by: int, duration_hours: int = 0):
     async with pool.acquire() as conn:
-        expires_at = None
         if duration_hours > 0:
-            expires_at = f"NOW() + INTERVAL '{duration_hours} hours'"
             await conn.execute(
-                f"""
+                """
                 INSERT INTO punishments (user_id, type, reason, issued_by, expires_at)
-                VALUES ($1, $2, $3, $4, {expires_at})
+                VALUES ($1, $2, $3, $4, NOW() + ($5 || ' hours')::INTERVAL)
                 """,
-                user_id, ptype, reason, issued_by
+                user_id, ptype, reason, issued_by, duration_hours
             )
         else:
             await conn.execute(
