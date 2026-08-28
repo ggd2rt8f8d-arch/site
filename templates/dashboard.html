@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
     <style>
+        /* ===== ВСЕ СТИЛИ ОСТАЮТСЯ ТЕМИ ЖЕ ===== */
         * { font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background: #0d0d0d; color: #d4d4d4; }
         ::-webkit-scrollbar { width: 5px; }
@@ -623,8 +624,6 @@
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        /* Стили для страницы фильма */
         .movie-page-container .review-item {
             background: #1a1a1a;
             border: 1px solid #2a2a2a;
@@ -666,12 +665,16 @@
         <a class="nav-link" href="#" data-page="movies">
             <i class="fas fa-list"></i> Фильмы
         </a>
-        <a class="nav-link" href="#" data-page="admins" id="adminsTab" {% if not is_admin %}style="display:none"{% endif %}>
+        {% if is_admin %}
+        <a class="nav-link" href="#" data-page="admins">
             <i class="fas fa-users-cog"></i> Админы
         </a>
-        <a class="nav-link" href="#" data-page="bans" id="bansTab" {% if not is_super %}style="display:none"{% endif %}>
+        {% endif %}
+        {% if is_super %}
+        <a class="nav-link" href="#" data-page="bans">
             <i class="fas fa-ban"></i> Баны
         </a>
+        {% endif %}
     </nav>
 </div>
 
@@ -734,6 +737,7 @@
                     </div>
                 </div>
             </div>
+            {% if is_admin %}
             <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <div class="d-flex justify-content-between align-items-center">
@@ -745,6 +749,8 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
+            {% if is_super %}
             <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <div class="d-flex justify-content-between align-items-center">
@@ -756,9 +762,10 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
         <div class="mt-4 text-center text-secondary-light" style="font-weight:300;">
-            <i class="fas fa-info-circle"></i> Управляйте фильмами и модерацией через меню
+            <i class="fas fa-info-circle"></i> Управляйте фильмами через меню
         </div>
     </div>
 
@@ -800,6 +807,7 @@
     </div>
 
     <!-- ====== АДМИНЫ ====== -->
+    {% if is_admin %}
     <div id="page-admins" style="display:none" class="fade-in">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 style="font-weight:300;color:#ccc;"><i class="fas fa-users-cog"></i> Администраторы</h5>
@@ -828,16 +836,16 @@
             </table>
         </div>
     </div>
+    {% endif %}
 
     <!-- ====== БАНЫ ====== -->
+    {% if is_super %}
     <div id="page-bans" style="display:none" class="fade-in">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 style="font-weight:300;color:#ccc;"><i class="fas fa-ban"></i> Забаненные</h5>
-            {% if is_super %}
             <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addBanModal">
                 <i class="fas fa-user-slash"></i> Забанить
             </button>
-            {% endif %}
         </div>
         <div class="table-container">
             <table class="table">
@@ -847,9 +855,7 @@
                         <th>ID / Имя</th>
                         <th>Причина</th>
                         <th>До</th>
-                        {% if is_super %}
                         <th>Действия</th>
-                        {% endif %}
                     </tr>
                 </thead>
                 <tbody id="bansBody">
@@ -858,6 +864,7 @@
             </table>
         </div>
     </div>
+    {% endif %}
 
     <!-- ====== ПРОФИЛЬ ====== -->
     <div id="page-profile" style="display:none" class="fade-in">
@@ -1027,30 +1034,12 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Код</label>
-                    <input type="text" class="form-control" id="movieCode" placeholder="the-matrix">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Название</label>
-                    <input type="text" class="form-control" id="movieTitle" placeholder="Матрица">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Год</label>
-                    <input type="number" class="form-control" id="movieYear" placeholder="1999">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Обложка</label>
-                    <input type="text" class="form-control" id="moviePoster" placeholder="https://example.com/poster.jpg">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Описание</label>
-                    <textarea class="form-control" id="movieDescription" rows="3"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">IMDb</label>
-                    <input type="text" class="form-control" id="movieRating" placeholder="8.7">
-                </div>
+                <div class="mb-3"><label class="form-label">Код</label><input type="text" class="form-control" id="movieCode" placeholder="the-matrix"></div>
+                <div class="mb-3"><label class="form-label">Название</label><input type="text" class="form-control" id="movieTitle" placeholder="Матрица"></div>
+                <div class="mb-3"><label class="form-label">Год</label><input type="number" class="form-control" id="movieYear" placeholder="1999"></div>
+                <div class="mb-3"><label class="form-label">Обложка</label><input type="text" class="form-control" id="moviePoster" placeholder="https://example.com/poster.jpg"></div>
+                <div class="mb-3"><label class="form-label">Описание</label><textarea class="form-control" id="movieDescription" rows="3"></textarea></div>
+                <div class="mb-3"><label class="form-label">IMDb</label><input type="text" class="form-control" id="movieRating" placeholder="8.7"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -1084,6 +1073,7 @@
     </div>
 </div>
 
+{% if is_super %}
 <!-- Добавить админа -->
 <div class="modal fade" id="addAdminModal" tabindex="-1">
     <div class="modal-dialog">
@@ -1102,6 +1092,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- Забанить -->
 <div class="modal fade" id="addBanModal" tabindex="-1">
@@ -1170,6 +1161,26 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-danger" id="savePunishBtn">Выдать</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка отзыва -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-star"></i> Оставить отзыв</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label">Оценка (1-10)</label><input type="number" class="form-control" id="reviewRating" min="1" max="10" value="8"></div>
+                <div class="mb-3"><label class="form-label">Текст отзыва</label><textarea class="form-control" id="reviewText" rows="3"></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveReviewBtn">Оставить отзыв</button>
             </div>
         </div>
     </div>
@@ -1293,8 +1304,8 @@ async function loadStats() {
         const data = await res.json();
         document.getElementById('statMovies').textContent = data.movies;
         document.getElementById('statRequests').textContent = data.requests;
-        document.getElementById('statAdmins').textContent = data.admins;
-        document.getElementById('statBans').textContent = data.bans;
+        if (IS_ADMIN) document.getElementById('statAdmins').textContent = data.admins;
+        if (IS_SUPER) document.getElementById('statBans').textContent = data.bans;
     } catch(e) { console.error(e); }
 }
 
@@ -1516,6 +1527,7 @@ document.getElementById('saveReviewBtn')?.addEventListener('click', async functi
 
 // ==================== АДМИНЫ ====================
 async function loadAdmins() {
+    if (!IS_ADMIN) return;
     try {
         const res = await apiRequest('/api/admins');
         const data = await res.json();
@@ -1543,6 +1555,7 @@ async function loadAdmins() {
 }
 
 document.getElementById('saveAdminBtn')?.addEventListener('click', async function() {
+    if (!IS_SUPER) return;
     const user_id = parseInt(document.getElementById('adminIdInput').value);
     if (!user_id) return showToast('⚠️ Введите ID', 'warning');
     try {
@@ -1557,6 +1570,7 @@ document.getElementById('saveAdminBtn')?.addEventListener('click', async functio
 });
 
 async function removeAdmin(user_id) {
+    if (!IS_SUPER) return;
     if (!confirm(`Снять админа ${user_id}?`)) return;
     try {
         await apiRequest(`/api/admins/${user_id}`, { method: 'DELETE' });
@@ -1567,6 +1581,7 @@ async function removeAdmin(user_id) {
 
 // ==================== БАНЫ ====================
 async function loadBans() {
+    if (!IS_SUPER) return;
     try {
         const res = await apiRequest('/api/bans');
         const data = await res.json();
@@ -1594,6 +1609,7 @@ async function loadBans() {
 }
 
 document.getElementById('saveBanBtn')?.addEventListener('click', async function() {
+    if (!IS_SUPER) return;
     const user_id = parseInt(document.getElementById('banIdInput').value);
     const reason = document.getElementById('banReasonInput').value;
     const duration = parseInt(document.getElementById('banDurationInput').value) || 0;
@@ -1617,6 +1633,7 @@ document.getElementById('saveBanBtn')?.addEventListener('click', async function(
 });
 
 async function unbanUser(user_id) {
+    if (!IS_SUPER) return;
     if (!confirm(`Разбанить ${user_id}?`)) return;
     try {
         await apiRequest(`/api/bans/${user_id}`, { method: 'DELETE' });
@@ -1671,7 +1688,6 @@ async function showProfileModal(user_id) {
         const res = await apiRequest(`/api/profile/${user_id}`);
         const data = await res.json();
         const body = document.getElementById('profileModalBody');
-        const isSuperAdmin = data.is_super_admin || data.user_id === CURRENT_USER && IS_SUPER;
         body.innerHTML = `
             <div class="text-center">
                 <img src="${data.photo_url || 'https://ui-avatars.com/api/?name=' + user_id + '&background=2a2a2a&color=cccccc&size=80&rounded=true'}" class="avatar-lg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23222%22 width=%2280%22 height=%2280%22/%3E%3Ctext x=%2240%22 y=%2248%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2232%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
@@ -1732,6 +1748,7 @@ async function showProfileModal(user_id) {
 }
 
 async function updateRole(user_id, role) {
+    if (!IS_SUPER) return;
     try {
         const res = await apiRequest('/api/roles', { method: 'POST', body: JSON.stringify({ user_id, role }) });
         if (res.ok) {
@@ -1837,6 +1854,7 @@ async function addModalComment() {
 
 // ==================== НАКАЗАНИЯ ====================
 function showPunishModal() {
+    if (!IS_SUPER) return;
     if (!currentProfileUserId) return;
     document.getElementById('punishReason').value = '';
     document.getElementById('punishDuration').value = '24';
@@ -1844,6 +1862,7 @@ function showPunishModal() {
 }
 
 document.getElementById('savePunishBtn')?.addEventListener('click', async function() {
+    if (!IS_SUPER) return;
     const user_id = currentProfileUserId;
     const type = document.getElementById('punishType').value;
     const reason = document.getElementById('punishReason').value.trim();
