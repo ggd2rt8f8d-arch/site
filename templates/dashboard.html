@@ -7,14 +7,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
     <style>
-        /* ===== ОБЩИЕ СТИЛИ ===== */
-        * { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        * { font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background: #0d0d0d; color: #d4d4d4; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #1a1a1a; }
         ::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 10px; }
 
-        /* ===== САЙДБАР ===== */
         .sidebar {
             background: #111;
             border-right: 1px solid #2a2a2a;
@@ -61,7 +59,6 @@
         }
         .sidebar .nav-link i { width: 20px; margin-right: 10px; }
 
-        /* ===== ОСНОВНОЙ КОНТЕНТ ===== */
         .main-content {
             margin-left: 210px;
             padding: 20px 28px;
@@ -69,7 +66,6 @@
             transition: margin-left 0.3s ease;
         }
 
-        /* ===== ВЕРХНЯЯ ПАНЕЛЬ ===== */
         .top-bar {
             background: #161616;
             border: 1px solid #2a2a2a;
@@ -121,7 +117,6 @@
             white-space: nowrap;
         }
 
-        /* ===== ВЫПАДАЮЩЕЕ МЕНЮ ===== */
         .dropdown-menu-custom {
             position: absolute;
             top: 100%;
@@ -166,7 +161,6 @@
             margin: 4px 0;
         }
 
-        /* ===== СТАТИСТИКА ===== */
         .stat-card {
             background: #151515;
             border: 1px solid #2a2a2a;
@@ -190,7 +184,6 @@
             color: #555;
         }
 
-        /* ===== ТАБЛИЦЫ ===== */
         .table-container {
             background: #141414;
             border: 1px solid #2a2a2a;
@@ -223,7 +216,6 @@
         .table tr:hover td { background: #1a1a1a; }
         .clickable-row { cursor: pointer; }
 
-        /* ===== КНОПКИ ===== */
         .btn {
             border-radius: 8px;
             font-weight: 400;
@@ -279,7 +271,6 @@
         }
         .btn-sm { padding: 2px 8px; font-size: 11px; }
 
-        /* ===== ПОИСК ===== */
         .search-box {
             position: relative;
             display: inline-block;
@@ -306,7 +297,6 @@
             font-size: 13px;
         }
 
-        /* ===== МОДАЛКИ ===== */
         .modal-content {
             background: #161616;
             border: 1px solid #2a2a2a;
@@ -341,7 +331,6 @@
         }
         .btn-close { filter: invert(0.6); }
 
-        /* ===== АВАТАРКИ ===== */
         .avatar {
             width: 32px;
             height: 32px;
@@ -357,7 +346,6 @@
             border: 3px solid #333;
         }
 
-        /* ===== ПРОФИЛЬ ===== */
         .profile-card {
             background: #141414;
             border: 1px solid #2a2a2a;
@@ -495,7 +483,6 @@
 
         .text-secondary-light { color: #888; }
 
-        /* ===== АДАПТИВ ===== */
         .sidebar-toggle {
             display: none;
             background: none;
@@ -517,6 +504,20 @@
         }
         .sidebar-overlay.show {
             display: block;
+        }
+
+        .movie-page-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 14px;
+            padding: 30px;
+        }
+        .movie-page-container .movie-poster-large {
+            max-width: 250px;
+            border-radius: 12px;
+            border: 1px solid #333;
         }
 
         @media (max-width: 768px) {
@@ -584,14 +585,11 @@
                 font-size: 13px;
                 padding: 8px 16px;
             }
-        }
-
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .search-box input {
-                width: 180px;
+            .movie-page-container {
+                padding: 16px;
             }
-            .stat-card .number {
-                font-size: 22px;
+            .movie-page-container .movie-poster-large {
+                max-width: 150px;
             }
         }
 
@@ -625,11 +623,34 @@
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Стили для страницы фильма */
+        .movie-page-container .review-item {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+        }
+        .movie-page-container .review-item .review-header {
+            display: flex;
+            justify-content: space-between;
+            color: #777;
+            font-size: 12px;
+        }
+        .movie-page-container .review-item .review-text {
+            color: #ccc;
+            margin-top: 4px;
+            font-size: 14px;
+        }
+        .movie-page-container .review-item .review-rating {
+            color: #e8c84a;
+        }
     </style>
 </head>
 <body>
 
-<!-- ====== ОВЕРЛЕЙ ДЛЯ САЙДБАРА ====== -->
+<!-- ====== ОВЕРЛЕЙ ====== -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
 <!-- ====== САЙДБАР ====== -->
@@ -645,25 +666,18 @@
         <a class="nav-link" href="#" data-page="movies">
             <i class="fas fa-list"></i> Фильмы
         </a>
-        <a class="nav-link" href="#" data-page="admins" id="adminsTab" {% if not is_super %}style="display:none"{% endif %}>
+        <a class="nav-link" href="#" data-page="admins" id="adminsTab" {% if not is_admin %}style="display:none"{% endif %}>
             <i class="fas fa-users-cog"></i> Админы
         </a>
         <a class="nav-link" href="#" data-page="bans" id="bansTab" {% if not is_super %}style="display:none"{% endif %}>
             <i class="fas fa-ban"></i> Баны
         </a>
-        <a class="nav-link" href="#" data-page="users">
-            <i class="fas fa-users"></i> Пользователи
-        </a>
-        <a class="nav-link" href="/logout">
-            <i class="fas fa-sign-out-alt"></i> Выйти
-        </a>
     </nav>
 </div>
 
-<!-- ====== MAIN CONTENT ====== -->
+<!-- ====== MAIN ====== -->
 <div class="main-content">
 
-    <!-- TOP BAR -->
     <div class="top-bar">
         <div style="display:flex;align-items:center;gap:12px;">
             <button class="sidebar-toggle" onclick="toggleSidebar()">
@@ -742,17 +756,6 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-3">
-                <div class="stat-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="number" id="statUsers">{{ stats.users or 0 }}</div>
-                            <div class="label"><i class="fas fa-users"></i> Пользователей</div>
-                        </div>
-                        <div class="icon"><i class="fas fa-users"></i></div>
-                    </div>
-                </div>
-            </div>
         </div>
         <div class="mt-4 text-center text-secondary-light" style="font-weight:300;">
             <i class="fas fa-info-circle"></i> Управляйте фильмами и модерацией через меню
@@ -766,9 +769,11 @@
                 <i class="fas fa-search"></i>
                 <input type="text" class="form-control" id="movieSearch" placeholder="Поиск по коду или названию...">
             </div>
+            {% if is_admin %}
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMovieModal">
                 <i class="fas fa-plus"></i> Добавить фильм
             </button>
+            {% endif %}
         </div>
         <div class="table-container">
             <div class="table-responsive">
@@ -781,7 +786,9 @@
                             <th>Постер</th>
                             <th>Рейтинг</th>
                             <th>TPZ</th>
+                            {% if is_admin %}
                             <th>Действия</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody id="moviesBody">
@@ -852,28 +859,6 @@
         </div>
     </div>
 
-    <!-- ====== ПОЛЬЗОВАТЕЛИ ====== -->
-    <div id="page-users" style="display:none" class="fade-in">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 style="font-weight:300;color:#ccc;"><i class="fas fa-users"></i> Все пользователи</h5>
-        </div>
-        <div class="table-container">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th style="width:40px;"></th>
-                        <th>ID / Имя</th>
-                        <th>Роль</th>
-                        <th>Дата регистрации</th>
-                    </tr>
-                </thead>
-                <tbody id="usersBody">
-                    <tr><td colspan="4" class="text-center py-4 text-secondary-light">Загрузка...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
     <!-- ====== ПРОФИЛЬ ====== -->
     <div id="page-profile" style="display:none" class="fade-in">
         <div class="profile-card" id="profileCard">
@@ -925,66 +910,93 @@
         </div>
     </div>
 
-    <!-- ====== СТРАНИЦА НАСТРОЕК ====== -->
+    <!-- ====== СТРАНИЦА ФИЛЬМА ====== -->
+    <div id="page-movie" style="display:none" class="fade-in">
+        <div class="movie-page-container" id="moviePageContainer">
+            <div id="moviePageContent">
+                <div class="text-center py-4 text-secondary-light">Загрузка...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== НАСТРОЙКИ ====== -->
     <div id="page-settings" style="display:none" class="fade-in">
         <div class="profile-card" style="max-width:600px;">
             <h3 style="font-weight:300;color:#e8e8e8;"><i class="fas fa-cog"></i> Настройки</h3>
             <hr style="border-color:#2a2a2a;">
+
+            <h6 style="color:#999;font-weight:300;margin-bottom:15px;"><i class="fas fa-user"></i> Аккаунт</h6>
             <div class="mb-3">
-                <label class="form-label" style="color:#999;">Язык интерфейса</label>
-                <select class="form-control" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                    <option value="ru">Русский</option>
-                    <option value="en">English</option>
-                </select>
+                <label class="form-label" style="color:#999;">Имя</label>
+                <input type="text" class="form-control" id="settingsFirstName" placeholder="Ваше имя" value="{{ username or '' }}">
             </div>
             <div class="mb-3">
+                <label class="form-label" style="color:#999;">Юзернейм</label>
+                <input type="text" class="form-control" id="settingsUsername" placeholder="@username" value="">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" style="color:#999;">Ссылка на аватарку</label>
+                <input type="text" class="form-control" id="settingsPhotoUrl" placeholder="https://example.com/avatar.jpg" value="{{ photo_url or '' }}">
+            </div>
+            <button class="btn btn-primary" onclick="saveProfileSettings()">
+                <i class="fas fa-save"></i> Сохранить профиль
+            </button>
+
+            <hr style="border-color:#2a2a2a;margin-top:25px;">
+
+            <h6 style="color:#999;font-weight:300;margin-bottom:15px;"><i class="fas fa-palette"></i> Внешний вид</h6>
+            <div class="mb-3">
                 <label class="form-label" style="color:#999;">Тема</label>
-                <select class="form-control" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                <select class="form-control" id="settingsTheme" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
                     <option value="dark">Тёмная</option>
                     <option value="light">Светлая</option>
                 </select>
             </div>
             <div class="mb-3">
-                <label class="form-label" style="color:#999;">Уведомления</label>
-                <div style="display:flex;gap:20px;align-items:center;">
-                    <label style="color:#aaa;font-size:14px;">
-                        <input type="checkbox" checked> Email
-                    </label>
-                    <label style="color:#aaa;font-size:14px;">
-                        <input type="checkbox" checked> Telegram
-                    </label>
-                </div>
+                <label class="form-label" style="color:#999;">Язык</label>
+                <select class="form-control" id="settingsLanguage" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                    <option value="ru">Русский</option>
+                    <option value="en">English</option>
+                </select>
             </div>
-            <button class="btn btn-primary" onclick="showToast('Настройки сохранены!', 'success')">
-                <i class="fas fa-save"></i> Сохранить
+            <button class="btn btn-primary" onclick="saveAppSettings()">
+                <i class="fas fa-save"></i> Сохранить настройки
             </button>
         </div>
     </div>
 
-    <!-- ====== СТРАНИЦА ПОДДЕРЖКИ ====== -->
+    <!-- ====== ПОДДЕРЖКА ====== -->
     <div id="page-support" style="display:none" class="fade-in">
         <div class="profile-card" style="max-width:600px;">
             <h3 style="font-weight:300;color:#e8e8e8;"><i class="fas fa-headset"></i> Поддержка</h3>
             <hr style="border-color:#2a2a2a;">
-            <p style="color:#ccc;">Свяжитесь с нами для получения помощи:</p>
-            <div style="display:flex;flex-direction:column;gap:12px;">
-                <div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;padding:12px 16px;border-radius:10px;border:1px solid #2a2a2a;">
-                    <i class="fas fa-telegram" style="color:#0088cc;font-size:20px;"></i>
-                    <span style="color:#ccc;">@topzfilmz</span>
+            <p style="color:#ccc;font-size:14px;">Напишите нам, и мы ответим в ближайшее время.</p>
+            <div class="mb-3">
+                <label class="form-label" style="color:#999;">Тема</label>
+                <input type="text" class="form-control" id="supportSubject" placeholder="Кратко опишите проблему">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" style="color:#999;">Сообщение</label>
+                <textarea class="form-control" id="supportMessage" rows="4" placeholder="Опишите подробнее..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="sendSupport()">
+                <i class="fas fa-paper-plane"></i> Отправить
+            </button>
+            <hr style="border-color:#2a2a2a;margin-top:20px;">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;padding:10px 14px;border-radius:10px;border:1px solid #2a2a2a;">
+                    <i class="fas fa-telegram" style="color:#0088cc;font-size:18px;"></i>
+                    <span style="color:#ccc;font-size:13px;">@topzfilmz</span>
                 </div>
-                <div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;padding:12px 16px;border-radius:10px;border:1px solid #2a2a2a;">
-                    <i class="fas fa-envelope" style="color:#888;font-size:20px;"></i>
-                    <span style="color:#ccc;">support@topzfilmz.ru</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;padding:12px 16px;border-radius:10px;border:1px solid #2a2a2a;">
-                    <i class="fas fa-clock" style="color:#888;font-size:20px;"></i>
-                    <span style="color:#ccc;">Ответ в течение 24 часов</span>
+                <div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;padding:10px 14px;border-radius:10px;border:1px solid #2a2a2a;">
+                    <i class="fas fa-envelope" style="color:#888;font-size:18px;"></i>
+                    <span style="color:#ccc;font-size:13px;">support@topzfilmz.ru</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ====== СТРАНИЦА О НАС ====== -->
+    <!-- ====== О НАС ====== -->
     <div id="page-about" style="display:none" class="fade-in">
         <div class="profile-card" style="max-width:600px;">
             <h3 style="font-weight:300;color:#e8e8e8;"><i class="fas fa-info-circle"></i> О нас</h3>
@@ -999,9 +1011,7 @@
                 🔒 Безопасный вход через Telegram
             </p>
             <hr style="border-color:#2a2a2a;">
-            <p style="color:#666;font-size:13px;">
-                Версия 2.0.0
-            </p>
+            <p style="color:#666;font-size:13px;">Версия 2.0.0</p>
         </div>
     </div>
 </div>
@@ -1018,8 +1028,8 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label">Код (уникальный)</label>
-                    <input type="text" class="form-control" id="movieCode" placeholder="например: the-matrix">
+                    <label class="form-label">Код</label>
+                    <input type="text" class="form-control" id="movieCode" placeholder="the-matrix">
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Название</label>
@@ -1030,15 +1040,15 @@
                     <input type="number" class="form-control" id="movieYear" placeholder="1999">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Обложка (file_id или URL)</label>
+                    <label class="form-label">Обложка</label>
                     <input type="text" class="form-control" id="moviePoster" placeholder="https://example.com/poster.jpg">
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Описание</label>
-                    <textarea class="form-control" id="movieDescription" rows="3" placeholder="Краткое описание фильма..."></textarea>
+                    <textarea class="form-control" id="movieDescription" rows="3"></textarea>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Рейтинг (IMDb)</label>
+                    <label class="form-label">IMDb</label>
                     <input type="text" class="form-control" id="movieRating" placeholder="8.7">
                 </div>
             </div>
@@ -1059,30 +1069,12 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Код</label>
-                    <input type="text" class="form-control" id="editCode" disabled>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Название</label>
-                    <input type="text" class="form-control" id="editTitle">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Год</label>
-                    <input type="number" class="form-control" id="editYear">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Обложка (file_id или URL)</label>
-                    <input type="text" class="form-control" id="editPoster">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Описание</label>
-                    <textarea class="form-control" id="editDescription" rows="3"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Рейтинг (IMDb)</label>
-                    <input type="text" class="form-control" id="editRating" placeholder="8.7">
-                </div>
+                <div class="mb-3"><label class="form-label">Код</label><input type="text" class="form-control" id="editCode" disabled></div>
+                <div class="mb-3"><label class="form-label">Название</label><input type="text" class="form-control" id="editTitle"></div>
+                <div class="mb-3"><label class="form-label">Год</label><input type="number" class="form-control" id="editYear"></div>
+                <div class="mb-3"><label class="form-label">Обложка</label><input type="text" class="form-control" id="editPoster"></div>
+                <div class="mb-3"><label class="form-label">Описание</label><textarea class="form-control" id="editDescription" rows="3"></textarea></div>
+                <div class="mb-3"><label class="form-label">IMDb</label><input type="text" class="form-control" id="editRating"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -1101,10 +1093,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Telegram ID</label>
-                    <input type="number" class="form-control" id="adminIdInput" placeholder="123456789">
-                </div>
+                <div class="mb-3"><label class="form-label">Telegram ID</label><input type="number" class="form-control" id="adminIdInput"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -1123,18 +1112,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Telegram ID</label>
-                    <input type="number" class="form-control" id="banIdInput" placeholder="123456789">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Причина</label>
-                    <input type="text" class="form-control" id="banReasonInput" placeholder="Нарушение правил">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Срок (часов, 0 = навсегда)</label>
-                    <input type="number" class="form-control" id="banDurationInput" placeholder="24" value="24">
-                </div>
+                <div class="mb-3"><label class="form-label">Telegram ID</label><input type="number" class="form-control" id="banIdInput"></div>
+                <div class="mb-3"><label class="form-label">Причина</label><input type="text" class="form-control" id="banReasonInput"></div>
+                <div class="mb-3"><label class="form-label">Срок (часов)</label><input type="number" class="form-control" id="banDurationInput" value="24"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -1144,7 +1124,7 @@
     </div>
 </div>
 
-<!-- Модалка просмотра профиля -->
+<!-- Модалка профиля -->
 <div class="modal fade" id="profileModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -1176,8 +1156,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Тип</label>
+                <div class="mb-3"><label class="form-label">Тип</label>
                     <select class="form-control" id="punishType">
                         <option value="warning">⚠️ Выговор</option>
                         <option value="mute">🔇 Мут (1 день)</option>
@@ -1185,14 +1164,8 @@
                         <option value="permanent_ban">🚫 Перманентный бан</option>
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Причина</label>
-                    <input type="text" class="form-control" id="punishReason" placeholder="Нарушение правил">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Срок (часов)</label>
-                    <input type="number" class="form-control" id="punishDuration" placeholder="24" value="24">
-                </div>
+                <div class="mb-3"><label class="form-label">Причина</label><input type="text" class="form-control" id="punishReason"></div>
+                <div class="mb-3"><label class="form-label">Срок (часов)</label><input type="number" class="form-control" id="punishDuration" value="24"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -1201,33 +1174,6 @@
         </div>
     </div>
 </div>
-
-<!-- Модалка отзыва -->
-<div class="modal fade" id="reviewModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-star"></i> Оставить отзыв</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Оценка (1-10)</label>
-                    <input type="number" class="form-control" id="reviewRating" min="1" max="10" value="8">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Текст отзыва</label>
-                    <textarea class="form-control" id="reviewText" rows="3" placeholder="Ваш отзыв о фильме..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="saveReviewBtn">Оставить отзыв</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -1246,7 +1192,7 @@ function toggleSidebar() {
     document.getElementById('sidebarOverlay').classList.toggle('show');
 }
 
-// ==================== МЕНЮ ПОЛЬЗОВАТЕЛЯ ====================
+// ==================== МЕНЮ ====================
 function toggleDropdown() {
     document.getElementById('userDropdown').classList.toggle('show');
 }
@@ -1258,42 +1204,33 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// ==================== СТРАНИЦЫ ====================
+// ==================== НАВИГАЦИЯ ====================
 function showPage(page) {
     document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
     document.querySelector(`.sidebar .nav-link[data-page="${page}"]`)?.classList.add('active');
     document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
     const target = document.getElementById(`page-${page}`);
     if (target) target.style.display = 'block';
-    document.getElementById('pageTitle').textContent = {
+    const titles = {
         dashboard: 'Главная',
         movies: 'Управление фильмами',
         admins: 'Администраторы',
         bans: 'Забаненные',
-        users: 'Пользователи',
         profile: 'Мой профиль',
         settings: 'Настройки',
         support: 'Поддержка',
-        about: 'О нас'
-    }[page] || page;
+        about: 'О нас',
+        movie: 'Фильм'
+    };
+    document.getElementById('pageTitle').textContent = titles[page] || page;
+    if (window.innerWidth <= 768) toggleSidebar();
 }
 
-function showSettings() {
-    document.getElementById('userDropdown').classList.remove('show');
-    showPage('settings');
-}
+function showSettings() { document.getElementById('userDropdown').classList.remove('show'); showPage('settings'); }
+function showSupport() { document.getElementById('userDropdown').classList.remove('show'); showPage('support'); }
+function showAbout() { document.getElementById('userDropdown').classList.remove('show'); showPage('about'); }
+function showProfilePage() { document.getElementById('userDropdown').classList.remove('show'); showPage('profile'); loadProfile(CURRENT_USER); }
 
-function showSupport() {
-    document.getElementById('userDropdown').classList.remove('show');
-    showPage('support');
-}
-
-function showAbout() {
-    document.getElementById('userDropdown').classList.remove('show');
-    showPage('about');
-}
-
-// ==================== НАВИГАЦИЯ ====================
 document.querySelectorAll('.sidebar .nav-link[data-page]').forEach(link => {
     link.addEventListener('click', function(e) {
         e.preventDefault();
@@ -1302,10 +1239,8 @@ document.querySelectorAll('.sidebar .nav-link[data-page]').forEach(link => {
         if (page === 'movies') loadMovies();
         if (page === 'admins') loadAdmins();
         if (page === 'bans') loadBans();
-        if (page === 'users') loadUsers();
         if (page === 'dashboard') loadStats();
         if (page === 'profile') loadProfile(CURRENT_USER);
-        if (window.innerWidth <= 768) toggleSidebar();
     });
 });
 
@@ -1326,14 +1261,8 @@ async function apiRequest(url, options = {}) {
     return res;
 }
 
-// ==================== TOAST ====================
 function showToast(msg, type = 'info') {
-    const colors = {
-        success: '#2a5a2a',
-        danger: '#5a2a2a',
-        warning: '#5a4a2a',
-        info: '#2a3a5a'
-    };
+    const colors = { success: '#2a5a2a', danger: '#5a2a2a', warning: '#5a4a2a', info: '#2a3a5a' };
     const toast = document.createElement('div');
     toast.style.cssText = `
         position: fixed; bottom: 30px; right: 30px;
@@ -1366,7 +1295,6 @@ async function loadStats() {
         document.getElementById('statRequests').textContent = data.requests;
         document.getElementById('statAdmins').textContent = data.admins;
         document.getElementById('statBans').textContent = data.bans;
-        document.getElementById('statUsers').textContent = data.users || 0;
     } catch(e) { console.error(e); }
 }
 
@@ -1391,20 +1319,20 @@ function renderMovies(data) {
         return;
     }
     tbody.innerHTML = data.map(m => {
-        let actions = `
-            <button class="btn btn-warning btn-sm" onclick="event.stopPropagation();editMovie('${m.code}')" style="padding:3px 8px;font-size:11px;">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showMoviePage('${m.code}')" style="padding:3px 8px;font-size:11px;">
-                <i class="fas fa-eye"></i>
-            </button>
-        `;
-        if (IS_SUPER) {
-            actions += `
-                <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteMovie('${m.code}')" style="padding:3px 8px;font-size:11px;">
-                    <i class="fas fa-trash"></i>
+        let actions = '';
+        if (IS_ADMIN) {
+            actions = `
+                <button class="btn btn-warning btn-sm" onclick="event.stopPropagation();editMovie('${m.code}')" style="padding:3px 8px;font-size:11px;">
+                    <i class="fas fa-edit"></i>
                 </button>
             `;
+            if (IS_SUPER) {
+                actions += `
+                    <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteMovie('${m.code}')" style="padding:3px 8px;font-size:11px;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+            }
         }
         return `
             <tr class="clickable-row" onclick="showMoviePage('${m.code}')">
@@ -1416,7 +1344,7 @@ function renderMovies(data) {
                 </td>
                 <td><i class="fas fa-star" style="color:#e8c84a;"></i> ${m.rating || '-'}</td>
                 <td>${m.tpz ? `<i class="fas fa-star" style="color:#e8c84a;"></i> ${m.tpz}` : '-'}</td>
-                <td style="white-space:nowrap;">${actions}</td>
+                ${IS_ADMIN ? `<td style="white-space:nowrap;">${actions}</td>` : ''}
             </tr>
         `;
     }).join('');
@@ -1424,9 +1352,7 @@ function renderMovies(data) {
 
 document.getElementById('movieSearch')?.addEventListener('input', function() {
     const q = this.value.toLowerCase();
-    const filtered = moviesData.filter(m => 
-        m.code.toLowerCase().includes(q) || m.title.toLowerCase().includes(q)
-    );
+    const filtered = moviesData.filter(m => m.code.toLowerCase().includes(q) || m.title.toLowerCase().includes(q));
     renderMovies(filtered);
 });
 
@@ -1440,23 +1366,12 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
         description: document.getElementById('movieDescription').value.trim(),
         rating: document.getElementById('movieRating').value.trim()
     };
-    
     for (let key in data) {
-        if (!data[key] && key !== 'year') {
-            showToast('⚠️ Заполните все поля', 'warning');
-            return;
-        }
-        if (key === 'year' && isNaN(data[key])) {
-            showToast('⚠️ Год должен быть числом', 'warning');
-            return;
-        }
+        if (!data[key] && key !== 'year') { showToast('⚠️ Заполните все поля', 'warning'); return; }
+        if (key === 'year' && isNaN(data[key])) { showToast('⚠️ Год должен быть числом', 'warning'); return; }
     }
-    
     try {
-        const res = await apiRequest('/api/movies', {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
+        const res = await apiRequest('/api/movies', { method: 'POST', body: JSON.stringify(data) });
         if (res.ok) {
             bootstrap.Modal.getInstance(document.getElementById('addMovieModal')).hide();
             document.getElementById('movieCode').value = '';
@@ -1465,19 +1380,15 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
             document.getElementById('moviePoster').value = '';
             document.getElementById('movieDescription').value = '';
             document.getElementById('movieRating').value = '';
-            loadMovies();
-            loadStats();
+            loadMovies(); loadStats();
             showToast('✅ Фильм добавлен', 'success');
         } else {
             const err = await res.json();
             showToast('❌ ' + (err.detail || 'Ошибка'), 'danger');
         }
-    } catch(e) {
-        showToast('❌ Ошибка соединения', 'danger');
-    }
+    } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
 });
 
-// Редактирование
 async function editMovie(code) {
     try {
         const res = await apiRequest(`/api/movies/${code}`);
@@ -1502,22 +1413,15 @@ document.getElementById('updateMovieBtn')?.addEventListener('click', async funct
         rating: document.getElementById('editRating').value
     };
     try {
-        const res = await apiRequest(`/api/movies/${code}`, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
+        const res = await apiRequest(`/api/movies/${code}`, { method: 'PUT', body: JSON.stringify(data) });
         if (res.ok) {
             bootstrap.Modal.getInstance(document.getElementById('editMovieModal')).hide();
-            loadMovies();
-            loadStats();
+            loadMovies(); loadStats();
             showToast('✅ Обновлено', 'success');
-        } else {
-            showToast('❌ Ошибка', 'danger');
-        }
+        } else { showToast('❌ Ошибка', 'danger'); }
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 });
 
-// Удаление
 async function deleteMovie(code) {
     if (!confirm(`Удалить фильм "${code}"?`)) return;
     try {
@@ -1535,17 +1439,16 @@ async function showMoviePage(code) {
         const reviewsRes = await apiRequest(`/api/movies/${code}/reviews`);
         const reviews = await reviewsRes.json();
         
-        const body = document.getElementById('profileModalBody');
         let reviewsHtml = '';
         if (reviews && reviews.length) {
-            reviewsHtml = reviews.slice(0, 5).map(r => `
-                <div class="review-item" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px 14px;margin-bottom:8px;">
-                    <div style="display:flex;justify-content:space-between;color:#777;font-size:11px;">
+            reviewsHtml = reviews.map(r => `
+                <div class="review-item">
+                    <div class="review-header">
                         <span><i class="fas fa-user"></i> ${r.user_id}</span>
-                        <span style="color:#e8c84a;"><i class="fas fa-star"></i> ${r.rating}/10</span>
+                        <span class="review-rating"><i class="fas fa-star"></i> ${r.rating}/10</span>
                         ${IS_SUPER ? `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteReview(${r.id}, '${code}')" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i></button>` : ''}
                     </div>
-                    <div style="color:#ccc;margin-top:4px;font-size:13px;">${r.text || ''}</div>
+                    <div class="review-text">${r.text || ''}</div>
                     <div style="color:#777;font-size:10px;margin-top:4px;">${new Date(r.created_at).toLocaleString()}</div>
                 </div>
             `).join('');
@@ -1553,29 +1456,27 @@ async function showMoviePage(code) {
             reviewsHtml = '<p class="text-secondary-light text-center py-3">Нет отзывов</p>';
         }
         
-        body.innerHTML = `
+        const container = document.getElementById('moviePageContent');
+        container.innerHTML = `
             <div class="text-center">
-                ${m.poster ? `<img src="${m.poster}" style="max-width:180px;border-radius:10px;border:1px solid #333;margin-bottom:14px;">` : ''}
-                <h3 style="font-weight:300;color:#e8e8e8;">${m.title} (${m.year})</h3>
+                ${m.poster ? `<img src="${m.poster}" class="movie-poster-large" onerror="this.style.display='none'">` : ''}
+                <h3 style="font-weight:300;color:#e8e8e8;margin-top:15px;">${m.title} (${m.year})</h3>
                 <p class="text-secondary-light"><i class="fas fa-star" style="color:#e8c84a;"></i> IMDb: ${m.rating || '-'}</p>
                 <p class="text-secondary-light"><i class="fas fa-star" style="color:#e8c84a;"></i> TPZ: ${m.tpz || '-'} (${m.votes || 0} оценок)</p>
-                <p style="color:#bbb;">${m.description || 'Нет описания'}</p>
+                <p style="color:#bbb;max-width:600px;margin:10px auto;">${m.description || 'Нет описания'}</p>
                 <hr style="border-color:#2a2a2a;">
                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                    <button class="btn btn-warning btn-sm" onclick="editMovie('${m.code}');bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();">
-                        <i class="fas fa-edit"></i> Редактировать
-                    </button>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#reviewModal" onclick="setReviewMovie('${m.code}')">
-                        <i class="fas fa-star"></i> Отзыв
-                    </button>
+                    ${IS_ADMIN ? `<button class="btn btn-warning btn-sm" onclick="editMovie('${m.code}')"><i class="fas fa-edit"></i> Редактировать</button>` : ''}
+                    ${IS_ADMIN ? `<button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#reviewModal" onclick="setReviewMovie('${m.code}')"><i class="fas fa-star"></i> Отзыв</button>` : ''}
+                    <button class="btn btn-secondary btn-sm" onclick="showPage('movies')"><i class="fas fa-arrow-left"></i> Назад</button>
                 </div>
                 <hr style="border-color:#2a2a2a;">
                 <h6 style="font-weight:300;color:#999;"><i class="fas fa-comments"></i> Отзывы (${reviews ? reviews.length : 0})</h6>
                 <div id="movieReviews">${reviewsHtml}</div>
             </div>
         `;
-        document.getElementById('profileModalName').textContent = `🎬 ${m.title}`;
-        new bootstrap.Modal(document.getElementById('profileModal')).show();
+        document.getElementById('pageTitle').textContent = `🎬 ${m.title}`;
+        showPage('movie');
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
@@ -1609,9 +1510,7 @@ document.getElementById('saveReviewBtn')?.addEventListener('click', async functi
             showToast('✅ Отзыв добавлен', 'success');
             if (currentReviewMovieCode) showMoviePage(currentReviewMovieCode);
             loadMovies();
-        } else {
-            showToast('❌ Ошибка', 'danger');
-        }
+        } else { showToast('❌ Ошибка', 'danger'); }
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 });
 
@@ -1626,22 +1525,17 @@ async function loadAdmins() {
             return;
         }
         tbody.innerHTML = data.map(a => {
-            let actions = `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showProfileModal(${a.user_id})"><i class="fas fa-eye"></i></button>`;
+            let actions = '';
             if (IS_SUPER) {
-                actions += `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeAdmin(${a.user_id})"><i class="fas fa-user-minus"></i></button>`;
+                actions = `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeAdmin(${a.user_id})"><i class="fas fa-user-minus"></i></button>`;
             }
             return `
                 <tr class="clickable-row" onclick="showProfileModal(${a.user_id})">
-                    <td>
-                        <img src="${a.photo_url || 'https://ui-avatars.com/api/?name=' + a.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'">
-                    </td>
-                    <td>
-                        <div style="font-weight:400;color:#ddd;">${a.username || 'Пользователь'}</div>
-                        <div style="font-size:11px;color:#666;"><code>${a.user_id}</code></div>
-                    </td>
+                    <td><img src="${a.photo_url || 'https://ui-avatars.com/api/?name=' + a.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'"></td>
+                    <td><div style="font-weight:400;color:#ddd;">${a.username || 'Пользователь'}</div><div style="font-size:11px;color:#666;"><code>${a.user_id}</code></div></td>
                     <td>${a.movies_count || 0}</td>
                     <td><span class="${(a.warns || 0) >= 3 ? 'text-danger' : 'text-secondary-light'}">${a.warns || 0}/3</span></td>
-                    <td style="white-space:nowrap;">${actions}</td>
+                    ${IS_SUPER ? `<td style="white-space:nowrap;">${actions}</td>` : ''}
                 </tr>
             `;
         }).join('');
@@ -1652,19 +1546,13 @@ document.getElementById('saveAdminBtn')?.addEventListener('click', async functio
     const user_id = parseInt(document.getElementById('adminIdInput').value);
     if (!user_id) return showToast('⚠️ Введите ID', 'warning');
     try {
-        const res = await apiRequest('/api/admins', {
-            method: 'POST',
-            body: JSON.stringify({ user_id })
-        });
+        const res = await apiRequest('/api/admins', { method: 'POST', body: JSON.stringify({ user_id }) });
         if (res.ok) {
             bootstrap.Modal.getInstance(document.getElementById('addAdminModal')).hide();
             document.getElementById('adminIdInput').value = '';
-            loadAdmins();
-            loadStats();
+            loadAdmins(); loadStats();
             showToast('✅ Админ добавлен', 'success');
-        } else {
-            showToast('❌ Ошибка', 'danger');
-        }
+        } else { showToast('❌ Ошибка', 'danger'); }
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 });
 
@@ -1672,8 +1560,7 @@ async function removeAdmin(user_id) {
     if (!confirm(`Снять админа ${user_id}?`)) return;
     try {
         await apiRequest(`/api/admins/${user_id}`, { method: 'DELETE' });
-        loadAdmins();
-        loadStats();
+        loadAdmins(); loadStats();
         showToast('✅ Снят', 'success');
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
@@ -1689,22 +1576,17 @@ async function loadBans() {
             return;
         }
         tbody.innerHTML = data.map(b => {
-            let actions = `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showProfileModal(${b.user_id})"><i class="fas fa-eye"></i></button>`;
+            let actions = '';
             if (IS_SUPER) {
-                actions += `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();unbanUser(${b.user_id})"><i class="fas fa-user-check"></i></button>`;
+                actions = `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();unbanUser(${b.user_id})"><i class="fas fa-user-check"></i></button>`;
             }
             return `
                 <tr class="clickable-row" onclick="showProfileModal(${b.user_id})">
-                    <td>
-                        <img src="${b.photo_url || 'https://ui-avatars.com/api/?name=' + b.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'">
-                    </td>
-                    <td>
-                        <div style="font-weight:400;color:#ddd;">${b.username || 'Пользователь'}</div>
-                        <div style="font-size:11px;color:#666;"><code>${b.user_id}</code></div>
-                    </td>
+                    <td><img src="${b.photo_url || 'https://ui-avatars.com/api/?name=' + b.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'"></td>
+                    <td><div style="font-weight:400;color:#ddd;">${b.username || 'Пользователь'}</div><div style="font-size:11px;color:#666;"><code>${b.user_id}</code></div></td>
                     <td>${b.reason || '-'}</td>
                     <td>${b.expires_at ? new Date(b.expires_at).toLocaleString() : 'Навсегда'}</td>
-                    <td style="white-space:nowrap;">${actions}</td>
+                    ${IS_SUPER ? `<td style="white-space:nowrap;">${actions}</td>` : ''}
                 </tr>
             `;
         }).join('');
@@ -1725,8 +1607,7 @@ document.getElementById('saveBanBtn')?.addEventListener('click', async function(
             bootstrap.Modal.getInstance(document.getElementById('addBanModal')).hide();
             document.getElementById('banIdInput').value = '';
             document.getElementById('banReasonInput').value = '';
-            loadBans();
-            loadStats();
+            loadBans(); loadStats();
             showToast('✅ Забанен', 'success');
         } else {
             const err = await res.json();
@@ -1739,48 +1620,12 @@ async function unbanUser(user_id) {
     if (!confirm(`Разбанить ${user_id}?`)) return;
     try {
         await apiRequest(`/api/bans/${user_id}`, { method: 'DELETE' });
-        loadBans();
-        loadStats();
+        loadBans(); loadStats();
         showToast('✅ Разбанен', 'success');
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-// ==================== ПОЛЬЗОВАТЕЛИ ====================
-async function loadUsers() {
-    try {
-        const res = await apiRequest('/api/users');
-        const data = await res.json();
-        const tbody = document.getElementById('usersBody');
-        if (!data || !data.length) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary-light"><i class="fas fa-users"></i> Пользователей пока нет</td></tr>';
-            return;
-        }
-        tbody.innerHTML = data.map(u => {
-            const role = u.is_admin ? (u.user_id == CURRENT_USER && IS_SUPER ? '⭐ Суперадмин' : '👑 Админ') : '👤 Пользователь';
-            return `
-                <tr class="clickable-row" onclick="showProfileModal(${u.user_id})">
-                    <td>
-                        <img src="${u.photo_url || 'https://ui-avatars.com/api/?name=' + u.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'">
-                    </td>
-                    <td>
-                        <div style="font-weight:400;color:#ddd;">${u.username || 'Пользователь'}</div>
-                        <div style="font-size:11px;color:#666;"><code>${u.user_id}</code></div>
-                    </td>
-                    <td>${role}</td>
-                    <td>${u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>
-                </tr>
-            `;
-        }).join('');
-    } catch(e) { console.error(e); }
-}
-
 // ==================== ПРОФИЛЬ ====================
-function showProfilePage() {
-    document.getElementById('userDropdown').classList.remove('show');
-    showPage('profile');
-    loadProfile(CURRENT_USER);
-}
-
 async function loadProfile(user_id) {
     try {
         const res = await apiRequest(`/api/profile/${user_id}`);
@@ -1797,7 +1642,6 @@ async function loadProfile(user_id) {
         }
         document.getElementById('topBarName').textContent = data.username || `Пользователь ${user_id}`;
         
-        // История наказаний
         const history = document.getElementById('pHistory');
         if (!data.punishments || !data.punishments.length) {
             history.innerHTML = '<p class="text-secondary-light text-center py-3"><i class="fas fa-history"></i> Нет наказаний</p>';
@@ -1816,10 +1660,7 @@ async function loadProfile(user_id) {
                 </div>
             `).join('');
         }
-        
-        // Комментарии
         loadProfileComments(user_id);
-        
     } catch(e) { console.error(e); }
 }
 
@@ -1830,6 +1671,7 @@ async function showProfileModal(user_id) {
         const res = await apiRequest(`/api/profile/${user_id}`);
         const data = await res.json();
         const body = document.getElementById('profileModalBody');
+        const isSuperAdmin = data.is_super_admin || data.user_id === CURRENT_USER && IS_SUPER;
         body.innerHTML = `
             <div class="text-center">
                 <img src="${data.photo_url || 'https://ui-avatars.com/api/?name=' + user_id + '&background=2a2a2a&color=cccccc&size=80&rounded=true'}" class="avatar-lg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23222%22 width=%2280%22 height=%2280%22/%3E%3Ctext x=%2240%22 y=%2248%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2232%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
@@ -1839,33 +1681,28 @@ async function showProfileModal(user_id) {
                 ${data.is_banned ? '<span class="badge-active" style="margin-left:8px;"><i class="fas fa-ban"></i> Забанен</span>' : ''}
                 <hr style="border-color:#2a2a2a;">
                 <div class="row g-3 text-center">
-                    <div class="col-4">
-                        <div class="stat-item" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px;">
-                            <div class="num" style="font-size:20px;font-weight:300;color:#e8e8e8;">${data.movies_count || 0}</div>
-                            <div class="lbl" style="color:#777;font-size:11px;"><i class="fas fa-film"></i> Фильмов</div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="stat-item" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px;">
-                            <div class="num warn" style="font-size:20px;font-weight:300;color:#cc8888;">${data.warns || 0}</div>
-                            <div class="lbl" style="color:#777;font-size:11px;"><i class="fas fa-exclamation-triangle"></i> Выговоров</div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="stat-item" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px;">
-                            <div class="num ok" style="font-size:20px;font-weight:300;color:#88cc88;">${data.total_punishments || 0}</div>
-                            <div class="lbl" style="color:#777;font-size:11px;"><i class="fas fa-gavel"></i> Наказаний</div>
-                        </div>
-                    </div>
+                    <div class="col-4"><div class="stat-item"><div class="num">${data.movies_count || 0}</div><div class="lbl"><i class="fas fa-film"></i> Фильмов</div></div></div>
+                    <div class="col-4"><div class="stat-item"><div class="num warn">${data.warns || 0}</div><div class="lbl"><i class="fas fa-exclamation-triangle"></i> Выговоров</div></div></div>
+                    <div class="col-4"><div class="stat-item"><div class="num ok">${data.total_punishments || 0}</div><div class="lbl"><i class="fas fa-gavel"></i> Наказаний</div></div></div>
                 </div>
+                ${IS_SUPER ? `
+                    <div class="mt-3">
+                        <label style="color:#999;font-size:12px;">Роль</label>
+                        <select class="form-control" id="roleSelect_${user_id}" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;"
+                            onchange="updateRole(${user_id}, this.value)">
+                            <option value="user" ${!data.is_admin ? 'selected' : ''}>👤 Пользователь</option>
+                            <option value="admin" ${data.is_admin && !data.is_super_admin ? 'selected' : ''}>👑 Админ</option>
+                            <option value="super_admin" ${data.is_super_admin ? 'selected' : ''}>⭐ Суперадмин</option>
+                        </select>
+                    </div>
+                ` : ''}
                 <h6 class="mt-4" style="font-weight:300;color:#999;"><i class="fas fa-history"></i> История наказаний</h6>
                 <div id="modalHistory">
-                    ${!data.punishments || !data.punishments.length ? '<p class="text-secondary-light text-center py-3">Нет наказаний</p>' : data.punishments.map(p => `
+                    ${!data.punishments || !data.punishments.length ? '<p class="text-secondary-light text-center py-3">Нет наказаний</p>' :
+                    data.punishments.map(p => `
                         <div class="punishment-item ${p.resolved ? 'resolved' : ''}">
-                            <div class="p-header">
-                                <span>${p.type === 'warning' ? '⚠️' : p.type === 'mute' ? '🔇' : '🚫'} ${p.type}</span>
-                                <span>${p.resolved ? '<span class="badge-resolved"><i class="fas fa-check"></i> Снято</span>' : p.expires_at ? `<span class="badge-active"><i class="fas fa-clock"></i> до ${new Date(p.expires_at).toLocaleString()}</span>` : '<span class="badge-active"><i class="fas fa-circle"></i> Активно</span>'}</span>
-                            </div>
+                            <div class="p-header"><span>${p.type === 'warning' ? '⚠️' : p.type === 'mute' ? '🔇' : '🚫'} ${p.type}</span>
+                            <span>${p.resolved ? '<span class="badge-resolved"><i class="fas fa-check"></i> Снято</span>' : p.expires_at ? `<span class="badge-active"><i class="fas fa-clock"></i> до ${new Date(p.expires_at).toLocaleString()}</span>` : '<span class="badge-active"><i class="fas fa-circle"></i> Активно</span>'}</span></div>
                             <div class="p-reason">${p.reason || 'Без причины'}</div>
                             <div class="text-secondary-light" style="font-size:11px;">
                                 <i class="fas fa-user"></i> Выдал: ${p.issued_by || 'Система'} · ${new Date(p.created_at).toLocaleString()}
@@ -1875,29 +1712,35 @@ async function showProfileModal(user_id) {
                     `).join('')}
                 </div>
                 <h6 class="mt-4" style="font-weight:300;color:#999;"><i class="fas fa-comments"></i> Комментарии</h6>
-                <div id="modalComments">
-                    <p class="text-secondary-light text-center py-3">Нет комментариев</p>
-                </div>
+                <div id="modalComments"><p class="text-secondary-light text-center py-3">Нет комментариев</p></div>
                 <div class="comment-input-area">
                     <input type="text" id="modalCommentInput" placeholder="Написать комментарий...">
-                    <button class="btn btn-primary btn-sm" onclick="addModalComment()">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="addModalComment()"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         `;
         document.getElementById('profileModalName').textContent = `👤 ${data.username || 'Пользователь'}`;
-        
         const punishBtn = document.getElementById('punishBtn');
         if (IS_SUPER && user_id != CURRENT_USER) {
             punishBtn.style.display = 'inline-block';
         } else {
             punishBtn.style.display = 'none';
         }
-        
         new bootstrap.Modal(document.getElementById('profileModal')).show();
         loadModalComments(user_id);
-        
+    } catch(e) { showToast('❌ Ошибка', 'danger'); }
+}
+
+async function updateRole(user_id, role) {
+    try {
+        const res = await apiRequest('/api/roles', { method: 'POST', body: JSON.stringify({ user_id, role }) });
+        if (res.ok) {
+            showToast('✅ Роль обновлена', 'success');
+            loadAdmins();
+            if (document.getElementById('profileModal').classList.contains('show')) {
+                showProfileModal(user_id);
+            }
+        }
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
@@ -1970,9 +1813,7 @@ async function addProfileComment() {
             input.value = '';
             showToast('✅ Комментарий добавлен', 'success');
             loadProfileComments(CURRENT_USER);
-        } else {
-            showToast('❌ Ошибка', 'danger');
-        }
+        } else { showToast('❌ Ошибка', 'danger'); }
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
@@ -1990,9 +1831,7 @@ async function addModalComment() {
             showToast('✅ Комментарий добавлен', 'success');
             loadModalComments(currentProfileUserId);
             if (currentProfileUserId === CURRENT_USER) loadProfileComments(currentProfileUserId);
-        } else {
-            showToast('❌ Ошибка', 'danger');
-        }
+        } else { showToast('❌ Ошибка', 'danger'); }
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
@@ -2009,10 +1848,8 @@ document.getElementById('savePunishBtn')?.addEventListener('click', async functi
     const type = document.getElementById('punishType').value;
     const reason = document.getElementById('punishReason').value.trim();
     const duration = parseInt(document.getElementById('punishDuration').value) || 0;
-    
     if (!user_id) return showToast('❌ Ошибка', 'danger');
     if (!reason) return showToast('⚠️ Укажите причину', 'warning');
-    
     try {
         const res = await apiRequest('/api/punish', {
             method: 'POST',
@@ -2027,8 +1864,7 @@ document.getElementById('savePunishBtn')?.addEventListener('click', async functi
                 showProfileModal(currentProfileUserId);
             }
             if (type === 'ban' || type === 'permanent_ban') loadBans();
-            loadAdmins();
-            loadStats();
+            loadAdmins(); loadStats();
         } else {
             const err = await res.json();
             showToast('❌ ' + (err.detail || 'Ошибка'), 'danger');
@@ -2036,17 +1872,88 @@ document.getElementById('savePunishBtn')?.addEventListener('click', async functi
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 });
 
+// ==================== НАСТРОЙКИ ====================
+function loadSettings() {
+    const theme = localStorage.getItem('theme') || 'dark';
+    const lang = localStorage.getItem('lang') || 'ru';
+    document.getElementById('settingsTheme').value = theme;
+    document.getElementById('settingsLanguage').value = lang;
+    applyTheme(theme);
+}
+
+function applyTheme(theme) {
+    if (theme === 'light') {
+        document.body.style.background = '#f5f5f5';
+        document.body.style.color = '#222';
+        document.querySelectorAll('.stat-card, .table-container, .profile-card, .movie-page-container, .top-bar, .sidebar, .modal-content').forEach(el => {
+            el.style.background = '#fff';
+            el.style.color = '#222';
+            el.style.borderColor = '#ddd';
+        });
+    } else {
+        document.body.style.background = '#0d0d0d';
+        document.body.style.color = '#d4d4d4';
+        document.querySelectorAll('.stat-card, .table-container, .profile-card, .movie-page-container, .top-bar, .sidebar, .modal-content').forEach(el => {
+            el.style.background = '';
+            el.style.color = '';
+            el.style.borderColor = '';
+        });
+    }
+}
+
+function saveAppSettings() {
+    const theme = document.getElementById('settingsTheme').value;
+    const lang = document.getElementById('settingsLanguage').value;
+    localStorage.setItem('theme', theme);
+    localStorage.setItem('lang', lang);
+    applyTheme(theme);
+    showToast('✅ Настройки сохранены', 'success');
+}
+
+async function saveProfileSettings() {
+    const first_name = document.getElementById('settingsFirstName').value.trim();
+    const username = document.getElementById('settingsUsername').value.trim();
+    const photo_url = document.getElementById('settingsPhotoUrl').value.trim();
+    try {
+        const res = await apiRequest(`/api/profile/${CURRENT_USER}`, {
+            method: 'PUT',
+            body: JSON.stringify({ first_name, username, photo_url })
+        });
+        if (res.ok) {
+            showToast('✅ Профиль обновлён', 'success');
+            location.reload();
+        } else { showToast('❌ Ошибка', 'danger'); }
+    } catch(e) { showToast('❌ Ошибка', 'danger'); }
+}
+
+// ==================== ПОДДЕРЖКА ====================
+async function sendSupport() {
+    const subject = document.getElementById('supportSubject').value.trim();
+    const message = document.getElementById('supportMessage').value.trim();
+    if (!subject) return showToast('⚠️ Укажите тему', 'warning');
+    if (!message) return showToast('⚠️ Напишите сообщение', 'warning');
+    try {
+        const res = await apiRequest('/api/support', {
+            method: 'POST',
+            body: JSON.stringify({ subject, message })
+        });
+        if (res.ok) {
+            showToast('✅ Сообщение отправлено!', 'success');
+            document.getElementById('supportSubject').value = '';
+            document.getElementById('supportMessage').value = '';
+        } else { showToast('❌ Ошибка', 'danger'); }
+    } catch(e) { showToast('❌ Ошибка', 'danger'); }
+}
+
 // ==================== ЗАГРУЗКА ====================
 loadStats();
 loadMovies();
+loadSettings();
 
-// Проверка, может уже авторизован
 fetch('/api/check-auth', { credentials: 'same-origin' })
     .then(res => res.json())
     .then(data => {
-        if (!data.authenticated) {
-            window.location.href = '/';
-        }
+        if (!data.authenticated) window.location.href = '/';
     })
     .catch(() => {});
 </script>
