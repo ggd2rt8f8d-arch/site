@@ -103,6 +103,21 @@
             color: #ff6b6b;
             font-size: 13px;
         }
+        .debug-info {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-top: 12px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            text-align: left;
+            font-family: monospace;
+            word-break: break-all;
+            display: none;
+        }
+        .debug-info.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -133,29 +148,50 @@
         <div class="footer-text">
             <i class="fas fa-shield-alt"></i> Безопасный вход через Telegram
         </div>
+
+        <div class="debug-info show" id="debugInfo">
+            <div id="debugContent">Загрузка...</div>
+        </div>
     </div>
 
     <script>
         // ============================================================
-        // ПЕРЕМЕННЫЕ
+        // ПЕРЕМЕННЫЕ ИЗ ШАБЛОНА
         // ============================================================
         const BOT_TOKEN = '{{ BOT_TOKEN }}';
         const BOT_ID = '{{ BOT_ID }}';
         
+        // Отладка
+        const debugInfo = document.getElementById('debugInfo');
+        const debugContent = document.getElementById('debugContent');
+        
+        function logDebug(msg) {
+            debugInfo.classList.add('show');
+            debugContent.innerHTML += msg + '<br>';
+            console.log('🐛', msg);
+        }
+
+        logDebug('🔑 BOT_TOKEN: ' + (BOT_TOKEN ? BOT_TOKEN.substring(0, 20) + '...' : '❌ НЕ УСТАНОВЛЕН'));
+        logDebug('🔑 BOT_ID: ' + (BOT_ID || '❌ НЕ УСТАНОВЛЕН'));
+        logDebug('🌐 Origin: ' + window.location.origin);
+
+        // ============================================================
+        // ОПРЕДЕЛЯЕМ BOT_ID
+        // ============================================================
         let botId = BOT_ID && BOT_ID !== 'None' ? BOT_ID : null;
-        if (!botId && BOT_TOKEN && BOT_TOKEN !== 'None') {
+        if (!botId && BOT_TOKEN && BOT_TOKEN !== 'None' && BOT_TOKEN !== '') {
             botId = BOT_TOKEN.split(':')[0];
         }
         
-        console.log('🔑 Bot ID:', botId);
-        console.log('🌐 Origin:', window.location.origin);
-        console.log('📝 BOT_TOKEN:', BOT_TOKEN ? '✅ установлен' : '❌ не установлен');
+        logDebug('🔑 Итоговый Bot ID: ' + (botId || '❌ НЕ НАЙДЕН'));
 
         // ============================================================
         // ГЛОБАЛЬНАЯ ФУНКЦИЯ — её вызывает Telegram Widget
         // ============================================================
         window.onTelegramAuth = function(user) {
-            console.log('✅ Авторизация через Telegram:', user);
+            logDebug('✅ onTelegramAuth вызван!');
+            logDebug('👤 User ID: ' + user.id);
+            logDebug('👤 Username: ' + (user.username || 'нет'));
             
             document.getElementById('successMsg').style.display = 'block';
             document.getElementById('successText').textContent = 'Авторизация успешна! Перенаправление...';
@@ -178,29 +214,29 @@
                 })
             })
             .then(response => {
+                logDebug('📥 Ответ сервера: ' + response.status);
                 if (!response.ok) {
                     return response.json().then(err => { throw new Error(err.error || 'Ошибка сервера'); });
                 }
                 return response.json();
             })
             .then(data => {
+                logDebug('📦 Данные: ' + JSON.stringify(data));
                 if (data.success) {
+                    logDebug('✅ Перенаправление на /dashboard');
                     window.location.href = '/dashboard';
                 } else {
                     document.getElementById('errorBox').classList.add('show');
                     document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (data.error || 'Ошибка авторизации');
                     document.getElementById('successMsg').style.display = 'none';
-                    document.getElementById('telegramWidget').innerHTML = '';
-                    loadTelegramWidget();
+                    logDebug('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
                 }
             })
             .catch((err) => {
-                console.error('❌ Ошибка:', err);
+                logDebug('❌ Исключение: ' + err.message);
                 document.getElementById('errorBox').classList.add('show');
                 document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (err.message || 'Ошибка соединения с сервером');
                 document.getElementById('successMsg').style.display = 'none';
-                document.getElementById('telegramWidget').innerHTML = '';
-                loadTelegramWidget();
             });
         };
 
@@ -211,15 +247,20 @@
             const container = document.getElementById('telegramWidget');
             
             if (!botId || botId === 'None' || botId === '') {
+                logDebug('❌ Bot ID не найден!');
                 container.innerHTML = `
                     <div style="color:rgba(255,255,255,0.5);font-size:14px;padding:20px;">
                         <i class="fas fa-exclamation-triangle"></i> BOT_ID не настроен
+                        <br>
+                        <small style="font-size:12px;color:rgba(255,255,255,0.3);">
+                            Добавьте переменную BOT_ID в Railway
+                        </small>
                     </div>
                 `;
                 return;
             }
 
-            console.log('📡 Загрузка встроенного виджета...');
+            logDebug('📡 Загрузка встроенного виджета с bot_id=' + botId);
 
             // Создаём скрипт виджета
             const script = document.createElement('script');
@@ -233,7 +274,7 @@
             script.async = true;
             
             script.onerror = function() {
-                console.error('❌ Ошибка загрузки виджета');
+                logDebug('❌ Ошибка загрузки виджета');
                 container.innerHTML = `
                     <div style="color:rgba(255,255,255,0.5);font-size:14px;padding:10px;">
                         <i class="fas fa-exclamation-triangle"></i> Не удалось загрузить виджет
@@ -248,10 +289,10 @@
             container.innerHTML = '';
             container.appendChild(script);
             
-            // Таймаут на случай, если виджет не загрузился
+            // Таймаут
             setTimeout(() => {
                 if (container.querySelector('iframe') === null) {
-                    console.warn('⚠️ Виджет не загрузился за 5 секунд');
+                    logDebug('⚠️ Виджет не загрузился за 5 секунд');
                     container.innerHTML = `
                         <div style="color:rgba(255,255,255,0.5);font-size:14px;padding:10px;">
                             <i class="fas fa-exclamation-triangle"></i> Виджет не загрузился
@@ -269,18 +310,24 @@
         // ЗАПУСК
         // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
-            // Проверяем, может уже авторизован
+            logDebug('✅ Страница загружена');
+            
+            // Проверяем авторизацию
             fetch('/api/check-auth', { credentials: 'same-origin' })
                 .then(res => res.json())
                 .then(data => {
                     if (data.authenticated) {
+                        logDebug('✅ Уже авторизован! Перенаправление...');
                         window.location.href = '/dashboard';
+                    } else {
+                        logDebug('⏳ Не авторизован, загружаем виджет');
+                        setTimeout(loadTelegramWidget, 500);
                     }
                 })
-                .catch(() => {});
-            
-            // Загружаем виджет
-            setTimeout(loadTelegramWidget, 500);
+                .catch(() => {
+                    logDebug('⚠️ Ошибка check-auth, загружаем виджет');
+                    setTimeout(loadTelegramWidget, 500);
+                });
         });
     </script>
 </body>
