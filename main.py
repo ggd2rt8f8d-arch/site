@@ -66,7 +66,7 @@ async def init_db():
                 budget TEXT,
                 box_office_us TEXT,
                 box_office_world TEXT,
-                cast TEXT
+                cast_list TEXT
             )
         """)
         await conn.execute("""
