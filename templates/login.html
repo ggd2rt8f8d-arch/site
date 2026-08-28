@@ -46,7 +46,8 @@
             display: flex;
             justify-content: center;
             margin-top: 10px;
-            min-height: 60px;
+            min-height: 70px;
+            width: 100%;
         }
         .telegram-btn {
             background: #0088cc;
@@ -90,6 +91,10 @@
             width: 100%;
             display: flex;
             justify-content: center;
+            align-items: center;
+        }
+        #widget-container iframe {
+            border-radius: 50px !important;
         }
     </style>
 </head>
@@ -103,12 +108,12 @@
 
         <div id="telegram-login">
             <div id="widget-container" class="telegram-widget-placeholder">
-                <!-- Сюда будет загружен виджет -->
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>
             </div>
         </div>
 
         <div id="errorMsg" class="error-msg">
-            <i class="fas fa-exclamation-circle"></i> Ошибка авторизации
+            <i class="fas fa-exclamation-circle"></i> <span id="errorText">Ошибка авторизации</span>
         </div>
 
         <div class="footer-text">
@@ -117,25 +122,28 @@
     </div>
 
     <script>
-        // Загружаем виджет Telegram
+        // Извлекаем bot_id из токена (числовая часть до двоеточия)
+        const botToken = '{{ BOT_TOKEN }}';
+        const botId = botToken.split(':')[0];
+
         function loadTelegramWidget() {
             const container = document.getElementById('widget-container');
             
             // Очищаем контейнер
             container.innerHTML = '';
-            
-            // Создаём скрипт виджета
+
+            // Создаём скрипт виджета с правильным bot_id
             const script = document.createElement('script');
             script.src = 'https://telegram.org/js/telegram-widget.js?22';
-            script.setAttribute('data-telegram-login', '{{ BOT_TOKEN }}');
+            script.setAttribute('data-telegram-login', botId);
             script.setAttribute('data-size', 'large');
             script.setAttribute('data-radius', '50');
             script.setAttribute('data-request-access', 'write');
             script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+            script.setAttribute('data-userpic', 'false');
             script.async = true;
             
             script.onerror = function() {
-                // Если виджет не загрузился, показываем кнопку-запасной вариант
                 container.innerHTML = `
                     <button class="telegram-btn" onclick="redirectToTelegram()">
                         <i class="fab fa-telegram"></i> Войти через Telegram
@@ -172,20 +180,20 @@
                     window.location.href = '/dashboard';
                 } else {
                     document.getElementById('errorMsg').style.display = 'block';
-                    document.getElementById('errorMsg').textContent = data.error || 'Ошибка авторизации';
+                    document.getElementById('errorText').textContent = data.error || 'Ошибка авторизации';
                 }
             })
-            .catch(() => {
+            .catch((err) => {
+                console.error(err);
                 document.getElementById('errorMsg').style.display = 'block';
-                document.getElementById('errorMsg').textContent = 'Ошибка соединения с сервером';
+                document.getElementById('errorText').textContent = 'Ошибка соединения с сервером';
             });
         }
 
-        // Запасной вариант — редирект на Telegram
+        // Запасной вариант — редирект на OAuth
         function redirectToTelegram() {
-            const botToken = '{{ BOT_TOKEN }}';
-            const redirectUrl = window.location.origin + '/auth/telegram-callback';
-            const authUrl = `https://oauth.telegram.org/auth?bot_id=${botToken}&origin=${encodeURIComponent(window.location.origin)}&embed=1&request_access=write`;
+            const redirectUrl = encodeURIComponent(window.location.origin);
+            const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${redirectUrl}&embed=1&request_access=write`;
             window.open(authUrl, '_blank', 'width=600,height=700');
         }
 
