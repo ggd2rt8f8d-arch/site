@@ -6,6 +6,8 @@
     <title>Вход — Админ-панель</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body {
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
@@ -14,13 +16,14 @@
             align-items: center;
             justify-content: center;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
         }
         .login-card {
             background: rgba(255,255,255,0.05);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 24px;
-            padding: 50px 40px;
+            padding: 40px 35px;
             max-width: 440px;
             width: 100%;
             box-shadow: 0 25px 50px rgba(0,0,0,0.5);
@@ -30,17 +33,17 @@
             color: #fff;
             font-weight: 700;
             font-size: 28px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
-        .login-card p {
-            color: rgba(255,255,255,0.6);
+        .login-card .subtitle {
+            color: rgba(255,255,255,0.5);
             font-size: 14px;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
         }
         .login-card .icon {
-            font-size: 64px;
+            font-size: 56px;
             color: #0088cc;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         .form-control {
             background: rgba(255,255,255,0.08);
@@ -78,6 +81,11 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(0,136,204,0.3);
         }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
         .btn-secondary {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.15);
@@ -95,29 +103,24 @@
         .error-msg {
             color: #ff6b6b;
             font-size: 14px;
-            margin-top: 15px;
+            margin-top: 12px;
             display: none;
         }
         .success-msg {
             color: #88dd88;
             font-size: 14px;
-            margin-top: 15px;
+            margin-top: 12px;
             display: none;
-        }
-        .footer-text {
-            color: rgba(255,255,255,0.3);
-            font-size: 12px;
-            margin-top: 30px;
         }
         .divider {
             border: none;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            margin: 25px 0;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin: 20px 0;
         }
         .label {
             color: rgba(255,255,255,0.4);
             font-size: 12px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             display: block;
             text-align: left;
         }
@@ -130,7 +133,7 @@
         .info-text {
             color: rgba(255,255,255,0.3);
             font-size: 13px;
-            margin-top: 12px;
+            margin-top: 10px;
         }
         .user-preview {
             display: none;
@@ -146,8 +149,8 @@
             display: flex;
         }
         .user-preview .avatar {
-            width: 50px;
-            height: 50px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid #0088cc;
@@ -159,7 +162,7 @@
         .user-preview .info .name {
             color: #fff;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 15px;
         }
         .user-preview .info .username {
             color: rgba(255,255,255,0.4);
@@ -171,6 +174,73 @@
         .loading.show {
             display: inline-block;
         }
+        .google-btn-wrapper {
+            margin: 8px 0;
+        }
+        .google-btn-wrapper .gsi-material-button {
+            width: 100% !important;
+            max-width: 100% !important;
+            justify-content: center !important;
+            background: rgba(255,255,255,0.08) !important;
+            border: 1px solid rgba(255,255,255,0.15) !important;
+            border-radius: 50px !important;
+            padding: 10px !important;
+        }
+        .google-btn-wrapper .gsi-material-button:hover {
+            background: rgba(255,255,255,0.15) !important;
+        }
+        .or-divider {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: rgba(255,255,255,0.2);
+            font-size: 12px;
+            margin: 16px 0;
+        }
+        .or-divider::before,
+        .or-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+        }
+        .footer-text {
+            color: rgba(255,255,255,0.2);
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        .back-link {
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.3s;
+            background: none;
+            border: none;
+            padding: 8px 0;
+        }
+        .back-link:hover {
+            color: #fff;
+        }
+        .telegram-login-hint {
+            color: rgba(255,255,255,0.3);
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .telegram-login-hint i {
+            color: #0088cc;
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 30px 20px;
+            }
+            .login-card h1 {
+                font-size: 24px;
+            }
+            .login-card .icon {
+                font-size: 44px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -179,7 +249,7 @@
             <i class="fas fa-film"></i>
         </div>
         <h1>Movie Admin</h1>
-        <p>Войдите в админ-панель</p>
+        <p class="subtitle">Войдите в админ-панель</p>
 
         <!-- ШАГ 1: Ввод ID -->
         <div class="step active" id="step1">
@@ -192,6 +262,17 @@
             <div class="info-text">
                 Код будет отправлен в Telegram
             </div>
+
+            <div class="or-divider">или</div>
+
+            <!-- Google Login -->
+            <div class="google-btn-wrapper" id="googleButtonContainer">
+                <!-- Google кнопка будет вставлена сюда -->
+            </div>
+
+            <div class="telegram-login-hint">
+                <i class="fab fa-telegram"></i> Вход через Telegram ID
+            </div>
         </div>
 
         <!-- ШАГ 2: Ввод кода -->
@@ -202,7 +283,7 @@
                 <span class="loading" id="verifyLoading"><i class="fas fa-spinner fa-spin"></i></span>
                 <span id="verifyText"><i class="fas fa-sign-in-alt"></i> Войти</span>
             </button>
-            <button class="btn-secondary mt-2" onclick="backToStep1()">
+            <button class="back-link mt-2" onclick="backToStep1()">
                 <i class="fas fa-arrow-left"></i> Назад
             </button>
             <div class="info-text">
@@ -229,14 +310,113 @@
 
         <hr class="divider">
 
-        <div style="color:rgba(255,255,255,0.2); font-size:12px;">
+        <div class="footer-text">
             <i class="fas fa-shield-alt"></i> Безопасный вход с подтверждением
         </div>
     </div>
 
     <script>
         // ============================================================
-        // Вход по коду с получением данных из Telegram
+        // Google OAuth 2.0 Login
+        // ============================================================
+        
+        const GOOGLE_CLIENT_ID = "{{ GOOGLE_CLIENT_ID }}";
+
+        function initGoogleLogin() {
+            if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "") {
+                console.warn("Google Client ID не задан");
+                return;
+            }
+
+            try {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleGoogleCredentialResponse,
+                    cancel_on_tap_outside: false,
+                    context: 'signin',
+                    ux_mode: 'popup'
+                });
+
+                google.accounts.id.renderButton(
+                    document.getElementById('googleButtonContainer'),
+                    { 
+                        theme: 'outline',
+                        size: 'large',
+                        type: 'standard',
+                        shape: 'pill',
+                        logo_alignment: 'center',
+                        text: 'signin_with',
+                        width: '100%'
+                    }
+                );
+            } catch(e) {
+                console.error('Google init error:', e);
+            }
+        }
+
+        async function handleGoogleCredentialResponse(response) {
+            try {
+                // Декодируем JWT для получения данных пользователя
+                const payload = parseJwt(response.credential);
+                
+                if (!payload) {
+                    showError('Не удалось получить данные от Google');
+                    return;
+                }
+
+                const email = payload.email;
+                const name = payload.name;
+                const picture = payload.picture;
+
+                if (!email) {
+                    showError('Email не получен от Google');
+                    return;
+                }
+
+                // Отправляем данные на сервер
+                const res = await fetch('/auth/google', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, name, picture })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    showSuccess('✅ Вход через Google выполнен! Перенаправление...');
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1500);
+                } else {
+                    showError(data.detail || 'Ошибка входа через Google');
+                }
+            } catch (err) {
+                console.error('Google auth error:', err);
+                showError('Ошибка соединения с сервером');
+            }
+        }
+
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                    atob(base64)
+                        .split('')
+                        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                        .join('')
+                );
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('JWT parse error:', e);
+                return null;
+            }
+        }
+
+        // ============================================================
+        // Telegram Login
         // ============================================================
         
         const ADMIN_ID = 2113363430;
@@ -267,15 +447,16 @@
 
         function setLoading(btnId, loading) {
             const btn = document.getElementById(btnId);
+            if (!btn) return;
             const loadingEl = btn.querySelector('.loading');
             const textEl = btn.querySelector('span:not(.loading)');
             if (loading) {
                 loadingEl.classList.add('show');
-                textEl.style.display = 'none';
+                if (textEl) textEl.style.display = 'none';
                 btn.disabled = true;
             } else {
                 loadingEl.classList.remove('show');
-                textEl.style.display = 'inline';
+                if (textEl) textEl.style.display = 'inline';
                 btn.disabled = false;
             }
         }
@@ -317,11 +498,10 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    // Показываем превью пользователя (если есть в БД)
                     const userData = await getUserData(userId);
-                    if (userData && userData.name) {
+                    if (userData && userData.display_name) {
                         const preview = document.getElementById('userPreview');
-                        document.getElementById('previewName').textContent = userData.name;
+                        document.getElementById('previewName').textContent = userData.display_name || 'Пользователь';
                         document.getElementById('previewUsername').textContent = userId;
                         if (userData.photo_url) {
                             document.getElementById('previewAvatar').src = userData.photo_url;
@@ -405,6 +585,12 @@
 
         // Устанавливаем ID админа по умолчанию
         document.getElementById('userIdInput').value = ADMIN_ID;
+
+        // Инициализируем Google Login после загрузки страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Небольшая задержка для загрузки Google SDK
+            setTimeout(initGoogleLogin, 500);
+        });
     </script>
 </body>
 </html>
