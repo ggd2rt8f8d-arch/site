@@ -29,6 +29,8 @@ BOT_ID = os.getenv("BOT_ID")
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "@topzfilmz")
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-secret-key")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
 super_admins_str = os.getenv("SUPER_ADMIN_IDS", "")
 SUPER_ADMIN_IDS = [int(x.strip()) for x in super_admins_str.split(",") if x.strip().isdigit()]
@@ -66,7 +68,8 @@ async def init_db():
                 budget TEXT,
                 box_office_us TEXT,
                 box_office_world TEXT,
-                cast_list TEXT
+                cast_list TEXT,
+                country TEXT
             )
         """)
         await conn.execute("""
@@ -169,6 +172,15 @@ async def init_db():
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS super_admins (user_id BIGINT PRIMARY KEY)
         """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS google_users (
+                email TEXT PRIMARY KEY,
+                user_id BIGINT UNIQUE,
+                name TEXT,
+                picture TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
 
         # Добавляем колонки
         await conn.execute("""
@@ -179,6 +191,9 @@ async def init_db():
                 END IF;
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='banner') THEN
                     ALTER TABLE movies ADD COLUMN banner TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='country') THEN
+                    ALTER TABLE movies ADD COLUMN country TEXT;
                 END IF;
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bans' AND column_name='expires_at') THEN
                     ALTER TABLE bans ADD COLUMN expires_at TIMESTAMP;
@@ -271,15 +286,16 @@ async def get_movies_count():
     async with pool.acquire() as conn:
         return await conn.fetchval("SELECT COUNT(*) FROM movies") or 0
 
-async def add_movie_to_db(code, title, year, poster, description, rating, banner, user_id=None):
+async def add_movie_to_db(code, title, year, poster, description, rating, banner, user_id=None, director=None, writers=None, genres=None, budget=None, box_office_us=None, box_office_world=None, cast_list=None, country=None):
     async with pool.acquire() as conn:
         await conn.execute(
-            "INSERT INTO movies (code, title, year, poster, description, rating, banner, added_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
-            code, title, year, poster, description, rating, banner, user_id
+            """INSERT INTO movies (code, title, year, poster, description, rating, banner, added_by, director, writers, genres, budget, box_office_us, box_office_world, cast_list, country) 
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)""",
+            code, title, year, poster, description, rating, banner, user_id, director, writers, genres, budget, box_office_us, box_office_world, cast_list, country
         )
 
 async def update_movie_field(code: str, field: str, value):
-    allowed = {"title", "year", "poster", "description", "rating", "banner"}
+    allowed = {"title", "year", "poster", "description", "rating", "banner", "director", "writers", "genres", "budget", "box_office_us", "box_office_world", "cast_list", "country"}
     if field not in allowed:
         return
     async with pool.acquire() as conn:
@@ -461,19 +477,15 @@ async def get_movie_tpz(movie_code: str):
 
 async def delete_review(review_id: int, user_id: int):
     async with pool.acquire() as conn:
-        # Получаем информацию об отзыве
         review = await conn.fetchrow("SELECT movie_code, rating FROM movie_reviews WHERE id = $1 AND user_id = $2", review_id, user_id)
         if review:
-            # Удаляем отзыв
             await conn.execute("DELETE FROM movie_reviews WHERE id = $1", review_id)
-            # Обновляем рейтинг
             await conn.execute("""
                 UPDATE movie_ratings 
                 SET total_rating = total_rating - $1,
                     votes_count = votes_count - 1
                 WHERE movie_code = $2
             """, review["rating"], review["movie_code"])
-            # Если голосов 0, удаляем запись
             await conn.execute("DELETE FROM movie_ratings WHERE movie_code = $1 AND votes_count = 0", review["movie_code"])
             return True
         return False
@@ -517,7 +529,8 @@ async def get_user_name(user_id: int):
                 "photo_url": row["photo_url"],
                 "banner_url": row["banner_url"],
                 "first_name": row["first_name"],
-                "last_name": row["last_name"]
+                "last_name": row["last_name"],
+                "is_super": user_id in SUPER_ADMIN_IDS or await is_super_admin(user_id)
             }
         return {
             "display_name": f"Пользователь {user_id}",
@@ -525,7 +538,8 @@ async def get_user_name(user_id: int):
             "photo_url": None,
             "banner_url": None,
             "first_name": None,
-            "last_name": None
+            "last_name": None,
+            "is_super": user_id in SUPER_ADMIN_IDS or await is_super_admin(user_id)
         }
 
 async def get_user_profile(user_id: int):
@@ -589,6 +603,23 @@ async def get_profile_comments(target_user_id: int):
     async with pool.acquire() as conn:
         rows = await conn.fetch("SELECT * FROM profile_comments WHERE target_user_id = $1 ORDER BY created_at DESC", target_user_id)
         return [dict(r) for r in rows]
+
+# ---------- Google Auth ----------
+async def get_or_create_user_from_google(email: str, name: str, picture: str):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT user_id FROM google_users WHERE email = $1", email)
+        if row:
+            return row["user_id"]
+        
+        # Создаём нового пользователя
+        user_id = random.randint(100000000, 999999999)
+        await conn.execute(
+            "INSERT INTO google_users (email, user_id, name, picture) VALUES ($1, $2, $3, $4)",
+            email, user_id, name, picture
+        )
+        await save_user_data(user_id, None, name, None, name, picture, None)
+        await add_user(user_id, None, name, None, picture)
+        return user_id
 
 # ---------- Клавиатуры ----------
 def subscribe_kb():
@@ -745,9 +776,11 @@ async def cb_reviews(callback: CallbackQuery):
     for review in reviews[:3]:
         user_name_data = await get_user_name(review["user_id"])
         display_name = user_name_data["display_name"]
+        is_super = user_name_data.get("is_super", False)
+        name_html = f'<span style="color:#f5a623;font-weight:bold;">{display_name}</span>' if is_super else display_name
         review_text = (
             f"⭐ <b>{review['rating']}/10</b>\n"
-            f"👤 {display_name}\n"
+            f"👤 {name_html}\n"
             f"💬 {review['text']}\n"
             f"🕐 {review['created_at'].strftime('%d.%m.%Y %H:%M')}"
         )
@@ -1146,7 +1179,8 @@ async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {
         "request": request,
         "BOT_TOKEN": BOT_TOKEN,
-        "BOT_ID": BOT_ID
+        "BOT_ID": BOT_ID,
+        "GOOGLE_CLIENT_ID": GOOGLE_CLIENT_ID
     })
 
 @app.post("/auth/request-code")
@@ -1188,6 +1222,29 @@ async def verify_code(request: Request, user_id: int = Form(...), code: str = Fo
     response = JSONResponse({"success": True})
     response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
     return response
+
+@app.post("/auth/google")
+async def google_auth(request: Request, data: dict):
+    try:
+        email = data.get("email")
+        name = data.get("name")
+        picture = data.get("picture")
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="Email не указан")
+        
+        user_id = await get_or_create_user_from_google(email, name, picture)
+        
+        # Добавляем пользователя как админа если он есть в SUPER_ADMIN_IDS
+        if user_id in SUPER_ADMIN_IDS:
+            await add_admin(user_id)
+        
+        response = JSONResponse({"success": True, "user_id": user_id})
+        response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
+        return response
+    except Exception as e:
+        logger.error(f"Google auth error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/check-auth")
 async def check_auth_api(request: Request):
@@ -1265,6 +1322,14 @@ class MovieCreate(BaseModel):
     description: str
     rating: str
     banner: Optional[str] = None
+    director: Optional[str] = None
+    writers: Optional[str] = None
+    genres: Optional[str] = None
+    budget: Optional[str] = None
+    box_office_us: Optional[str] = None
+    box_office_world: Optional[str] = None
+    cast_list: Optional[str] = None
+    country: Optional[str] = None
 
 class MovieUpdate(BaseModel):
     title: Optional[str] = None
@@ -1273,6 +1338,14 @@ class MovieUpdate(BaseModel):
     description: Optional[str] = None
     rating: Optional[str] = None
     banner: Optional[str] = None
+    director: Optional[str] = None
+    writers: Optional[str] = None
+    genres: Optional[str] = None
+    budget: Optional[str] = None
+    box_office_us: Optional[str] = None
+    box_office_world: Optional[str] = None
+    cast_list: Optional[str] = None
+    country: Optional[str] = None
 
 class AdminAdd(BaseModel):
     user_id: int
@@ -1355,8 +1428,10 @@ async def api_add_movie(request: Request, data: MovieCreate):
     async with pool.acquire() as conn:
         try:
             await conn.execute(
-                "INSERT INTO movies (code, title, year, poster, description, rating, banner, added_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
-                data.code, data.title, data.year, data.poster, data.description, data.rating, data.banner, user_id
+                """INSERT INTO movies (code, title, year, poster, description, rating, banner, added_by, director, writers, genres, budget, box_office_us, box_office_world, cast_list, country) 
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)""",
+                data.code, data.title, data.year, data.poster, data.description, data.rating, data.banner, user_id,
+                data.director, data.writers, data.genres, data.budget, data.box_office_us, data.box_office_world, data.cast_list, data.country
             )
             return {"success": True, "code": data.code}
         except asyncpg.UniqueViolationError:
@@ -1381,7 +1456,6 @@ async def api_delete_movie(request: Request, code: str):
 @app.post("/api/movies/{code}/reviews")
 async def api_add_review(request: Request, code: str, data: ReviewData):
     user_id = await check_auth(request)
-    # Проверяем, есть ли уже отзыв от этого пользователя
     existing = await get_user_review(code, user_id)
     if existing:
         raise HTTPException(status_code=400, detail="Вы уже оставляли отзыв на этот фильм")
@@ -1398,10 +1472,8 @@ async def api_get_reviews(request: Request, code: str):
 @app.delete("/api/reviews/{review_id}")
 async def api_delete_review(request: Request, review_id: int):
     user_id = await check_auth(request)
-    # Проверяем, является ли пользователь владельцем отзыва или суперадмином
     is_super = await is_super_admin(user_id)
     if not is_super:
-        # Проверяем, что отзыв принадлежит пользователю
         async with pool.acquire() as conn:
             owner = await conn.fetchval("SELECT user_id FROM movie_reviews WHERE id = $1", review_id)
             if owner != user_id:
