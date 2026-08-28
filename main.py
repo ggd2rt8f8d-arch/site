@@ -80,7 +80,7 @@ async def init_db():
             ON CONFLICT (key) DO NOTHING
         """)
 
-        # НОВЫЕ ТАБЛИЦЫ
+        # Таблицы для новых функций
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS punishments (
                 id SERIAL PRIMARY KEY,
@@ -120,8 +120,17 @@ async def init_db():
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS profile_comments (
+                id SERIAL PRIMARY KEY,
+                target_user_id BIGINT NOT NULL,
+                author_id BIGINT NOT NULL,
+                text TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
 
-        # Триггер для обновления статистики админов при добавлении фильма
+        # Триггер для обновления статистики админов
         await conn.execute("""
             CREATE OR REPLACE FUNCTION update_admin_stats()
             RETURNS TRIGGER AS $$
@@ -214,7 +223,6 @@ async def add_movie_to_db(code, title, year, poster, description, rating, user_i
             "INSERT INTO movies (code, title, year, poster, description, rating) VALUES ($1, $2, $3, $4, $5, $6)",
             code, title, year, poster, description, rating
         )
-        # Обновляем статистику админа, если передан user_id
         if user_id:
             await conn.execute(
                 "INSERT INTO admin_stats (user_id, movies_added) VALUES ($1, 1) ON CONFLICT (user_id) DO UPDATE SET movies_added = admin_stats.movies_added + 1",
@@ -230,7 +238,7 @@ async def update_movie_field(code: str, field: str, value):
 
 async def delete_movie(code: str):
     async with pool.acquire() as conn:
-        await conn.execute("DELETE FROM movies WHERE code = $1")
+        await conn.execute("DELETE FROM movies WHERE code = $1", code)
 
 async def is_admin(user_id: int) -> bool:
     if user_id in SUPER_ADMIN_IDS:
@@ -287,13 +295,11 @@ async def unban_user(user_id: int):
 
 async def is_banned(user_id: int) -> bool:
     async with pool.acquire() as conn:
-        # Автоматически удаляем истёкшие баны
         await conn.execute("DELETE FROM bans WHERE expires_at IS NOT NULL AND expires_at < NOW()")
         return await conn.fetchval("SELECT 1 FROM bans WHERE user_id = $1", user_id) is not None
 
 async def get_banned_users():
     async with pool.acquire() as conn:
-        # Удаляем истёкшие
         await conn.execute("DELETE FROM bans WHERE expires_at IS NOT NULL AND expires_at < NOW()")
         rows = await conn.fetch("SELECT user_id, reason, expires_at FROM bans")
         return [dict(r) for r in rows]
@@ -313,39 +319,34 @@ async def check_sub(user_id: int) -> bool:
     except Exception:
         return False
 
-# ---------- НОВЫЕ ФУНКЦИИ ДЛЯ ПРОФИЛЕЙ И НАКАЗАНИЙ ----------
+# ---------- Функции для профилей и наказаний ----------
 async def get_user_profile(user_id: int):
     async with pool.acquire() as conn:
-        # Проверяем, админ ли
         is_admin_user = await is_admin(user_id)
         is_banned_user = await is_banned(user_id)
         
-        # Количество добавленных фильмов
         movies_count = await conn.fetchval(
             "SELECT movies_added FROM admin_stats WHERE user_id = $1", user_id
         ) or 0
         
-        # Активные выговоры
         warns = await conn.fetchval(
             "SELECT COUNT(*) FROM punishments WHERE user_id = $1 AND type = 'warning' AND resolved = FALSE",
             user_id
         ) or 0
         
-        # Все наказания
         punishments = await conn.fetch(
             """
             SELECT * FROM punishments WHERE user_id = $1 ORDER BY created_at DESC
             """, user_id
         )
         
-        # Имя пользователя
         user_name = await conn.fetchrow(
             "SELECT username, first_name, last_name FROM user_names WHERE user_id = $1",
             user_id
         )
         
         if user_name:
-            username = user_name["username"] or f"Пользователь {user_id}"
+            username = user_name["username"] or user_name["first_name"] or f"Пользователь {user_id}"
         else:
             username = f"Пользователь {user_id}"
         
@@ -381,13 +382,11 @@ async def add_punishment(user_id: int, ptype: str, reason: str, issued_by: int, 
                 user_id, ptype, reason, issued_by
             )
         
-        # Если это бан — добавляем в bans
         if ptype in ("ban", "permanent_ban"):
             await ban_user(user_id, reason, duration_hours if ptype == "ban" else 0)
 
 async def resolve_punishment(punishment_id: int, resolved_by: int):
     async with pool.acquire() as conn:
-        # Получаем информацию о наказании
         punishment = await conn.fetchrow(
             "SELECT user_id, type FROM punishments WHERE id = $1", punishment_id
         )
@@ -400,7 +399,6 @@ async def resolve_punishment(punishment_id: int, resolved_by: int):
                 """,
                 resolved_by, punishment_id
             )
-            # Если это был бан — снимаем бан
             if punishment["type"] in ("ban", "permanent_ban"):
                 await unban_user(punishment["user_id"])
             return True
@@ -442,6 +440,21 @@ async def get_user_name(user_id: int):
         if row:
             return row["username"] or row["first_name"] or f"Пользователь {user_id}"
         return f"Пользователь {user_id}"
+
+async def add_profile_comment(target_user_id: int, author_id: int, text: str):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO profile_comments (target_user_id, author_id, text) VALUES ($1, $2, $3)",
+            target_user_id, author_id, text
+        )
+
+async def get_profile_comments(target_user_id: int):
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM profile_comments WHERE target_user_id = $1 ORDER BY created_at DESC",
+            target_user_id
+        )
+        return [dict(r) for r in rows]
 
 # ---------- Клавиатуры ----------
 def subscribe_kb():
@@ -823,7 +836,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# ---------- Вспомогательные функции для админки ----------
+# ---------- Вспомогательные функции ----------
 def verify_telegram_auth(data: dict) -> Optional[int]:
     check_data = data.copy()
     check_hash = check_data.pop("hash", None)
@@ -843,7 +856,20 @@ def get_user_id_from_cookie(request: Request) -> Optional[int]:
         return int(user_id_str)
     return None
 
-# ---------- Роуты админки ----------
+# ---------- Проверки прав ----------
+async def check_admin(request: Request):
+    user_id = get_user_id_from_cookie(request)
+    if not user_id or not await is_admin(user_id):
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    return user_id
+
+async def check_super_admin(request: Request):
+    user_id = get_user_id_from_cookie(request)
+    if not user_id or not await is_super_admin(user_id):
+        raise HTTPException(status_code=403, detail="Только суперадмин")
+    return user_id
+
+# ---------- Роуты ----------
 @app.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "BOT_TOKEN": BOT_TOKEN})
@@ -858,7 +884,6 @@ async def auth_telegram(request: Request):
     if not await is_admin(user_id):
         return JSONResponse(status_code=403, content={"error": "У вас нет прав администратора"})
     
-    # Сохраняем имя пользователя
     await save_user_name(
         user_id,
         data.get("username", ""),
@@ -914,9 +939,9 @@ async def dashboard(request: Request):
         }
     })
 
-# ==================== API ДЛЯ ФРОНТЕНДА ====================
+# ==================== API ====================
 
-# ---------- Базовые модели ----------
+# ---------- Модели ----------
 class MovieCreate(BaseModel):
     code: str
     title: str
@@ -942,7 +967,7 @@ class BanAdd(BaseModel):
 
 class PunishData(BaseModel):
     user_id: int
-    type: str  # warning, mute, ban, permanent_ban
+    type: str
     reason: str = ""
     duration_hours: int = 0
 
@@ -950,18 +975,8 @@ class ReviewData(BaseModel):
     rating: int
     text: str
 
-# ---------- Проверки ----------
-async def check_admin(request: Request):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id or not await is_admin(user_id):
-        raise HTTPException(status_code=401, detail="Не авторизован")
-    return user_id
-
-async def check_super_admin(request: Request):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id or not await is_super_admin(user_id):
-        raise HTTPException(status_code=403, detail="Только суперадмин")
-    return user_id
+class CommentData(BaseModel):
+    text: str
 
 # ---------- Фильмы ----------
 @app.get("/api/movies")
@@ -989,7 +1004,6 @@ async def api_add_movie(request: Request, data: MovieCreate):
                 "INSERT INTO movies (code, title, year, poster, description, rating) VALUES ($1, $2, $3, $4, $5, $6)",
                 data.code, data.title, data.year, data.poster, data.description, data.rating
             )
-            # Обновляем статистику
             await conn.execute(
                 "INSERT INTO admin_stats (user_id, movies_added) VALUES ($1, 1) ON CONFLICT (user_id) DO UPDATE SET movies_added = admin_stats.movies_added + 1",
                 user_id
@@ -1093,7 +1107,6 @@ async def api_profile(request: Request, user_id: int):
 async def api_punish(request: Request, data: PunishData):
     issued_by = await check_super_admin(request)
     
-    # Проверяем, не является ли цель суперадмином
     if await is_super_admin(data.user_id):
         raise HTTPException(status_code=403, detail="Нельзя наказывать суперадмина")
     
@@ -1114,6 +1127,27 @@ async def api_resolve_punishment(request: Request, punishment_id: int):
         raise HTTPException(status_code=404, detail="Наказание не найдено")
     return {"success": True}
 
+# ---------- Комментарии к профилям ----------
+@app.get("/api/profile/{user_id}/comments")
+async def api_get_profile_comments(request: Request, user_id: int):
+    await check_admin(request)
+    return await get_profile_comments(user_id)
+
+@app.post("/api/profile/{user_id}/comments")
+async def api_add_profile_comment(request: Request, user_id: int, data: CommentData):
+    author_id = await check_admin(request)
+    if not data.text or not data.text.strip():
+        raise HTTPException(status_code=400, detail="Текст комментария обязателен")
+    await add_profile_comment(user_id, author_id, data.text.strip())
+    return {"success": True}
+
+# ---------- Имена ----------
+@app.get("/api/user/{user_id}/name")
+async def api_user_name(request: Request, user_id: int):
+    await check_admin(request)
+    name = await get_user_name(user_id)
+    return {"name": name}
+
 # ---------- Статистика ----------
 @app.get("/api/stats")
 async def api_stats(request: Request):
@@ -1125,12 +1159,6 @@ async def api_stats(request: Request):
         bans = await conn.fetchval("SELECT COUNT(*) FROM bans") or 0
     return {"movies": movies, "requests": requests, "admins": admins, "bans": bans}
 
-# ---------- Имена пользователей ----------
-@app.get("/api/user/{user_id}/name")
-async def api_user_name(request: Request, user_id: int):
-    await check_admin(request)
-    name = await get_user_name(user_id)
-    return {"name": name}
 
 # ==================== ЗАПУСК ====================
 if __name__ == "__main__":
