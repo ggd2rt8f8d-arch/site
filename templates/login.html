@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — Админ-панель</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .login-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 50px 40px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .login-card h1 {
+            color: #fff;
+            font-weight: 700;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        .login-card p {
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .login-card .icon {
+            font-size: 64px;
+            color: #0088cc;
+            margin-bottom: 20px;
+        }
+        #telegram-login {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .telegram-btn {
+            background: #0088cc;
+            border: none;
+            border-radius: 50px;
+            padding: 14px 40px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .telegram-btn:hover {
+            background: #006699;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,136,204,0.3);
+        }
+        .telegram-btn i {
+            font-size: 24px;
+        }
+        .error-msg {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 15px;
+            display: none;
+        }
+        .footer-text {
+            color: rgba(255,255,255,0.3);
+            font-size: 12px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="icon">
+            <i class="fas fa-film"></i>
+        </div>
+        <h1>Movie Admin</h1>
+        <p>Войдите через Telegram, чтобы управлять фильмами</p>
+
+        <div id="telegram-login">
+            <button class="telegram-btn" id="loginBtn">
+                <i class="fab fa-telegram"></i> Войти через Telegram
+            </button>
+        </div>
+
+        <div id="errorMsg" class="error-msg">
+            <i class="fas fa-exclamation-circle"></i> Ошибка авторизации
+        </div>
+
+        <div class="footer-text">
+            <i class="fas fa-shield-alt"></i> Безопасный вход через Telegram
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginBtn').addEventListener('click', function() {
+            const script = document.createElement('script');
+            script.src = 'https://telegram.org/js/telegram-widget.js?22';
+            script.setAttribute('data-telegram-login', '{{ BOT_TOKEN }}');
+            script.setAttribute('data-size', 'large');
+            script.setAttribute('data-radius', '50');
+            script.setAttribute('data-request-access', 'write');
+            script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+            script.async = true;
+            document.getElementById('telegram-login').innerHTML = '';
+            document.getElementById('telegram-login').appendChild(script);
+        });
+
+        function onTelegramAuth(user) {
+            fetch('/auth/telegram', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    id: user.id,
+                    first_name: user.first_name,
+                    last_name: user.last_name || '',
+                    username: user.username || '',
+                    photo_url: user.photo_url || '',
+                    auth_date: user.auth_date,
+                    hash: user.hash
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    document.getElementById('errorMsg').style.display = 'block';
+                    document.getElementById('errorMsg').textContent = data.error || 'Ошибка авторизации';
+                }
+            })
+            .catch(() => {
+                document.getElementById('errorMsg').style.display = 'block';
+                document.getElementById('errorMsg').textContent = 'Ошибка соединения с сервером';
+            });
+        }
+    </script>
+</body>
+</html>
