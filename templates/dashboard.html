@@ -878,7 +878,6 @@
             background: #222;
         }
 
-        /* Стили для вкладок настроек */
         .settings-tabs {
             display: flex;
             gap: 4px;
@@ -914,7 +913,6 @@
             display: block;
         }
 
-        /* Стили для загрузки файлов */
         .file-upload-wrapper {
             position: relative;
             display: inline-block;
@@ -950,10 +948,42 @@
             font-size: 18px;
         }
 
-        /* Ярко-жёлтый цвет для создателя в комментариях */
         .creator-name {
             color: #f5a623 !important;
             font-weight: bold !important;
+        }
+
+        .status-badge-online {
+            background: #1a3a1a;
+            color: #88cc88;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 10px;
+            border: 1px solid #2a5a2a;
+        }
+        .status-badge-offline {
+            background: #2a2a2a;
+            color: #888;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 10px;
+            border: 1px solid #3a3a3a;
+        }
+        .online-dot {
+            color: #44ff44;
+            font-size: 12px;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        .offline-dot {
+            color: #555;
+            font-size: 12px;
+            display: inline-block;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
         }
 
         @media (max-width: 768px) {
@@ -1186,7 +1216,6 @@
             width: 100%;
         }
 
-        /* Стиль для активного режима редактирования */
         .edit-mode-active {
             border: 2px solid #f5a623 !important;
             border-radius: 8px;
@@ -1377,6 +1406,7 @@
                     <tr>
                         <th style="width:40px;"></th>
                         <th>ID / Имя</th>
+                        <th><i class="fas fa-circle"></i> Статус</th>
                         <th><i class="fas fa-film"></i> Фильмов</th>
                         <th><i class="fas fa-exclamation-triangle"></i> Выговоров</th>
                         {% if is_super %}
@@ -1385,7 +1415,7 @@
                     </tr>
                 </thead>
                 <tbody id="adminsBody">
-                    <tr><td colspan="5" class="text-center py-4 text-secondary-light">Загрузка...</td></tr>
+                    <tr><td colspan="6" class="text-center py-4 text-secondary-light">Загрузка...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -1407,13 +1437,14 @@
                     <tr>
                         <th style="width:40px;"></th>
                         <th>ID / Имя</th>
+                        <th><i class="fas fa-circle"></i> Статус</th>
                         <th>Причина</th>
                         <th>До</th>
                         <th>Действия</th>
                     </tr>
                 </thead>
                 <tbody id="bansBody">
-                    <tr><td colspan="5" class="text-center py-4 text-secondary-light">Загрузка...</td></tr>
+                    <tr><td colspan="6" class="text-center py-4 text-secondary-light">Загрузка...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -1513,7 +1544,6 @@
                 <button class="tab-btn" data-tab="tab-privacy"><i class="fas fa-lock"></i> Конфиденциальность</button>
             </div>
             
-            <!-- Аккаунт -->
             <div class="settings-tab-content active" id="tab-account">
                 <div class="mb-3">
                     <label class="form-label" style="color:#999;">Отображаемое имя</label>
@@ -1550,7 +1580,6 @@
                 </button>
             </div>
             
-            <!-- Внешний вид -->
             <div class="settings-tab-content" id="tab-appearance">
                 <div class="mb-3">
                     <label class="form-label" style="color:#999;">Тема</label>
@@ -1571,7 +1600,6 @@
                 </button>
             </div>
             
-            <!-- Конфиденциальность -->
             <div class="settings-tab-content" id="tab-privacy">
                 <div class="mb-3">
                     <label class="form-label" style="color:#999;">Комментарии к профилю</label>
@@ -2169,6 +2197,39 @@ async function uploadMovieImage(code, field, input) {
     reader.readAsDataURL(file);
 }
 
+function saveEditChanges(code) {
+    if (!IS_ADMIN || !isEditingMode) return;
+    
+    const data = {};
+    const editFields = document.querySelectorAll('.editable-input, .editable-textarea');
+    editFields.forEach(el => {
+        const field = el.dataset.field;
+        if (field) {
+            data[field] = el.value;
+        }
+    });
+    
+    const castContainer = document.querySelector('.cast-grid [data-field="cast_list"]');
+    if (castContainer) {
+        const items = castContainer.querySelectorAll('.cast-item');
+        const castValues = Array.from(items).map(el => el.textContent.trim());
+        const input = castContainer.querySelector('input');
+        if (input && input.value.trim()) {
+            castValues.push(input.value.trim());
+        }
+        if (castValues.length) {
+            data.cast_list = castValues.join(', ');
+        }
+    }
+    
+    if (Object.keys(data).length === 0) {
+        showToast('⚠️ Нет изменений для сохранения', 'warning');
+        return;
+    }
+    
+    saveAllMovieFields(code, data);
+}
+
 async function showMoviePage(code) {
     currentMovieCode = code;
     try {
@@ -2177,7 +2238,6 @@ async function showMoviePage(code) {
         const reviewsRes = await apiRequest(`/api/movies/${code}/reviews`);
         const reviews = await reviewsRes.json();
         
-        // Получаем информацию о создателях для отзывов
         const reviewUsers = {};
         if (reviews && reviews.length) {
             for (const r of reviews) {
@@ -2200,7 +2260,6 @@ async function showMoviePage(code) {
             { key: 'box_office_world', label: 'Сборы в мире', value: m.box_office_world || '-' }
         ];
         
-        // Каст
         let castHtml = '';
         if (m.cast_list) {
             try {
@@ -2217,7 +2276,6 @@ async function showMoviePage(code) {
             castHtml = '<span class="text-secondary-light">Не указаны</span>';
         }
         
-        // Отзывы
         let reviewsHtml = '';
         if (reviews && reviews.length) {
             reviewsHtml = reviews.map(r => {
@@ -2370,59 +2428,6 @@ async function showMoviePage(code) {
     }
 }
 
-function saveEditChanges(code) {
-    if (!IS_ADMIN || !isEditingMode) return;
-    
-    // Собираем все изменённые поля
-    const data = {};
-    const editFields = document.querySelectorAll('.editable-input, .editable-textarea');
-    editFields.forEach(el => {
-        const field = el.dataset.field;
-        if (field) {
-            data[field] = el.value;
-        }
-    });
-    
-    // Собираем cast_list из массива
-    const castContainer = document.querySelector('.cast-grid [data-field="cast_list"]');
-    if (castContainer) {
-        const items = castContainer.querySelectorAll('.cast-item');
-        const castValues = Array.from(items).map(el => el.textContent.trim());
-        // Добавляем значения из поля ввода
-        const input = castContainer.querySelector('input');
-        if (input && input.value.trim()) {
-            castValues.push(input.value.trim());
-        }
-        if (castValues.length) {
-            data.cast_list = castValues.join(', ');
-        }
-    }
-    
-    if (Object.keys(data).length === 0) {
-        showToast('⚠️ Нет изменений для сохранения', 'warning');
-        return;
-    }
-    
-    saveAllMovieFields(code, data);
-}
-
-async function saveAllMovieFields(code, data) {
-    if (!IS_ADMIN) return;
-    try {
-        const res = await apiRequest(`/api/movies/${code}`, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
-        if (res.ok) {
-            showToast('✅ Все изменения сохранены', 'success');
-            loadMovies();
-            showMoviePage(code);
-        } else {
-            showToast('❌ Ошибка сохранения', 'danger');
-        }
-    } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
-}
-
 function setReviewMovie(code) { currentReviewMovieCode = code; }
 
 async function deleteReview(reviewId, movieCode) {
@@ -2471,7 +2476,7 @@ async function loadAdmins() {
         const data = await res.json();
         const tbody = document.getElementById('adminsBody');
         if (!data || !data.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-secondary-light"><i class="fas fa-users"></i> Админов пока нет</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-secondary-light"><i class="fas fa-users"></i> Админов пока нет</td></tr>';
             return;
         }
         tbody.innerHTML = data.map(a => {
@@ -2479,10 +2484,17 @@ async function loadAdmins() {
             if (IS_SUPER) {
                 actions = `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeAdmin(${a.user_id})"><i class="fas fa-user-minus"></i></button>`;
             }
+            const statusHtml = a.is_online 
+                ? '<span class="status-badge-online"><i class="fas fa-circle" style="color:#44ff44;font-size:8px;"></i> Онлайн</span>'
+                : '<span class="status-badge-offline"><i class="fas fa-circle" style="color:#666;font-size:8px;"></i> Офлайн</span>';
             return `
                 <tr class="clickable-row" onclick="showProfileModal(${a.user_id})">
                     <td><img src="${a.photo_url || 'https://ui-avatars.com/api/?name=' + a.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'"></td>
-                    <td><div style="font-weight:400;color:#ddd;">${a.display_name || 'Пользователь'}</div><div style="font-size:11px;color:#666;"><code>${a.user_id}</code></div></td>
+                    <td>
+                        <div style="font-weight:400;color:#ddd;">${a.display_name || 'Пользователь'}</div>
+                        <div style="font-size:11px;color:#666;"><code>${a.user_id}</code></div>
+                    </td>
+                    <td>${statusHtml}</td>
                     <td>${a.movies_count || 0}</td>
                     <td><span class="${(a.warns || 0) >= 3 ? 'text-danger' : 'text-secondary-light'}">${a.warns || 0}/3</span></td>
                     ${IS_SUPER ? `<td style="white-space:nowrap;">${actions}</td>` : ''}
@@ -2525,7 +2537,7 @@ async function loadBans() {
         const data = await res.json();
         const tbody = document.getElementById('bansBody');
         if (!data || !data.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-secondary-light"><i class="fas fa-check-circle"></i> Забаненных нет</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-secondary-light"><i class="fas fa-check-circle"></i> Забаненных нет</td></tr>';
             return;
         }
         tbody.innerHTML = data.map(b => {
@@ -2533,10 +2545,17 @@ async function loadBans() {
             if (IS_SUPER) {
                 actions = `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();unbanUser(${b.user_id})"><i class="fas fa-user-check"></i></button>`;
             }
+            const statusHtml = b.is_online 
+                ? '<span class="status-badge-online"><i class="fas fa-circle" style="color:#44ff44;font-size:8px;"></i> Онлайн</span>'
+                : '<span class="status-badge-offline"><i class="fas fa-circle" style="color:#666;font-size:8px;"></i> Офлайн</span>';
             return `
                 <tr class="clickable-row" onclick="showProfileModal(${b.user_id})">
                     <td><img src="${b.photo_url || 'https://ui-avatars.com/api/?name=' + b.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'"></td>
-                    <td><div style="font-weight:400;color:#ddd;">${b.display_name || 'Пользователь'}</div><div style="font-size:11px;color:#666;"><code>${b.user_id}</code></div></td>
+                    <td>
+                        <div style="font-weight:400;color:#ddd;">${b.display_name || 'Пользователь'}</div>
+                        <div style="font-size:11px;color:#666;"><code>${b.user_id}</code></div>
+                    </td>
+                    <td>${statusHtml}</td>
                     <td>${b.reason || '-'}</td>
                     <td>${b.expires_at ? new Date(b.expires_at).toLocaleString() : 'Навсегда'}</td>
                     ${IS_SUPER ? `<td style="white-space:nowrap;">${actions}</td>` : ''}
@@ -2626,15 +2645,21 @@ async function showProfileModal(user_id) {
         const res = await apiRequest(`/api/profile/${user_id}`);
         const data = await res.json();
         const body = document.getElementById('profileModalBody');
+        
+        const statusHtml = data.is_online 
+            ? '<span class="status-badge-online" style="margin-left:8px;"><i class="fas fa-circle" style="color:#44ff44;font-size:8px;"></i> Онлайн</span>'
+            : '<span class="status-badge-offline" style="margin-left:8px;"><i class="fas fa-circle" style="color:#666;font-size:8px;"></i> Офлайн</span>';
+        
         body.innerHTML = `
             <div class="text-center">
                 <img src="${data.photo_url || 'https://ui-avatars.com/api/?name=' + user_id + '&background=2a2a2a&color=cccccc&size=80&rounded=true'}" class="avatar-lg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23222%22 width=%2280%22 height=%2280%22/%3E%3Ctext x=%2240%22 y=%2248%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2232%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
                 <h4 class="mt-3" style="font-weight:300;color:#e8e8e8;">${data.display_name || 'Пользователь'}</h4>
                 <p class="text-secondary-light"><i class="fas fa-id-badge"></i> ID: ${user_id}</p>
                 <p class="text-secondary-light">@${data.username || user_id}</p>
-                ${data.is_super_admin ? '<span class="badge-creator"><i class="fas fa-crown"></i> Создатель</span>' : ''}
-                ${data.is_admin && !data.is_super_admin ? '<span class="badge-super"><i class="fas fa-user-shield"></i> Админ</span>' : ''}
-                ${data.is_banned ? '<span class="badge-active" style="margin-left:8px;"><i class="fas fa-ban"></i> Забанен</span>' : ''}
+                ${statusHtml}
+                ${data.is_super_admin ? '<br><span class="badge-creator"><i class="fas fa-crown"></i> Создатель</span>' : ''}
+                ${data.is_admin && !data.is_super_admin ? '<br><span class="badge-super"><i class="fas fa-user-shield"></i> Админ</span>' : ''}
+                ${data.is_banned ? '<br><span class="badge-active" style="margin-left:8px;"><i class="fas fa-ban"></i> Забанен</span>' : ''}
                 <hr style="border-color:#2a2a2a;">
                 <div class="row g-3 text-center">
                     <div class="col-4"><div class="stat-item"><div class="num">${data.movies_count || 0}</div><div class="lbl"><i class="fas fa-film"></i> Фильмов</div></div></div>
@@ -2715,10 +2740,17 @@ async function loadProfileComments(user_id) {
             const isAdmin = IS_ADMIN;
             const showDelete = isAdmin ? true : isOwner;
             const deleteLabel = isAdmin ? 'Удалить комментарий' : 'Удалить свой';
+            const authorName = c.author_display_name || c.author_id;
+            const authorPhoto = c.author_photo_url || `https://ui-avatars.com/api/?name=${c.author_id}&background=2a2a2a&color=cccccc&size=24&rounded=true`;
+            const isSuperAuthor = c.author_is_super || false;
+            const nameClass = isSuperAuthor ? 'creator-name' : '';
             return `
                 <div class="comment-item">
                     <div class="comment-header">
-                        <span><i class="fas fa-user"></i> ${c.author_id}</span>
+                        <span>
+                            <img src="${authorPhoto}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid #2a2a2a;margin-right:6px;" onerror="this.style.display='none'">
+                            <span class="${nameClass}">${authorName}</span>
+                        </span>
                         <span>${new Date(c.created_at).toLocaleString()}</span>
                         ${showDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteComment(${c.id})" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i> ${deleteLabel}</button>` : ''}
                     </div>
@@ -2754,10 +2786,17 @@ async function loadModalComments(user_id) {
             const isAdmin = IS_ADMIN;
             const showDelete = isAdmin ? true : isOwner;
             const deleteLabel = isAdmin ? 'Удалить комментарий' : 'Удалить свой';
+            const authorName = c.author_display_name || c.author_id;
+            const authorPhoto = c.author_photo_url || `https://ui-avatars.com/api/?name=${c.author_id}&background=2a2a2a&color=cccccc&size=24&rounded=true`;
+            const isSuperAuthor = c.author_is_super || false;
+            const nameClass = isSuperAuthor ? 'creator-name' : '';
             return `
                 <div class="comment-item">
                     <div class="comment-header">
-                        <span><i class="fas fa-user"></i> ${c.author_id}</span>
+                        <span>
+                            <img src="${authorPhoto}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid #2a2a2a;margin-right:6px;" onerror="this.style.display='none'">
+                            <span class="${nameClass}">${authorName}</span>
+                        </span>
                         <span>${new Date(c.created_at).toLocaleString()}</span>
                         ${showDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteComment(${c.id})" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i> ${deleteLabel}</button>` : ''}
                     </div>
