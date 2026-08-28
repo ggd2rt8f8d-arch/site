@@ -54,7 +54,8 @@ async def init_db():
                 year INTEGER,
                 poster TEXT,
                 description TEXT,
-                rating TEXT
+                rating TEXT,
+                added_by BIGINT
             )
         """)
         await conn.execute("""
@@ -117,6 +118,7 @@ async def init_db():
                 username TEXT,
                 first_name TEXT,
                 last_name TEXT,
+                photo_url TEXT,
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         """)
@@ -130,15 +132,27 @@ async def init_db():
             )
         """)
 
-        # Добавляем колонку expires_at в bans если её нет
+        # Добавляем колонки если их нет
         await conn.execute("""
             DO $$
             BEGIN
                 IF NOT EXISTS (
                     SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='movies' AND column_name='added_by'
+                ) THEN
+                    ALTER TABLE movies ADD COLUMN added_by BIGINT;
+                END IF;
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
                     WHERE table_name='bans' AND column_name='expires_at'
                 ) THEN
                     ALTER TABLE bans ADD COLUMN expires_at TIMESTAMP;
+                END IF;
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='user_names' AND column_name='photo_url'
+                ) THEN
+                    ALTER TABLE user_names ADD COLUMN photo_url TEXT;
                 END IF;
             END $$;
         """)
@@ -148,10 +162,12 @@ async def init_db():
             CREATE OR REPLACE FUNCTION update_admin_stats()
             RETURNS TRIGGER AS $$
             BEGIN
-                INSERT INTO admin_stats (user_id, movies_added)
-                VALUES (NEW.user_id, 1)
-                ON CONFLICT (user_id) DO UPDATE
-                SET movies_added = admin_stats.movies_added + 1;
+                IF NEW.added_by IS NOT NULL THEN
+                    INSERT INTO admin_stats (user_id, movies_added)
+                    VALUES (NEW.added_by, 1)
+                    ON CONFLICT (user_id) DO UPDATE
+                    SET movies_added = admin_stats.movies_added + 1;
+                END IF;
                 RETURN NEW;
             END;
             $$ LANGUAGE plpgsql;
@@ -214,14 +230,9 @@ async def get_movies_count():
 async def add_movie_to_db(code, title, year, poster, description, rating, user_id=None):
     async with pool.acquire() as conn:
         await conn.execute(
-            "INSERT INTO movies (code, title, year, poster, description, rating) VALUES ($1, $2, $3, $4, $5, $6)",
-            code, title, year, poster, description, rating
+            "INSERT INTO movies (code, title, year, poster, description, rating, added_by) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            code, title, year, poster, description, rating, user_id
         )
-        if user_id:
-            await conn.execute(
-                "INSERT INTO admin_stats (user_id, movies_added) VALUES ($1, 1) ON CONFLICT (user_id) DO UPDATE SET movies_added = admin_stats.movies_added + 1",
-                user_id
-            )
 
 async def update_movie_field(code: str, field: str, value):
     allowed = {"title", "year", "poster", "description", "rating"}
@@ -287,13 +298,11 @@ async def unban_user(user_id: int):
 
 async def is_banned(user_id: int) -> bool:
     async with pool.acquire() as conn:
-        # Удаляем истёкшие баны
         await conn.execute("DELETE FROM bans WHERE expires_at IS NOT NULL AND expires_at < NOW()")
         return await conn.fetchval("SELECT 1 FROM bans WHERE user_id = $1", user_id) is not None
 
 async def get_banned_users():
     async with pool.acquire() as conn:
-        # Удаляем истёкшие
         await conn.execute("DELETE FROM bans WHERE expires_at IS NOT NULL AND expires_at < NOW()")
         rows = await conn.fetch("SELECT user_id, reason, expires_at FROM bans")
         return [dict(r) for r in rows]
@@ -335,18 +344,21 @@ async def get_user_profile(user_id: int):
         )
         
         user_name = await conn.fetchrow(
-            "SELECT username, first_name, last_name FROM user_names WHERE user_id = $1",
+            "SELECT username, first_name, last_name, photo_url FROM user_names WHERE user_id = $1",
             user_id
         )
         
         if user_name:
             username = user_name["username"] or user_name["first_name"] or f"Пользователь {user_id}"
+            photo_url = user_name["photo_url"]
         else:
             username = f"Пользователь {user_id}"
+            photo_url = None
         
         return {
             "user_id": user_id,
             "username": username,
+            "photo_url": photo_url,
             "is_admin": is_admin_user,
             "is_banned": is_banned_user,
             "movies_count": movies_count,
@@ -411,27 +423,27 @@ async def get_reviews(movie_code: str):
         )
         return [dict(r) for r in rows]
 
-async def save_user_name(user_id: int, username: str = None, first_name: str = None, last_name: str = None):
+async def save_user_name(user_id: int, username: str = None, first_name: str = None, last_name: str = None, photo_url: str = None):
     async with pool.acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO user_names (user_id, username, first_name, last_name, updated_at)
-            VALUES ($1, $2, $3, $4, NOW())
+            INSERT INTO user_names (user_id, username, first_name, last_name, photo_url, updated_at)
+            VALUES ($1, $2, $3, $4, $5, NOW())
             ON CONFLICT (user_id) DO UPDATE
-            SET username = $2, first_name = $3, last_name = $4, updated_at = NOW()
+            SET username = $2, first_name = $3, last_name = $4, photo_url = $5, updated_at = NOW()
             """,
-            user_id, username, first_name, last_name
+            user_id, username, first_name, last_name, photo_url
         )
 
 async def get_user_name(user_id: int):
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT username, first_name, last_name FROM user_names WHERE user_id = $1",
+            "SELECT username, first_name, last_name, photo_url FROM user_names WHERE user_id = $1",
             user_id
         )
         if row:
-            return row["username"] or row["first_name"] or f"Пользователь {user_id}"
-        return f"Пользователь {user_id}"
+            return row["username"] or row["first_name"] or f"Пользователь {user_id}", row["photo_url"]
+        return f"Пользователь {user_id}", None
 
 async def add_profile_comment(target_user_id: int, author_id: int, text: str):
     async with pool.acquire() as conn:
@@ -490,11 +502,15 @@ def movie_actions_kb(code: str, user_id: int):
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
+    photo_url = None
+    if message.from_user.photo:
+        photo_url = message.from_user.photo.url
     await save_user_name(
         message.from_user.id,
         message.from_user.username,
         message.from_user.first_name,
-        message.from_user.last_name
+        message.from_user.last_name,
+        photo_url
     )
     
     if await is_banned(message.from_user.id):
@@ -700,7 +716,7 @@ async def cb_admins(callback: CallbackQuery):
         text += "Пока нет."
     else:
         for a in admins:
-            name = await get_user_name(a["user_id"])
+            name, _ = await get_user_name(a["user_id"])
             text += f"👤 {name} (<code>{a['user_id']}</code>)"
             text += f" — 🎬 {a['movies_count']} | ⚠️ {a['warns']}/3\n"
     
@@ -761,7 +777,7 @@ async def cb_list_bans(callback: CallbackQuery):
     else:
         text = "🚫 <b>Забаненные:</b>\n\n"
         for b in banned:
-            name = await get_user_name(b["user_id"])
+            name, _ = await get_user_name(b["user_id"])
             text += f"👤 {name} (<code>{b['user_id']}</code>)"
             if b["reason"]:
                 text += f" — {b['reason']}"
@@ -880,7 +896,8 @@ async def auth_telegram(request: Request):
         user_id,
         data.get("username", ""),
         data.get("first_name", ""),
-        data.get("last_name", "")
+        data.get("last_name", ""),
+        None
     )
     
     response = JSONResponse({"success": True, "user_id": user_id})
@@ -993,12 +1010,8 @@ async def api_add_movie(request: Request, data: MovieCreate):
     async with pool.acquire() as conn:
         try:
             await conn.execute(
-                "INSERT INTO movies (code, title, year, poster, description, rating) VALUES ($1, $2, $3, $4, $5, $6)",
-                data.code, data.title, data.year, data.poster, data.description, data.rating
-            )
-            await conn.execute(
-                "INSERT INTO admin_stats (user_id, movies_added) VALUES ($1, 1) ON CONFLICT (user_id) DO UPDATE SET movies_added = admin_stats.movies_added + 1",
-                user_id
+                "INSERT INTO movies (code, title, year, poster, description, rating, added_by) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                data.code, data.title, data.year, data.poster, data.description, data.rating, user_id
             )
             return {"success": True, "code": data.code}
         except asyncpg.UniqueViolationError:
@@ -1039,10 +1052,11 @@ async def api_admins(request: Request):
     admins = await get_admins_with_stats()
     result = []
     for a in admins:
-        name = await get_user_name(a["user_id"])
+        name, photo = await get_user_name(a["user_id"])
         result.append({
             "user_id": a["user_id"],
             "username": name,
+            "photo_url": photo,
             "movies_count": a["movies_count"],
             "warns": a["warns"]
         })
@@ -1067,10 +1081,11 @@ async def api_bans(request: Request):
     banned = await get_banned_users()
     result = []
     for b in banned:
-        name = await get_user_name(b["user_id"])
+        name, photo = await get_user_name(b["user_id"])
         result.append({
             "user_id": b["user_id"],
             "username": name,
+            "photo_url": photo,
             "reason": b["reason"],
             "expires_at": b["expires_at"]
         })
@@ -1137,8 +1152,8 @@ async def api_add_profile_comment(request: Request, user_id: int, data: CommentD
 @app.get("/api/user/{user_id}/name")
 async def api_user_name(request: Request, user_id: int):
     await check_admin(request)
-    name = await get_user_name(user_id)
-    return {"name": name}
+    name, photo = await get_user_name(user_id)
+    return {"name": name, "photo_url": photo}
 
 # ---------- Статистика ----------
 @app.get("/api/stats")
