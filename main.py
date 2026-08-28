@@ -1115,9 +1115,8 @@ async def dashboard(request: Request):
     if not user_id:
         return RedirectResponse(url="/", status_code=302)
     
-    # Проверяем, есть ли пользователь в БД
+    # Если пользователь не существует — создаём
     if not await is_user_exists(user_id):
-        # Создаём пользователя, если его нет
         await add_user(user_id)
         user_data = await get_telegram_user(user_id)
         if user_data:
