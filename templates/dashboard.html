@@ -1756,7 +1756,7 @@ async function loadUsers() {
             return;
         }
         tbody.innerHTML = data.map(u => {
-            const role = u.is_admin ? (u.user_id in {{ SUPER_ADMIN_IDS|tojson }} ? '⭐ Суперадмин' : '👑 Админ') : '👤 Пользователь';
+            const role = u.is_admin ? (u.user_id == CURRENT_USER && IS_SUPER ? '⭐ Суперадмин' : '👑 Админ') : '👤 Пользователь';
             return `
                 <tr class="clickable-row" onclick="showProfileModal(${u.user_id})">
                     <td>
