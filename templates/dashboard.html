@@ -3109,6 +3109,10 @@ async function unbanUser(user_id) {
 async function loadProfile(user_id) {
     try {
         const res = await apiRequest(`/api/profile/${user_id}`);
+        if (res.status === 404) {
+            showToast('❌ Пользователь не найден', 'danger');
+            return;
+        }
         const data = await res.json();
         document.getElementById('profileName').textContent = data.display_name || `Пользователь ${user_id}`;
         document.getElementById('profileUsername').textContent = `@${data.username || user_id}`;
@@ -3218,6 +3222,10 @@ async function showProfileModal(user_id) {
     currentProfileUserId = user_id;
     try {
         const res = await apiRequest(`/api/profile/${user_id}`);
+        if (res.status === 404) {
+            showToast('❌ Пользователь не найден', 'danger');
+            return;
+        }
         const data = await res.json();
         const body = document.getElementById('profileModalBody');
         
