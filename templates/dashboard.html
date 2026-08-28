@@ -2,17 +2,19 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <title>Movie Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
     <style>
-        * { font-family: 'Segoe UI', system-ui, sans-serif; }
+        /* ===== ОБЩИЕ СТИЛИ ===== */
+        * { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
         body { background: #0d0d0d; color: #d4d4d4; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #1a1a1a; }
         ::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 10px; }
 
+        /* ===== САЙДБАР ===== */
         .sidebar {
             background: #111;
             border-right: 1px solid #2a2a2a;
@@ -25,6 +27,7 @@
             overflow-y: auto;
             padding: 20px 0;
             z-index: 1000;
+            transition: transform 0.3s ease;
         }
         .sidebar .brand {
             text-align: center;
@@ -58,10 +61,15 @@
         }
         .sidebar .nav-link i { width: 20px; margin-right: 10px; }
 
+        /* ===== ОСНОВНОЙ КОНТЕНТ ===== */
         .main-content {
             margin-left: 210px;
             padding: 20px 28px;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
         }
+
+        /* ===== ВЕРХНЯЯ ПАНЕЛЬ ===== */
         .top-bar {
             background: #161616;
             border: 1px solid #2a2a2a;
@@ -71,7 +79,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            cursor: default;
         }
         .top-bar h4 {
             color: #e8e8e8;
@@ -84,9 +91,8 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            color: #999;
-            font-size: 13px;
             cursor: pointer;
+            position: relative;
             padding: 4px 10px 4px 14px;
             border-radius: 30px;
             transition: 0.2s;
@@ -105,16 +111,62 @@
         .top-bar .user-info:hover .avatar-sm {
             border-color: #555;
         }
-        .badge-super {
-            background: #3a3a3a;
+        .top-bar .user-info .user-name {
             color: #ccc;
+            font-size: 13px;
             font-weight: 400;
-            padding: 2px 10px;
-            border-radius: 30px;
-            font-size: 10px;
-            letter-spacing: 0.5px;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
+        /* ===== ВЫПАДАЮЩЕЕ МЕНЮ ===== */
+        .dropdown-menu-custom {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 8px 0;
+            min-width: 200px;
+            display: none;
+            z-index: 1001;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        }
+        .dropdown-menu-custom.show {
+            display: block;
+        }
+        .dropdown-menu-custom .dropdown-item {
+            color: #ccc;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            text-decoration: none;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+        .dropdown-menu-custom .dropdown-item:hover {
+            background: #2a2a2a;
+            color: #fff;
+        }
+        .dropdown-menu-custom .dropdown-item i {
+            width: 18px;
+            color: #666;
+        }
+        .dropdown-menu-custom .dropdown-divider {
+            border-top: 1px solid #2a2a2a;
+            margin: 4px 0;
+        }
+
+        /* ===== СТАТИСТИКА ===== */
         .stat-card {
             background: #151515;
             border: 1px solid #2a2a2a;
@@ -138,17 +190,20 @@
             color: #555;
         }
 
+        /* ===== ТАБЛИЦЫ ===== */
         .table-container {
             background: #141414;
             border: 1px solid #2a2a2a;
             border-radius: 12px;
             padding: 16px;
+            overflow-x: auto;
         }
         .table {
             color: #ccc;
             border-color: #2a2a2a;
             margin-bottom: 0;
             font-size: 13px;
+            width: 100%;
         }
         .table th {
             font-weight: 400;
@@ -158,6 +213,7 @@
             font-size: 10px;
             letter-spacing: 0.5px;
             padding: 8px 6px;
+            white-space: nowrap;
         }
         .table td {
             border-bottom: 1px solid #222;
@@ -165,7 +221,9 @@
             padding: 8px 6px;
         }
         .table tr:hover td { background: #1a1a1a; }
+        .clickable-row { cursor: pointer; }
 
+        /* ===== КНОПКИ ===== */
         .btn {
             border-radius: 8px;
             font-weight: 400;
@@ -221,6 +279,7 @@
         }
         .btn-sm { padding: 2px 8px; font-size: 11px; }
 
+        /* ===== ПОИСК ===== */
         .search-box {
             position: relative;
             display: inline-block;
@@ -247,6 +306,7 @@
             font-size: 13px;
         }
 
+        /* ===== МОДАЛКИ ===== */
         .modal-content {
             background: #161616;
             border: 1px solid #2a2a2a;
@@ -281,6 +341,7 @@
         }
         .btn-close { filter: invert(0.6); }
 
+        /* ===== АВАТАРКИ ===== */
         .avatar {
             width: 32px;
             height: 32px;
@@ -288,7 +349,6 @@
             object-fit: cover;
             border: 2px solid #2a2a2a;
         }
-        .avatar-sm { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
         .avatar-lg {
             width: 72px;
             height: 72px;
@@ -433,17 +493,133 @@
             font-size: 10px;
         }
 
-        .clickable-row { cursor: pointer; }
-        .clickable-row:hover td { background: #1a1a1a; }
         .text-secondary-light { color: #888; }
 
-        @media (max-width: 768px) {
-            .sidebar { position: relative; width: 100%; min-height: auto; }
-            .main-content { margin-left: 0; padding: 15px; }
-            .search-box input { width: 100%; }
-            .profile-card .profile-header { flex-direction: column; text-align: center; }
-            .profile-card .stats-grid { grid-template-columns: repeat(3, 1fr); }
+        /* ===== АДАПТИВ ===== */
+        .sidebar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: #ccc;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
         }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .sidebar-overlay.show {
+                display: block;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+            .sidebar-toggle {
+                display: block;
+            }
+            .top-bar {
+                padding: 10px 16px;
+            }
+            .top-bar h4 {
+                font-size: 16px;
+            }
+            .top-bar .user-info .user-name {
+                max-width: 80px;
+                font-size: 12px;
+            }
+            .search-box input {
+                width: 160px;
+                font-size: 11px;
+            }
+            .stat-card .number {
+                font-size: 20px;
+            }
+            .profile-card .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .profile-card .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            .profile-card .stats-grid .stat-item .num {
+                font-size: 18px;
+            }
+            .table th, .table td {
+                padding: 4px 4px;
+                font-size: 11px;
+            }
+            .table-container {
+                padding: 8px;
+            }
+            .btn {
+                padding: 2px 8px;
+                font-size: 10px;
+            }
+            .dropdown-menu-custom {
+                min-width: 180px;
+                right: -10px;
+            }
+            .dropdown-menu-custom .dropdown-item {
+                font-size: 13px;
+                padding: 8px 16px;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .search-box input {
+                width: 180px;
+            }
+            .stat-card .number {
+                font-size: 22px;
+            }
+        }
+
+        @media (min-width: 1025px) {
+            .main-content {
+                padding: 25px 40px;
+            }
+            .table th, .table td {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+            .top-bar {
+                padding: 16px 30px;
+            }
+            .top-bar h4 {
+                font-size: 22px;
+            }
+            .stat-card {
+                padding: 22px 28px;
+            }
+            .stat-card .number {
+                font-size: 32px;
+            }
+            .stat-card .label {
+                font-size: 14px;
+            }
+        }
+
         .fade-in { animation: fadeIn 0.25s ease; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(6px); }
@@ -453,8 +629,11 @@
 </head>
 <body>
 
-<!-- ====== SIDEBAR ====== -->
-<div class="sidebar">
+<!-- ====== ОВЕРЛЕЙ ДЛЯ САЙДБАРА ====== -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- ====== САЙДБАР ====== -->
+<div class="sidebar" id="sidebar">
     <div class="brand">
         <i class="fas fa-film"></i>
         <h3>MOVIE ADMIN</h3>
@@ -472,6 +651,9 @@
         <a class="nav-link" href="#" data-page="bans" id="bansTab" {% if not is_super %}style="display:none"{% endif %}>
             <i class="fas fa-ban"></i> Баны
         </a>
+        <a class="nav-link" href="#" data-page="users">
+            <i class="fas fa-users"></i> Пользователи
+        </a>
         <a class="nav-link" href="/logout">
             <i class="fas fa-sign-out-alt"></i> Выйти
         </a>
@@ -481,21 +663,42 @@
 <!-- ====== MAIN CONTENT ====== -->
 <div class="main-content">
 
+    <!-- TOP BAR -->
     <div class="top-bar">
-        <h4 id="pageTitle">Главная</h4>
-        <div class="user-info" onclick="showProfilePage()">
-            <span id="topBarName">Загрузка...</span>
-            <img src="" class="avatar-sm" id="topBarAvatar" onerror="this.style.display='none'">
-            {% if is_super %}
-                <span class="badge-super"><i class="fas fa-star"></i></span>
-            {% endif %}
+        <div style="display:flex;align-items:center;gap:12px;">
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h4 id="pageTitle">Главная</h4>
+        </div>
+        <div class="user-info" onclick="toggleDropdown()" id="userMenu">
+            <span class="user-name" id="topBarName">{{ username or 'Загрузка...' }}</span>
+            <img src="{{ photo_url or 'https://ui-avatars.com/api/?name=' + user_id|string + '&background=2a2a2a&color=cccccc&size=34&rounded=true' }}" class="avatar-sm" id="topBarAvatar" onerror="this.style.display='none'">
+            <div class="dropdown-menu-custom" id="userDropdown">
+                <button class="dropdown-item" onclick="showProfilePage()">
+                    <i class="fas fa-user"></i> Мой профиль
+                </button>
+                <button class="dropdown-item" onclick="showSettings()">
+                    <i class="fas fa-cog"></i> Настройки
+                </button>
+                <button class="dropdown-item" onclick="showSupport()">
+                    <i class="fas fa-headset"></i> Поддержка
+                </button>
+                <button class="dropdown-item" onclick="showAbout()">
+                    <i class="fas fa-info-circle"></i> О нас
+                </button>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item" onclick="window.location.href='/logout'">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- ====== ГЛАВНАЯ ====== -->
     <div id="page-dashboard" class="fade-in">
-        <div class="row g-4" id="statsRow">
-            <div class="col-md-3">
+        <div class="row g-3 g-md-4" id="statsRow">
+            <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -506,7 +709,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -517,18 +720,18 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="number" id="statAdmins">{{ stats.admins }}</div>
-                            <div class="label"><i class="fas fa-users"></i> Админов</div>
+                            <div class="label"><i class="fas fa-users-cog"></i> Админов</div>
                         </div>
-                        <div class="icon"><i class="fas fa-users"></i></div>
+                        <div class="icon"><i class="fas fa-users-cog"></i></div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -536,6 +739,17 @@
                             <div class="label"><i class="fas fa-ban"></i> Банов</div>
                         </div>
                         <div class="icon"><i class="fas fa-ban"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="number" id="statUsers">{{ stats.users or 0 }}</div>
+                            <div class="label"><i class="fas fa-users"></i> Пользователей</div>
+                        </div>
+                        <div class="icon"><i class="fas fa-users"></i></div>
                     </div>
                 </div>
             </div>
@@ -566,11 +780,12 @@
                             <th>Год</th>
                             <th>Постер</th>
                             <th>Рейтинг</th>
+                            <th>TPZ</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody id="moviesBody">
-                        <tr><td colspan="6" class="text-center py-4 text-secondary-light">Загрузка...</td></tr>
+                        <tr><td colspan="7" class="text-center py-4 text-secondary-light">Загрузка...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -581,9 +796,11 @@
     <div id="page-admins" style="display:none" class="fade-in">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 style="font-weight:300;color:#ccc;"><i class="fas fa-users-cog"></i> Администраторы</h5>
+            {% if is_super %}
             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAdminModal">
                 <i class="fas fa-user-plus"></i> Добавить
             </button>
+            {% endif %}
         </div>
         <div class="table-container">
             <table class="table">
@@ -593,7 +810,9 @@
                         <th>ID / Имя</th>
                         <th><i class="fas fa-film"></i> Фильмов</th>
                         <th><i class="fas fa-exclamation-triangle"></i> Выговоров</th>
+                        {% if is_super %}
                         <th>Действия</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody id="adminsBody">
@@ -607,9 +826,11 @@
     <div id="page-bans" style="display:none" class="fade-in">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 style="font-weight:300;color:#ccc;"><i class="fas fa-ban"></i> Забаненные</h5>
+            {% if is_super %}
             <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addBanModal">
                 <i class="fas fa-user-slash"></i> Забанить
             </button>
+            {% endif %}
         </div>
         <div class="table-container">
             <table class="table">
@@ -619,7 +840,9 @@
                         <th>ID / Имя</th>
                         <th>Причина</th>
                         <th>До</th>
+                        {% if is_super %}
                         <th>Действия</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody id="bansBody">
@@ -629,22 +852,46 @@
         </div>
     </div>
 
+    <!-- ====== ПОЛЬЗОВАТЕЛИ ====== -->
+    <div id="page-users" style="display:none" class="fade-in">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 style="font-weight:300;color:#ccc;"><i class="fas fa-users"></i> Все пользователи</h5>
+        </div>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width:40px;"></th>
+                        <th>ID / Имя</th>
+                        <th>Роль</th>
+                        <th>Дата регистрации</th>
+                    </tr>
+                </thead>
+                <tbody id="usersBody">
+                    <tr><td colspan="4" class="text-center py-4 text-secondary-light">Загрузка...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- ====== ПРОФИЛЬ ====== -->
     <div id="page-profile" style="display:none" class="fade-in">
         <div class="profile-card" id="profileCard">
-            <!-- Шапка: аватарка + ник + должность -->
             <div class="profile-header">
-                <img src="" class="avatar-lg" id="profileAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2272%22 height=%2272%22%3E%3Crect fill=%22%23222%22 width=%2272%22 height=%2272%22/%3E%3Ctext x=%2236%22 y=%2244%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2230%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
+                <img src="{{ photo_url or 'https://ui-avatars.com/api/?name=' + user_id|string + '&background=2a2a2a&color=cccccc&size=72&rounded=true' }}" class="avatar-lg" id="profileAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2272%22 height=%2272%22%3E%3Crect fill=%22%23222%22 width=%2272%22 height=%2272%22/%3E%3Ctext x=%2236%22 y=%2244%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2230%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
                 <div class="profile-info">
-                    <h3 id="profileName">Загрузка...</h3>
+                    <h3 id="profileName">{{ username or 'Загрузка...' }}</h3>
                     <div class="sub" id="profileId"><i class="fas fa-id-badge"></i> ID: {{ user_id }}</div>
                     {% if is_super %}
                         <span class="badge-super"><i class="fas fa-crown"></i> Суперадмин</span>
+                    {% elif is_admin %}
+                        <span class="badge-super"><i class="fas fa-user-shield"></i> Админ</span>
+                    {% else %}
+                        <span class="badge-super"><i class="fas fa-user"></i> Пользователь</span>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- Статистика: фильмы, выговоры, наказания -->
             <div class="stats-grid" id="profileStats">
                 <div class="stat-item">
                     <div class="num" id="pMovies">-</div>
@@ -660,13 +907,11 @@
                 </div>
             </div>
 
-            <!-- История наказаний -->
             <div class="section-title"><i class="fas fa-history"></i> История наказаний</div>
             <div id="pHistory">
                 <p class="text-secondary-light text-center py-3">Нет наказаний</p>
             </div>
 
-            <!-- Комментарии -->
             <div class="section-title"><i class="fas fa-comments"></i> Комментарии</div>
             <div id="pComments">
                 <p class="text-secondary-light text-center py-3">Нет комментариев</p>
@@ -677,6 +922,86 @@
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ====== СТРАНИЦА НАСТРОЕК ====== -->
+    <div id="page-settings" style="display:none" class="fade-in">
+        <div class="profile-card" style="max-width:600px;">
+            <h3 style="font-weight:300;color:#e8e8e8;"><i class="fas fa-cog"></i> Настройки</h3>
+            <hr style="border-color:#2a2a2a;">
+            <div class="mb-3">
+                <label class="form-label" style="color:#999;">Язык интерфейса</label>
+                <select class="form-control" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                    <option value="ru">Русский</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" style="color:#999;">Тема</label>
+                <select class="form-control" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
+                    <option value="dark">Тёмная</option>
+                    <option value="light">Светлая</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" style="color:#999;">Уведомления</label>
+                <div style="display:flex;gap:20px;align-items:center;">
+                    <label style="color:#aaa;font-size:14px;">
+                        <input type="checkbox" checked> Email
+                    </label>
+                    <label style="color:#aaa;font-size:14px;">
+                        <input type="checkbox" checked> Telegram
+                    </label>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="showToast('Настройки сохранены!', 'success')">
+                <i class="fas fa-save"></i> Сохранить
+            </button>
+        </div>
+    </div>
+
+    <!-- ====== СТРАНИЦА ПОДДЕРЖКИ ====== -->
+    <div id="page-support" style="display:none" class="fade-in">
+        <div class="profile-card" style="max-width:600px;">
+            <h3 style="font-weight:300;color:#e8e8e8;"><i class="fas fa-headset"></i> Поддержка</h3>
+            <hr style="border-color:#2a2a2a;">
+            <p style="color:#ccc;">Свяжитесь с нами для получения помощи:</p>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;padding:12px 16px;border-radius:10px;border:1px solid #2a2a2a;">
+                    <i class="fas fa-telegram" style="color:#0088cc;font-size:20px;"></i>
+                    <span style="color:#ccc;">@topzfilmz</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;padding:12px 16px;border-radius:10px;border:1px solid #2a2a2a;">
+                    <i class="fas fa-envelope" style="color:#888;font-size:20px;"></i>
+                    <span style="color:#ccc;">support@topzfilmz.ru</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;padding:12px 16px;border-radius:10px;border:1px solid #2a2a2a;">
+                    <i class="fas fa-clock" style="color:#888;font-size:20px;"></i>
+                    <span style="color:#ccc;">Ответ в течение 24 часов</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== СТРАНИЦА О НАС ====== -->
+    <div id="page-about" style="display:none" class="fade-in">
+        <div class="profile-card" style="max-width:600px;">
+            <h3 style="font-weight:300;color:#e8e8e8;"><i class="fas fa-info-circle"></i> О нас</h3>
+            <hr style="border-color:#2a2a2a;">
+            <p style="color:#ccc;line-height:1.6;">
+                <b>Movie Admin</b> — система управления фильмами с интеграцией Telegram.
+            </p>
+            <p style="color:#888;font-size:14px;line-height:1.6;">
+                🎬 Добавляйте и редактируйте фильмы<br>
+                ⭐ Оценивайте и оставляйте отзывы<br>
+                👥 Управляйте пользователями и админами<br>
+                🔒 Безопасный вход через Telegram
+            </p>
+            <hr style="border-color:#2a2a2a;">
+            <p style="color:#666;font-size:13px;">
+                Версия 2.0.0
+            </p>
         </div>
     </div>
 </div>
@@ -842,7 +1167,7 @@
     </div>
 </div>
 
-<!-- Модалка выдачи наказания -->
+<!-- Модалка наказания -->
 <div class="modal fade" id="punishModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -852,7 +1177,7 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label">Тип наказания</label>
+                    <label class="form-label">Тип</label>
                     <select class="form-control" id="punishType">
                         <option value="warning">⚠️ Выговор</option>
                         <option value="mute">🔇 Мут (1 день)</option>
@@ -865,7 +1190,7 @@
                     <input type="text" class="form-control" id="punishReason" placeholder="Нарушение правил">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Срок (часов, 0 = навсегда)</label>
+                    <label class="form-label">Срок (часов)</label>
                     <input type="number" class="form-control" id="punishDuration" placeholder="24" value="24">
                 </div>
             </div>
@@ -908,34 +1233,79 @@
 <script>
 // ==================== ПЕРЕМЕННЫЕ ====================
 const IS_SUPER = {{ is_super|lower }};
+const IS_ADMIN = {{ is_admin|lower }};
 const CURRENT_USER = {{ user_id }};
 let moviesData = [];
 let currentProfileUserId = CURRENT_USER;
 let currentMovieCode = null;
+let currentReviewMovieCode = null;
+
+// ==================== САЙДБАР ====================
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+
+// ==================== МЕНЮ ПОЛЬЗОВАТЕЛЯ ====================
+function toggleDropdown() {
+    document.getElementById('userDropdown').classList.toggle('show');
+}
+document.addEventListener('click', function(e) {
+    const menu = document.getElementById('userMenu');
+    const dropdown = document.getElementById('userDropdown');
+    if (menu && !menu.contains(e.target)) {
+        dropdown.classList.remove('show');
+    }
+});
+
+// ==================== СТРАНИЦЫ ====================
+function showPage(page) {
+    document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelector(`.sidebar .nav-link[data-page="${page}"]`)?.classList.add('active');
+    document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
+    const target = document.getElementById(`page-${page}`);
+    if (target) target.style.display = 'block';
+    document.getElementById('pageTitle').textContent = {
+        dashboard: 'Главная',
+        movies: 'Управление фильмами',
+        admins: 'Администраторы',
+        bans: 'Забаненные',
+        users: 'Пользователи',
+        profile: 'Мой профиль',
+        settings: 'Настройки',
+        support: 'Поддержка',
+        about: 'О нас'
+    }[page] || page;
+}
+
+function showSettings() {
+    document.getElementById('userDropdown').classList.remove('show');
+    showPage('settings');
+}
+
+function showSupport() {
+    document.getElementById('userDropdown').classList.remove('show');
+    showPage('support');
+}
+
+function showAbout() {
+    document.getElementById('userDropdown').classList.remove('show');
+    showPage('about');
+}
 
 // ==================== НАВИГАЦИЯ ====================
-const pageTitles = {
-    dashboard: 'Главная',
-    movies: 'Управление фильмами',
-    admins: 'Администраторы',
-    bans: 'Забаненные',
-    profile: 'Мой профиль'
-};
-
 document.querySelectorAll('.sidebar .nav-link[data-page]').forEach(link => {
     link.addEventListener('click', function(e) {
         e.preventDefault();
         const page = this.dataset.page;
-        document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
-        this.classList.add('active');
-        document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
-        document.getElementById(`page-${page}`).style.display = 'block';
-        document.getElementById('pageTitle').textContent = pageTitles[page] || page;
+        showPage(page);
         if (page === 'movies') loadMovies();
         if (page === 'admins') loadAdmins();
         if (page === 'bans') loadBans();
+        if (page === 'users') loadUsers();
         if (page === 'dashboard') loadStats();
         if (page === 'profile') loadProfile(CURRENT_USER);
+        if (window.innerWidth <= 768) toggleSidebar();
     });
 });
 
@@ -987,35 +1357,6 @@ function showToast(msg, type = 'info') {
     }, 3000);
 }
 
-// ==================== ЗАГРУЗКА АВАТАРКИ И ИМЕНИ ====================
-async function loadUserInfo(user_id) {
-    try {
-        const res = await apiRequest(`/api/user/${user_id}/name`);
-        const data = await res.json();
-        const name = data.name || `Пользователь ${user_id}`;
-        const photo = data.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2a2a2a&color=cccccc&size=34&rounded=true`;
-        
-        // Обновляем верхнюю панель
-        document.getElementById('topBarName').textContent = name;
-        document.getElementById('topBarAvatar').src = photo;
-        
-        // Обновляем профиль
-        document.getElementById('profileName').textContent = name;
-        document.getElementById('profileAvatar').src = photo;
-        
-        return { name, photo };
-    } catch(e) {
-        console.error(e);
-        const fallback = `Пользователь ${user_id}`;
-        const fallbackPhoto = `https://ui-avatars.com/api/?name=${user_id}&background=2a2a2a&color=cccccc&size=34&rounded=true`;
-        document.getElementById('topBarName').textContent = fallback;
-        document.getElementById('topBarAvatar').src = fallbackPhoto;
-        document.getElementById('profileName').textContent = fallback;
-        document.getElementById('profileAvatar').src = fallbackPhoto;
-        return { name: fallback, photo: fallbackPhoto };
-    }
-}
-
 // ==================== СТАТИСТИКА ====================
 async function loadStats() {
     try {
@@ -1025,6 +1366,7 @@ async function loadStats() {
         document.getElementById('statRequests').textContent = data.requests;
         document.getElementById('statAdmins').textContent = data.admins;
         document.getElementById('statBans').textContent = data.bans;
+        document.getElementById('statUsers').textContent = data.users || 0;
     } catch(e) { console.error(e); }
 }
 
@@ -1032,40 +1374,40 @@ async function loadStats() {
 async function loadMovies() {
     try {
         const tbody = document.getElementById('moviesBody');
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-secondary-light"><i class="fas fa-spinner fa-spin"></i> Загрузка...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-secondary-light"><i class="fas fa-spinner fa-spin"></i> Загрузка...</td></tr>';
         const res = await apiRequest('/api/movies');
         if (!res.ok) throw new Error('Ошибка');
         moviesData = await res.json();
         renderMovies(moviesData);
     } catch(e) {
-        document.getElementById('moviesBody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger"><i class="fas fa-exclamation-circle"></i> Ошибка загрузки</td></tr>';
+        document.getElementById('moviesBody').innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger"><i class="fas fa-exclamation-circle"></i> Ошибка загрузки</td></tr>';
     }
 }
 
 function renderMovies(data) {
     const tbody = document.getElementById('moviesBody');
     if (!data || !data.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-secondary-light"><i class="fas fa-inbox"></i> Фильмов пока нет</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-secondary-light"><i class="fas fa-inbox"></i> Фильмов пока нет</td></tr>';
         return;
     }
     tbody.innerHTML = data.map(m => {
         let actions = `
-            <button class="btn btn-warning btn-sm" onclick="editMovie('${m.code}')" style="padding:3px 8px;font-size:11px;">
+            <button class="btn btn-warning btn-sm" onclick="event.stopPropagation();editMovie('${m.code}')" style="padding:3px 8px;font-size:11px;">
                 <i class="fas fa-edit"></i>
             </button>
-            <button class="btn btn-primary btn-sm" onclick="showMoviePage('${m.code}')" style="padding:3px 8px;font-size:11px;">
+            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showMoviePage('${m.code}')" style="padding:3px 8px;font-size:11px;">
                 <i class="fas fa-eye"></i>
             </button>
         `;
         if (IS_SUPER) {
             actions += `
-                <button class="btn btn-danger btn-sm" onclick="deleteMovie('${m.code}')" style="padding:3px 8px;font-size:11px;">
+                <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteMovie('${m.code}')" style="padding:3px 8px;font-size:11px;">
                     <i class="fas fa-trash"></i>
                 </button>
             `;
         }
         return `
-            <tr>
+            <tr class="clickable-row" onclick="showMoviePage('${m.code}')">
                 <td><code style="color:#999;">${m.code}</code></td>
                 <td>${m.title}</td>
                 <td>${m.year}</td>
@@ -1073,6 +1415,7 @@ function renderMovies(data) {
                     ${m.poster ? `<img src="${m.poster}" style="width:36px;height:50px;object-fit:cover;border-radius:4px;border:1px solid #333;" onerror="this.style.display='none'">` : '<span class="text-secondary-light">-</span>'}
                 </td>
                 <td><i class="fas fa-star" style="color:#e8c84a;"></i> ${m.rating || '-'}</td>
+                <td>${m.tpz ? `<i class="fas fa-star" style="color:#e8c84a;"></i> ${m.tpz}` : '-'}</td>
                 <td style="white-space:nowrap;">${actions}</td>
             </tr>
         `;
@@ -1189,12 +1532,33 @@ async function showMoviePage(code) {
     try {
         const res = await apiRequest(`/api/movies/${code}`);
         const m = await res.json();
+        const reviewsRes = await apiRequest(`/api/movies/${code}/reviews`);
+        const reviews = await reviewsRes.json();
+        
         const body = document.getElementById('profileModalBody');
+        let reviewsHtml = '';
+        if (reviews && reviews.length) {
+            reviewsHtml = reviews.slice(0, 5).map(r => `
+                <div class="review-item" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px 14px;margin-bottom:8px;">
+                    <div style="display:flex;justify-content:space-between;color:#777;font-size:11px;">
+                        <span><i class="fas fa-user"></i> ${r.user_id}</span>
+                        <span style="color:#e8c84a;"><i class="fas fa-star"></i> ${r.rating}/10</span>
+                        ${IS_SUPER ? `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteReview(${r.id}, '${code}')" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i></button>` : ''}
+                    </div>
+                    <div style="color:#ccc;margin-top:4px;font-size:13px;">${r.text || ''}</div>
+                    <div style="color:#777;font-size:10px;margin-top:4px;">${new Date(r.created_at).toLocaleString()}</div>
+                </div>
+            `).join('');
+        } else {
+            reviewsHtml = '<p class="text-secondary-light text-center py-3">Нет отзывов</p>';
+        }
+        
         body.innerHTML = `
             <div class="text-center">
                 ${m.poster ? `<img src="${m.poster}" style="max-width:180px;border-radius:10px;border:1px solid #333;margin-bottom:14px;">` : ''}
                 <h3 style="font-weight:300;color:#e8e8e8;">${m.title} (${m.year})</h3>
                 <p class="text-secondary-light"><i class="fas fa-star" style="color:#e8c84a;"></i> IMDb: ${m.rating || '-'}</p>
+                <p class="text-secondary-light"><i class="fas fa-star" style="color:#e8c84a;"></i> TPZ: ${m.tpz || '-'} (${m.votes || 0} оценок)</p>
                 <p style="color:#bbb;">${m.description || 'Нет описания'}</p>
                 <hr style="border-color:#2a2a2a;">
                 <div class="d-flex justify-content-center gap-2 flex-wrap">
@@ -1206,49 +1570,36 @@ async function showMoviePage(code) {
                     </button>
                 </div>
                 <hr style="border-color:#2a2a2a;">
-                <h6 style="font-weight:300;color:#999;"><i class="fas fa-comments"></i> Отзывы</h6>
-                <div id="movieReviews">
-                    <p class="text-secondary-light text-center py-3">Нет отзывов</p>
-                </div>
+                <h6 style="font-weight:300;color:#999;"><i class="fas fa-comments"></i> Отзывы (${reviews ? reviews.length : 0})</h6>
+                <div id="movieReviews">${reviewsHtml}</div>
             </div>
         `;
         document.getElementById('profileModalName').textContent = `🎬 ${m.title}`;
         new bootstrap.Modal(document.getElementById('profileModal')).show();
-        loadReviews(code);
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-function setReviewMovie(code) { currentMovieCode = code; }
+function setReviewMovie(code) { currentReviewMovieCode = code; }
 
-async function loadReviews(code) {
+async function deleteReview(reviewId, movieCode) {
+    if (!confirm('Удалить этот отзыв?')) return;
     try {
-        const res = await apiRequest(`/api/movies/${code}/reviews`);
-        const data = await res.json();
-        const container = document.getElementById('movieReviews');
-        if (!data || !data.length) {
-            container.innerHTML = '<p class="text-secondary-light text-center py-3">Нет отзывов</p>';
-            return;
+        const res = await apiRequest(`/api/reviews/${reviewId}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('✅ Отзыв удалён', 'success');
+            showMoviePage(movieCode);
+            loadMovies();
         }
-        container.innerHTML = data.map(r => `
-            <div class="review-item" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px 14px;margin-bottom:8px;">
-                <div style="display:flex;justify-content:space-between;color:#777;font-size:11px;">
-                    <span><i class="fas fa-user"></i> ${r.user_id}</span>
-                    <span style="color:#e8c84a;"><i class="fas fa-star"></i> ${r.rating}/10</span>
-                </div>
-                <div style="color:#ccc;margin-top:4px;font-size:13px;">${r.text || ''}</div>
-                <div style="color:#777;font-size:10px;margin-top:4px;">${new Date(r.created_at).toLocaleString()}</div>
-            </div>
-        `).join('');
-    } catch(e) { console.error(e); }
+    } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
 document.getElementById('saveReviewBtn')?.addEventListener('click', async function() {
-    if (!currentMovieCode) return showToast('❌ Ошибка', 'danger');
+    if (!currentReviewMovieCode) return showToast('❌ Ошибка', 'danger');
     const rating = parseInt(document.getElementById('reviewRating').value);
     const text = document.getElementById('reviewText').value.trim();
     if (!text) return showToast('⚠️ Введите текст', 'warning');
     try {
-        const res = await apiRequest(`/api/movies/${currentMovieCode}/reviews`, {
+        const res = await apiRequest(`/api/movies/${currentReviewMovieCode}/reviews`, {
             method: 'POST',
             body: JSON.stringify({ rating, text })
         });
@@ -1256,7 +1607,8 @@ document.getElementById('saveReviewBtn')?.addEventListener('click', async functi
             bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide();
             document.getElementById('reviewText').value = '';
             showToast('✅ Отзыв добавлен', 'success');
-            if (currentMovieCode) loadReviews(currentMovieCode);
+            if (currentReviewMovieCode) showMoviePage(currentReviewMovieCode);
+            loadMovies();
         } else {
             showToast('❌ Ошибка', 'danger');
         }
@@ -1273,27 +1625,26 @@ async function loadAdmins() {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-secondary-light"><i class="fas fa-users"></i> Админов пока нет</td></tr>';
             return;
         }
-        tbody.innerHTML = data.map(a => `
-            <tr class="clickable-row" onclick="showProfileModal(${a.user_id})">
-                <td>
-                    <img src="${a.photo_url || `https://ui-avatars.com/api/?name=${a.user_id}&background=2a2a2a&color=cccccc&size=32&rounded=true`}" class="avatar" onerror="this.style.display='none'">
-                </td>
-                <td>
-                    <div style="font-weight:400;color:#ddd;">${a.username || 'Пользователь'}</div>
-                    <div style="font-size:11px;color:#666;"><code>${a.user_id}</code></div>
-                </td>
-                <td>${a.movies_count || 0}</td>
-                <td><span class="${(a.warns || 0) >= 3 ? 'text-danger' : 'text-secondary-light'}">${a.warns || 0}/3</span></td>
-                <td>
-                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showProfileModal(${a.user_id})">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    ${IS_SUPER ? `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeAdmin(${a.user_id})">
-                        <i class="fas fa-user-minus"></i>
-                    </button>` : ''}
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = data.map(a => {
+            let actions = `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showProfileModal(${a.user_id})"><i class="fas fa-eye"></i></button>`;
+            if (IS_SUPER) {
+                actions += `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeAdmin(${a.user_id})"><i class="fas fa-user-minus"></i></button>`;
+            }
+            return `
+                <tr class="clickable-row" onclick="showProfileModal(${a.user_id})">
+                    <td>
+                        <img src="${a.photo_url || 'https://ui-avatars.com/api/?name=' + a.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'">
+                    </td>
+                    <td>
+                        <div style="font-weight:400;color:#ddd;">${a.username || 'Пользователь'}</div>
+                        <div style="font-size:11px;color:#666;"><code>${a.user_id}</code></div>
+                    </td>
+                    <td>${a.movies_count || 0}</td>
+                    <td><span class="${(a.warns || 0) >= 3 ? 'text-danger' : 'text-secondary-light'}">${a.warns || 0}/3</span></td>
+                    <td style="white-space:nowrap;">${actions}</td>
+                </tr>
+            `;
+        }).join('');
     } catch(e) { console.error(e); }
 }
 
@@ -1337,27 +1688,26 @@ async function loadBans() {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-secondary-light"><i class="fas fa-check-circle"></i> Забаненных нет</td></tr>';
             return;
         }
-        tbody.innerHTML = data.map(b => `
-            <tr class="clickable-row" onclick="showProfileModal(${b.user_id})">
-                <td>
-                    <img src="${b.photo_url || `https://ui-avatars.com/api/?name=${b.user_id}&background=2a2a2a&color=cccccc&size=32&rounded=true`}" class="avatar" onerror="this.style.display='none'">
-                </td>
-                <td>
-                    <div style="font-weight:400;color:#ddd;">${b.username || 'Пользователь'}</div>
-                    <div style="font-size:11px;color:#666;"><code>${b.user_id}</code></div>
-                </td>
-                <td>${b.reason || '-'}</td>
-                <td>${b.expires_at ? new Date(b.expires_at).toLocaleString() : 'Навсегда'}</td>
-                <td>
-                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showProfileModal(${b.user_id})">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    ${IS_SUPER ? `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();unbanUser(${b.user_id})">
-                        <i class="fas fa-user-check"></i>
-                    </button>` : ''}
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = data.map(b => {
+            let actions = `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showProfileModal(${b.user_id})"><i class="fas fa-eye"></i></button>`;
+            if (IS_SUPER) {
+                actions += `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();unbanUser(${b.user_id})"><i class="fas fa-user-check"></i></button>`;
+            }
+            return `
+                <tr class="clickable-row" onclick="showProfileModal(${b.user_id})">
+                    <td>
+                        <img src="${b.photo_url || 'https://ui-avatars.com/api/?name=' + b.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'">
+                    </td>
+                    <td>
+                        <div style="font-weight:400;color:#ddd;">${b.username || 'Пользователь'}</div>
+                        <div style="font-size:11px;color:#666;"><code>${b.user_id}</code></div>
+                    </td>
+                    <td>${b.reason || '-'}</td>
+                    <td>${b.expires_at ? new Date(b.expires_at).toLocaleString() : 'Навсегда'}</td>
+                    <td style="white-space:nowrap;">${actions}</td>
+                </tr>
+            `;
+        }).join('');
     } catch(e) { console.error(e); }
 }
 
@@ -1395,13 +1745,39 @@ async function unbanUser(user_id) {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
+// ==================== ПОЛЬЗОВАТЕЛИ ====================
+async function loadUsers() {
+    try {
+        const res = await apiRequest('/api/users');
+        const data = await res.json();
+        const tbody = document.getElementById('usersBody');
+        if (!data || !data.length) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary-light"><i class="fas fa-users"></i> Пользователей пока нет</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.map(u => {
+            const role = u.is_admin ? (u.user_id in {{ SUPER_ADMIN_IDS|tojson }} ? '⭐ Суперадмин' : '👑 Админ') : '👤 Пользователь';
+            return `
+                <tr class="clickable-row" onclick="showProfileModal(${u.user_id})">
+                    <td>
+                        <img src="${u.photo_url || 'https://ui-avatars.com/api/?name=' + u.user_id + '&background=2a2a2a&color=cccccc&size=32&rounded=true'}" class="avatar" onerror="this.style.display='none'">
+                    </td>
+                    <td>
+                        <div style="font-weight:400;color:#ddd;">${u.username || 'Пользователь'}</div>
+                        <div style="font-size:11px;color:#666;"><code>${u.user_id}</code></div>
+                    </td>
+                    <td>${role}</td>
+                    <td>${u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>
+                </tr>
+            `;
+        }).join('');
+    } catch(e) { console.error(e); }
+}
+
 // ==================== ПРОФИЛЬ ====================
 function showProfilePage() {
-    document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
-    document.querySelector('[data-page="profile"]')?.classList.add('active');
-    document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
-    document.getElementById('page-profile').style.display = 'block';
-    document.getElementById('pageTitle').textContent = 'Мой профиль';
+    document.getElementById('userDropdown').classList.remove('show');
+    showPage('profile');
     loadProfile(CURRENT_USER);
 }
 
@@ -1415,12 +1791,11 @@ async function loadProfile(user_id) {
         document.getElementById('pWarns').textContent = data.warns || 0;
         document.getElementById('pPunishments').textContent = data.total_punishments || 0;
         
-        // Обновляем верхнюю панель
-        document.getElementById('topBarName').textContent = data.username || `Пользователь ${user_id}`;
         if (data.photo_url) {
-            document.getElementById('topBarAvatar').src = data.photo_url;
             document.getElementById('profileAvatar').src = data.photo_url;
+            document.getElementById('topBarAvatar').src = data.photo_url;
         }
+        document.getElementById('topBarName').textContent = data.username || `Пользователь ${user_id}`;
         
         // История наказаний
         const history = document.getElementById('pHistory');
@@ -1457,8 +1832,8 @@ async function showProfileModal(user_id) {
         const body = document.getElementById('profileModalBody');
         body.innerHTML = `
             <div class="text-center">
-                <img src="${data.photo_url || `https://ui-avatars.com/api/?name=${user_id}&background=2a2a2a&color=cccccc&size=80&rounded=true`}" class="avatar-lg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23222%22 width=%2280%22 height=%2280%22/%3E%3Ctext x=%2240%22 y=%2248%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2232%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
-                <h4 class="mt-3" style="font-weight:300;color:#e8e8e8;">${data.username || `Пользователь ${user_id}`}</h4>
+                <img src="${data.photo_url || 'https://ui-avatars.com/api/?name=' + user_id + '&background=2a2a2a&color=cccccc&size=80&rounded=true'}" class="avatar-lg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23222%22 width=%2280%22 height=%2280%22/%3E%3Ctext x=%2240%22 y=%2248%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2232%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
+                <h4 class="mt-3" style="font-weight:300;color:#e8e8e8;">${data.username || 'Пользователь'}</h4>
                 <p class="text-secondary-light"><i class="fas fa-id-badge"></i> ID: ${user_id}</p>
                 ${data.is_admin ? '<span class="badge-super"><i class="fas fa-crown"></i> Админ</span>' : ''}
                 ${data.is_banned ? '<span class="badge-active" style="margin-left:8px;"><i class="fas fa-ban"></i> Забанен</span>' : ''}
@@ -1485,22 +1860,19 @@ async function showProfileModal(user_id) {
                 </div>
                 <h6 class="mt-4" style="font-weight:300;color:#999;"><i class="fas fa-history"></i> История наказаний</h6>
                 <div id="modalHistory">
-                    ${!data.punishments || !data.punishments.length ? 
-                        '<p class="text-secondary-light text-center py-3">Нет наказаний</p>' :
-                        data.punishments.map(p => `
-                            <div class="punishment-item ${p.resolved ? 'resolved' : ''}">
-                                <div class="p-header">
-                                    <span>${p.type === 'warning' ? '⚠️' : p.type === 'mute' ? '🔇' : '🚫'} ${p.type}</span>
-                                    <span>${p.resolved ? '<span class="badge-resolved"><i class="fas fa-check"></i> Снято</span>' : p.expires_at ? `<span class="badge-active"><i class="fas fa-clock"></i> до ${new Date(p.expires_at).toLocaleString()}</span>` : '<span class="badge-active"><i class="fas fa-circle"></i> Активно</span>'}</span>
-                                </div>
-                                <div class="p-reason">${p.reason || 'Без причины'}</div>
-                                <div class="text-secondary-light" style="font-size:11px;">
-                                    <i class="fas fa-user"></i> Выдал: ${p.issued_by || 'Система'} · ${new Date(p.created_at).toLocaleString()}
-                                    ${p.resolved ? ` · <i class="fas fa-check"></i> Снял: ${p.resolved_by || 'Система'}` : ''}
-                                </div>
+                    ${!data.punishments || !data.punishments.length ? '<p class="text-secondary-light text-center py-3">Нет наказаний</p>' : data.punishments.map(p => `
+                        <div class="punishment-item ${p.resolved ? 'resolved' : ''}">
+                            <div class="p-header">
+                                <span>${p.type === 'warning' ? '⚠️' : p.type === 'mute' ? '🔇' : '🚫'} ${p.type}</span>
+                                <span>${p.resolved ? '<span class="badge-resolved"><i class="fas fa-check"></i> Снято</span>' : p.expires_at ? `<span class="badge-active"><i class="fas fa-clock"></i> до ${new Date(p.expires_at).toLocaleString()}</span>` : '<span class="badge-active"><i class="fas fa-circle"></i> Активно</span>'}</span>
                             </div>
-                        `).join('')
-                    }
+                            <div class="p-reason">${p.reason || 'Без причины'}</div>
+                            <div class="text-secondary-light" style="font-size:11px;">
+                                <i class="fas fa-user"></i> Выдал: ${p.issued_by || 'Система'} · ${new Date(p.created_at).toLocaleString()}
+                                ${p.resolved ? ` · <i class="fas fa-check"></i> Снял: ${p.resolved_by || 'Система'}` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
                 <h6 class="mt-4" style="font-weight:300;color:#999;"><i class="fas fa-comments"></i> Комментарии</h6>
                 <div id="modalComments">
@@ -1516,7 +1888,6 @@ async function showProfileModal(user_id) {
         `;
         document.getElementById('profileModalName').textContent = `👤 ${data.username || 'Пользователь'}`;
         
-        // Кнопка наказания
         const punishBtn = document.getElementById('punishBtn');
         if (IS_SUPER && user_id != CURRENT_USER) {
             punishBtn.style.display = 'inline-block';
@@ -1525,8 +1896,6 @@ async function showProfileModal(user_id) {
         }
         
         new bootstrap.Modal(document.getElementById('profileModal')).show();
-        
-        // Загружаем комментарии в модалку
         loadModalComments(user_id);
         
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
@@ -1547,11 +1916,23 @@ async function loadProfileComments(user_id) {
                 <div class="comment-header">
                     <span><i class="fas fa-user"></i> ${c.author_id}</span>
                     <span>${new Date(c.created_at).toLocaleString()}</span>
+                    ${IS_SUPER || c.author_id == CURRENT_USER ? `<button class="btn btn-danger btn-sm" onclick="deleteComment(${c.id})" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i></button>` : ''}
                 </div>
                 <div class="comment-text">${c.text}</div>
             </div>
         `).join('');
     } catch(e) { console.error(e); }
+}
+
+async function deleteComment(commentId) {
+    if (!confirm('Удалить комментарий?')) return;
+    try {
+        const res = await apiRequest(`/api/profile/comments/${commentId}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('✅ Комментарий удалён', 'success');
+            loadProfileComments(currentProfileUserId || CURRENT_USER);
+        }
+    } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
 async function loadModalComments(user_id) {
@@ -1568,6 +1949,7 @@ async function loadModalComments(user_id) {
                 <div class="comment-header">
                     <span><i class="fas fa-user"></i> ${c.author_id}</span>
                     <span>${new Date(c.created_at).toLocaleString()}</span>
+                    ${IS_SUPER || c.author_id == CURRENT_USER ? `<button class="btn btn-danger btn-sm" onclick="deleteComment(${c.id})" style="padding:2px 6px;font-size:10px;"><i class="fas fa-trash"></i></button>` : ''}
                 </div>
                 <div class="comment-text">${c.text}</div>
             </div>
@@ -1655,9 +2037,18 @@ document.getElementById('savePunishBtn')?.addEventListener('click', async functi
 });
 
 // ==================== ЗАГРУЗКА ====================
-loadUserInfo(CURRENT_USER);
 loadStats();
 loadMovies();
+
+// Проверка, может уже авторизован
+fetch('/api/check-auth', { credentials: 'same-origin' })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.authenticated) {
+            window.location.href = '/';
+        }
+    })
+    .catch(() => {});
 </script>
 </body>
 </html>
