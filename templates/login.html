@@ -42,23 +42,6 @@
             color: #0088cc;
             margin-bottom: 20px;
         }
-        .error-msg {
-            color: #ff6b6b;
-            font-size: 14px;
-            margin-top: 15px;
-            display: none;
-        }
-        .success-msg {
-            color: #88dd88;
-            font-size: 14px;
-            margin-top: 15px;
-            display: none;
-        }
-        .footer-text {
-            color: rgba(255,255,255,0.3);
-            font-size: 12px;
-            margin-top: 30px;
-        }
         .btn-telegram {
             background: #0088cc;
             border: none;
@@ -85,11 +68,6 @@
         .btn-telegram i {
             font-size: 24px;
         }
-        .divider {
-            border: none;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            margin: 20px 0;
-        }
         .error-box {
             background: rgba(255,0,0,0.1);
             border: 1px solid rgba(255,0,0,0.2);
@@ -105,16 +83,47 @@
             color: #ff6b6b;
             font-size: 13px;
         }
-        .telegram-widget-container {
-            min-height: 70px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .success-msg {
+            color: #88dd88;
+            font-size: 14px;
+            margin-top: 15px;
+            display: none;
+        }
+        .footer-text {
+            color: rgba(255,255,255,0.3);
+            font-size: 12px;
+            margin-top: 30px;
         }
         .info-text {
             color: rgba(255,255,255,0.3);
             font-size: 12px;
             margin-top: 8px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: #0088cc;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .debug-info {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            text-align: left;
+            display: none;
+            font-family: monospace;
+            word-break: break-all;
         }
     </style>
 </head>
@@ -126,12 +135,9 @@
         <h1>Movie Admin</h1>
         <p>Войдите через Telegram, чтобы управлять фильмами</p>
 
-        <!-- Виджет Telegram -->
-        <div class="telegram-widget-container" id="telegramWidget">
-            <button class="btn-telegram" onclick="redirectToTelegram()">
-                <i class="fab fa-telegram"></i> Войти через Telegram
-            </button>
-        </div>
+        <button class="btn-telegram" onclick="redirectToTelegram()">
+            <i class="fab fa-telegram"></i> Войти через Telegram
+        </button>
 
         <div class="info-text">
             Нажмите кнопку, авторизуйтесь в Telegram и вернитесь на сайт
@@ -150,6 +156,10 @@
         <div class="footer-text">
             <i class="fas fa-shield-alt"></i> Безопасный вход через Telegram
         </div>
+
+        <div class="debug-info" id="debugInfo">
+            <div id="debugContent">Ожидание...</div>
+        </div>
     </div>
 
     <script>
@@ -166,49 +176,74 @@
         
         console.log('🔑 Bot ID:', botId);
         console.log('🌐 Origin:', window.location.origin);
+        console.log('📝 BOT_TOKEN:', BOT_TOKEN ? '✅ установлен' : '❌ не установлен');
+
+        // Отладка
+        const debugInfo = document.getElementById('debugInfo');
+        const debugContent = document.getElementById('debugContent');
+        
+        function logDebug(msg) {
+            debugInfo.style.display = 'block';
+            debugContent.innerHTML += msg + '<br>';
+            console.log('🐛', msg);
+        }
+
+        logDebug('Bot ID: ' + botId);
+        logDebug('Origin: ' + window.location.origin);
 
         // ============================================================
         // ГЛОБАЛЬНАЯ ФУНКЦИЯ — её вызывает Telegram Widget
         // ============================================================
         window.onTelegramAuth = function(user) {
-            console.log('✅ Авторизация через Telegram:', user);
+            logDebug('✅ onTelegramAuth вызван!');
+            logDebug('User ID: ' + user.id);
+            logDebug('Username: ' + (user.username || 'нет'));
+            logDebug('Hash: ' + user.hash.substring(0, 20) + '...');
             
             document.getElementById('successMsg').style.display = 'block';
             document.getElementById('successText').textContent = 'Авторизация успешна! Перенаправление...';
             document.getElementById('errorBox').classList.remove('show');
+            
+            const payload = new URLSearchParams({
+                id: user.id,
+                first_name: user.first_name || '',
+                last_name: user.last_name || '',
+                username: user.username || '',
+                photo_url: user.photo_url || '',
+                auth_date: user.auth_date,
+                hash: user.hash
+            });
+            
+            logDebug('📤 Отправка данных на сервер...');
             
             fetch('/auth/telegram', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: new URLSearchParams({
-                    id: user.id,
-                    first_name: user.first_name || '',
-                    last_name: user.last_name || '',
-                    username: user.username || '',
-                    photo_url: user.photo_url || '',
-                    auth_date: user.auth_date,
-                    hash: user.hash
-                })
+                body: payload
             })
             .then(response => {
+                logDebug('📥 Ответ сервера: ' + response.status);
                 if (!response.ok) {
                     return response.json().then(err => { throw new Error(err.error || 'Ошибка сервера'); });
                 }
                 return response.json();
             })
             .then(data => {
+                logDebug('📦 Данные: ' + JSON.stringify(data));
                 if (data.success) {
+                    logDebug('✅ Перенаправление на /dashboard');
                     window.location.href = '/dashboard';
                 } else {
                     document.getElementById('errorBox').classList.add('show');
                     document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (data.error || 'Ошибка авторизации');
                     document.getElementById('successMsg').style.display = 'none';
+                    logDebug('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
                 }
             })
             .catch((err) => {
-                console.error('❌ Ошибка:', err);
+                logDebug('❌ Исключение: ' + err.message);
                 document.getElementById('errorBox').classList.add('show');
                 document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (err.message || 'Ошибка соединения с сервером');
                 document.getElementById('successMsg').style.display = 'none';
@@ -216,7 +251,7 @@
         };
 
         // ============================================================
-        // ВХОД ЧЕРЕЗ OAuth (отдельное окно)
+        // ВХОД ЧЕРЕЗ OAuth
         // ============================================================
         function redirectToTelegram() {
             if (!botId) {
@@ -228,66 +263,61 @@
             const origin = encodeURIComponent(window.location.origin);
             const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${origin}&embed=1&request_access=write`;
             
-            document.getElementById('telegramWidget').innerHTML = '<div style="color:rgba(255,255,255,0.5);font-size:14px;"><span class="spinner" style="display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,0.1);border-top-color:#0088cc;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:10px;vertical-align:middle;"></span> Открываем окно авторизации...</div>';
+            logDebug('🔗 Открываем окно: ' + authUrl);
             
             const win = window.open(authUrl, '_blank', 'width=600,height=700,scrollbars=yes');
             
             if (!win) {
                 document.getElementById('errorBox').classList.add('show');
                 document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> Браузер заблокировал всплывающее окно. Разрешите всплывающие окна для этого сайта.';
-                document.getElementById('telegramWidget').innerHTML = `<button class="btn-telegram" onclick="redirectToTelegram()"><i class="fab fa-telegram"></i> Войти через Telegram</button>`;
                 return;
             }
             
             const checkWin = setInterval(() => {
                 if (win.closed) {
                     clearInterval(checkWin);
-                    document.getElementById('telegramWidget').innerHTML = '<div style="color:rgba(255,255,255,0.5);font-size:14px;"><span class="spinner" style="display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,0.1);border-top-color:#0088cc;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:10px;vertical-align:middle;"></span> Проверка авторизации...</div>';
+                    logDebug('🚪 Окно закрыто, проверяем авторизацию...');
                     setTimeout(checkAuth, 1500);
                 }
             }, 500);
         }
 
         function checkAuth() {
+            logDebug('🔍 Проверка авторизации...');
             fetch('/api/check-auth', { credentials: 'same-origin' })
                 .then(res => res.json())
                 .then(data => {
+                    logDebug('📊 check-auth ответ: ' + JSON.stringify(data));
                     if (data.authenticated) {
+                        logDebug('✅ Авторизован! Перенаправление...');
                         window.location.href = '/dashboard';
                     } else {
-                        document.getElementById('telegramWidget').innerHTML = `<button class="btn-telegram" onclick="redirectToTelegram()"><i class="fab fa-telegram"></i> Войти через Telegram</button>`;
+                        logDebug('❌ Не авторизован');
                         document.getElementById('errorBox').classList.add('show');
                         document.getElementById('errorText').innerHTML = '<i class="fas fa-exclamation-circle"></i> Авторизация не выполнена. Попробуйте снова.';
                     }
                 })
-                .catch(() => {
-                    document.getElementById('telegramWidget').innerHTML = `<button class="btn-telegram" onclick="redirectToTelegram()"><i class="fab fa-telegram"></i> Войти через Telegram</button>`;
+                .catch((err) => {
+                    logDebug('❌ Ошибка check-auth: ' + err.message);
                 });
         }
 
-        // Добавляем стиль для спиннера
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes spin {
-                to { transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(style);
-
         // ============================================================
-        // ЗАГРУЗКА ВИДЖЕТА (показываем кнопку сразу)
+        // ЗАПУСК
         // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
-            // Показываем кнопку сразу, виджет загружается в фоне
-            const container = document.getElementById('telegramWidget');
+            logDebug('✅ Страница загружена');
             
-            // Если виджет не загрузился через 3 секунды — оставляем кнопку
-            setTimeout(() => {
-                if (container.querySelector('iframe') === null) {
-                    // Кнопка уже есть, ничего не делаем
-                    console.log('ℹ️ Используем кнопку для входа');
-                }
-            }, 3000);
+            // Проверяем, может уже авторизован
+            fetch('/api/check-auth', { credentials: 'same-origin' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.authenticated) {
+                        logDebug('✅ Уже авторизован! Перенаправление...');
+                        window.location.href = '/dashboard';
+                    }
+                })
+                .catch(() => {});
         });
     </script>
 </body>
