@@ -10,7 +10,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException, Form, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from aiogram import Bot, Dispatcher, F
@@ -278,4 +277,479 @@ async def cb_close(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "admin_back")
 async def cb_back(callback: CallbackQuery):
-    await callback.message.edit_text("
+    await callback.message.edit_text("🔧 <b>Админ-панель</b>", parse_mode="HTML", reply_markup=admin_main_kb(callback.from_user.id))
+
+@dp.callback_query(F.data == "admin_stats")
+async def cb_stats(callback: CallbackQuery):
+    if not await is_admin(callback.from_user.id):
+        return
+    movies_count = await get_movies_count()
+    requests_count = await get_total_requests()
+    text = f"📊 <b>Статистика бота</b>\n\n🎬 Фильмов в базе: <b>{movies_count}</b>\n🔍 Всего запросов: <b>{requests_count}</b>"
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back")]
+    ]))
+
+@dp.callback_query(F.data == "admin_list")
+async def cb_list(callback: CallbackQuery):
+    if not await is_admin(callback.from_user.id):
+        return
+    movies = await get_all_movies()
+    if not movies:
+        await callback.message.edit_text("База пустая.", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back")]
+        ]))
+        return
+    buttons = []
+    for code, title, year in movies:
+        buttons.append([InlineKeyboardButton(text=f"{code} — {title} ({year})", callback_data=f"movie:{code}")])
+    buttons.append([InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back")])
+    await callback.message.edit_text("📋 <b>Список фильмов:</b>\nВыбери фильм:", parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
+
+@dp.callback_query(F.data.startswith("movie:"))
+async def cb_movie(callback: CallbackQuery):
+    code = callback.data.split(":", 1)[1]
+    movie = await get_movie(code)
+    if not movie:
+        await callback.answer("Фильм не найден", show_alert=True)
+        return
+    text = f"<b>{movie['title']} ({movie['year']})</b>\nКод: <code>{movie['code']}</code>\nIMDb: {movie['rating']}\n\n{movie['description'][:180]}..."
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=movie_actions_kb(code, callback.from_user.id))
+
+@dp.callback_query(F.data.startswith("delete_movie:"))
+async def cb_delete_movie(callback: CallbackQuery):
+    if not await is_super_admin(callback.from_user.id):
+        return await callback.answer("Недостаточно прав", show_alert=True)
+    code = callback.data.split(":", 1)[1]
+    await delete_movie(code)
+    await callback.answer("Фильм удалён ✅")
+    await cb_list(callback)
+
+@dp.callback_query(F.data.startswith("edit_"))
+async def cb_edit_start(callback: CallbackQuery, state: FSMContext):
+    if not await is_admin(callback.from_user.id):
+        return
+    parts = callback.data.split(":", 1)
+    field = parts[0].replace("edit_", "")
+    code = parts[1]
+    await state.update_data(edit_code=code, edit_field=field)
+    await callback.message.edit_text(f"Введи новое значение для <b>{field}</b>:", parse_mode="HTML")
+    await state.set_state(EditMovie.waiting_value)
+
+@dp.message(EditMovie.waiting_value)
+async def process_edit(message: Message, state: FSMContext):
+    data = await state.get_data()
+    code = data["edit_code"]
+    field = data["edit_field"]
+    if field == "poster":
+        if message.photo:
+            value = message.photo[-1].file_id
+        elif message.text:
+            value = message.text.strip()
+        else:
+            return await message.answer("Отправь фото или ссылку:")
+    else:
+        if not message.text:
+            return await message.answer("Отправь текстом:")
+        value = message.text.strip()
+        if field == "year":
+            if not value.isdigit():
+                return await message.answer("Год должен быть числом:")
+            value = int(value)
+    await update_movie_field(code, field, value)
+    await state.clear()
+    await message.answer("✅ Обновлено!")
+    movie = await get_movie(code)
+    if movie:
+        text = f"<b>{movie['title']} ({movie['year']})</b>\nКод: <code>{movie['code']}</code>\nIMDb: {movie['rating']}"
+        await message.answer(text, parse_mode="HTML", reply_markup=movie_actions_kb(code, message.from_user.id))
+
+@dp.callback_query(F.data == "admin_add")
+async def cb_add(callback: CallbackQuery, state: FSMContext):
+    if not await is_admin(callback.from_user.id):
+        return
+    await state.clear()
+    await callback.message.edit_text("Введи <b>код</b> фильма:", parse_mode="HTML")
+    await state.set_state(AddMovie.code)
+
+@dp.message(AddMovie.code)
+async def add_code(message: Message, state: FSMContext):
+    code = message.text.strip()
+    if await get_movie(code):
+        return await message.answer("Такой код уже есть. Введи другой:")
+    await state.update_data(code=code)
+    await message.answer("Введи <b>название</b>:", parse_mode="HTML")
+    await state.set_state(AddMovie.title)
+
+@dp.message(AddMovie.title)
+async def add_title(message: Message, state: FSMContext):
+    await state.update_data(title=message.text.strip())
+    await message.answer("Введи <b>год</b>:", parse_mode="HTML")
+    await state.set_state(AddMovie.year)
+
+@dp.message(AddMovie.year)
+async def add_year(message: Message, state: FSMContext):
+    if not message.text.strip().isdigit():
+        return await message.answer("Год должен быть числом:")
+    await state.update_data(year=int(message.text.strip()))
+    await message.answer("Отправь <b>обложку</b>:\n• Фотографию\n• Или прямую ссылку", parse_mode="HTML")
+    await state.set_state(AddMovie.poster)
+
+@dp.message(AddMovie.poster)
+async def add_poster(message: Message, state: FSMContext):
+    if message.photo:
+        poster = message.photo[-1].file_id
+    elif message.text:
+        poster = message.text.strip()
+    else:
+        return await message.answer("Отправь фото или ссылку:")
+    await state.update_data(poster=poster)
+    await message.answer("Краткое <b>описание</b>:", parse_mode="HTML")
+    await state.set_state(AddMovie.description)
+
+@dp.message(AddMovie.description)
+async def add_description(message: Message, state: FSMContext):
+    await state.update_data(description=message.text.strip())
+    await message.answer("Оценка <b>IMDb</b>:", parse_mode="HTML")
+    await state.set_state(AddMovie.rating)
+
+@dp.message(AddMovie.rating)
+async def add_rating(message: Message, state: FSMContext):
+    data = await state.get_data()
+    try:
+        await add_movie_to_db(data["code"], data["title"], data["year"], data["poster"], data["description"], message.text.strip())
+        await state.clear()
+        count = await get_movies_count()
+        await message.answer(f"✅ Фильм <b>{data['title']}</b> добавлен!\nВсего фильмов в базе: <b>{count}</b>", parse_mode="HTML")
+    except asyncpg.UniqueViolationError:
+        await message.answer("❌ Такой код уже существует. Попробуй другой.")
+
+@dp.callback_query(F.data == "admin_admins")
+async def cb_admins(callback: CallbackQuery):
+    if not await is_super_admin(callback.from_user.id):
+        return await callback.answer("Недостаточно прав", show_alert=True)
+    admins = await get_admins()
+    text = "👥 <b>Обычные админы:</b>\n\n"
+    text += "Пока нет." if not admins else "\n".join(f"<code>{uid}</code>" for uid in admins)
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="➕ Назначить админа", callback_data="add_admin")],
+        [InlineKeyboardButton(text="➖ Снять админа", callback_data="remove_admin")],
+        [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back")]
+    ])
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+
+@dp.callback_query(F.data == "add_admin")
+async def cb_add_admin(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.edit_text("Введи Telegram ID нового админа:")
+    await state.set_state(AddAdmin.waiting_id)
+    await state.update_data(action="add")
+
+@dp.callback_query(F.data == "remove_admin")
+async def cb_remove_admin(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.edit_text("Введи Telegram ID админа для снятия:")
+    await state.set_state(AddAdmin.waiting_id)
+    await state.update_data(action="remove")
+
+@dp.message(AddAdmin.waiting_id)
+async def process_admin(message: Message, state: FSMContext):
+    if not message.text or not message.text.strip().isdigit():
+        return await message.answer("ID должен быть числом. Попробуй ещё раз:")
+    uid = int(message.text.strip())
+    data = await state.get_data()
+    await state.clear()
+    if data.get("action") == "add":
+        await add_admin(uid)
+        await message.answer(f"✅ <code>{uid}</code> теперь админ", parse_mode="HTML")
+    else:
+        await remove_admin(uid)
+        await message.answer(f"✅ <code>{uid}</code> снят с админки", parse_mode="HTML")
+
+@dp.callback_query(F.data == "admin_bans")
+async def cb_bans(callback: CallbackQuery):
+    if not await is_super_admin(callback.from_user.id):
+        return await callback.answer("Недостаточно прав", show_alert=True)
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🚫 Забанить", callback_data="ban_user")],
+        [InlineKeyboardButton(text="✅ Разбанить", callback_data="unban_user")],
+        [InlineKeyboardButton(text="📋 Список забаненных", callback_data="list_bans")],
+        [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back")]
+    ])
+    await callback.message.edit_text("🚫 <b>Управление банами</b>", parse_mode="HTML", reply_markup=kb)
+
+@dp.callback_query(F.data == "list_bans")
+async def cb_list_bans(callback: CallbackQuery):
+    if not await is_super_admin(callback.from_user.id):
+        return
+    banned = await get_banned_users()
+    if not banned:
+        text = "Список банов пуст."
+    else:
+        text = "🚫 <b>Забаненные:</b>\n\n"
+        for uid, reason in banned:
+            text += f"<code>{uid}</code>"
+            if reason:
+                text += f" — {reason}"
+            text += "\n"
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_bans")]
+    ]))
+
+@dp.callback_query(F.data == "ban_user")
+async def cb_ban(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.edit_text("Введи Telegram ID для бана:")
+    await state.set_state(BanUser.waiting_id)
+    await state.update_data(action="ban")
+
+@dp.callback_query(F.data == "unban_user")
+async def cb_unban(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.edit_text("Введи Telegram ID для разбана:")
+    await state.set_state(BanUser.waiting_id)
+    await state.update_data(action="unban")
+
+@dp.message(BanUser.waiting_id)
+async def process_ban(message: Message, state: FSMContext):
+    if not message.text or not message.text.strip().isdigit():
+        return await message.answer("ID должен быть числом:")
+    uid = int(message.text.strip())
+    data = await state.get_data()
+    await state.clear()
+    if data.get("action") == "ban":
+        await ban_user(uid)
+        await message.answer(f"🚫 <code>{uid}</code> забанен", parse_mode="HTML")
+    else:
+        await unban_user(uid)
+        await message.answer(f"✅ <code>{uid}</code> разбанен", parse_mode="HTML")
+
+@dp.message(StateFilter(None), F.text)
+async def handle_code(message: Message):
+    if await is_banned(message.from_user.id):
+        return await message.answer("🚫 Вы заблокированы в боте.")
+    if not await check_sub(message.from_user.id):
+        return await message.answer("Сначала подпишись на канал!", reply_markup=subscribe_kb())
+    code = message.text.strip()
+    movie = await get_movie(code)
+    if not movie:
+        return await message.answer("❌ Код не найден.")
+    await increment_requests()
+    caption = f"<b>{movie['title']} ({movie['year']})</b>\n\n⭐ <b>IMDb:</b> {movie['rating']}\n\n{movie['description']}"
+    await message.answer_photo(photo=movie["poster"], caption=caption, parse_mode="HTML")
+
+# ==================== FASTAPI АДМИН-ПАНЕЛЬ ====================
+templates = Jinja2Templates(directory="templates")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    asyncio.create_task(dp.start_polling(bot))
+    logger.info("Бот и админ-панель запущены")
+    yield
+    await bot.session.close()
+
+app = FastAPI(lifespan=lifespan)
+
+# ---------- Вспомогательные функции для админки ----------
+def verify_telegram_auth(data: dict) -> Optional[int]:
+    check_data = data.copy()
+    check_hash = check_data.pop("hash", None)
+    if not check_hash:
+        return None
+    sorted_items = sorted(check_data.items())
+    data_string = "\n".join([f"{k}={v}" for k, v in sorted_items])
+    secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
+    hmac_hash = hmac.new(secret_key, data_string.encode(), hashlib.sha256).hexdigest()
+    if hmac_hash == check_hash:
+        return int(data.get("id", 0))
+    return None
+
+def get_user_id_from_cookie(request: Request) -> Optional[int]:
+    user_id_str = request.cookies.get("user_id")
+    if user_id_str and user_id_str.isdigit():
+        return int(user_id_str)
+    return None
+
+# ---------- Роуты админки ----------
+@app.get("/", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/auth/telegram")
+async def auth_telegram(request: Request):
+    form = await request.form()
+    data = dict(form)
+    user_id = verify_telegram_auth(data)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Неверная подпись")
+    if not await is_admin(user_id):
+        return JSONResponse(status_code=403, content={"error": "У вас нет прав администратора"})
+    response = JSONResponse({"success": True, "user_id": user_id})
+    response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
+    return response
+
+@app.get("/logout")
+async def logout():
+    response = RedirectResponse(url="/", status_code=302)
+    response.delete_cookie("user_id")
+    return response
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    user_id = get_user_id_from_cookie(request)
+    if not user_id or not await is_admin(user_id):
+        return RedirectResponse(url="/", status_code=302)
+    is_super = await is_super_admin(user_id)
+    async with pool.acquire() as conn:
+        movies_count = await conn.fetchval("SELECT COUNT(*) FROM movies") or 0
+        requests_count = await conn.fetchval("SELECT value FROM stats WHERE key = 'total_requests'") or 0
+        admins_count = await conn.fetchval("SELECT COUNT(*) FROM admins") or 0
+        bans_count = await conn.fetchval("SELECT COUNT(*) FROM bans") or 0
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "user_id": user_id,
+        "is_super": is_super,
+        "stats": {"movies": movies_count, "requests": requests_count, "admins": admins_count, "bans": bans_count}
+    })
+
+# ---------- API ----------
+class MovieCreate(BaseModel):
+    code: str
+    title: str
+    year: int
+    poster: str
+    description: str
+    rating: str
+
+class MovieUpdate(BaseModel):
+    title: Optional[str] = None
+    year: Optional[int] = None
+    poster: Optional[str] = None
+    description: Optional[str] = None
+    rating: Optional[str] = None
+
+class AdminAdd(BaseModel):
+    user_id: int
+
+class BanAdd(BaseModel):
+    user_id: int
+    reason: str = ""
+
+async def check_admin(request: Request):
+    user_id = get_user_id_from_cookie(request)
+    if not user_id or not await is_admin(user_id):
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    return user_id
+
+async def check_super_admin(request: Request):
+    user_id = get_user_id_from_cookie(request)
+    if not user_id or not await is_super_admin(user_id):
+        raise HTTPException(status_code=403, detail="Только суперадмин")
+    return user_id
+
+@app.get("/api/movies")
+async def api_movies(request: Request):
+    await check_admin(request)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT code, title, year, poster, rating FROM movies ORDER BY code")
+        return [dict(row) for row in rows]
+
+@app.get("/api/movies/{code}")
+async def api_movie(request: Request, code: str):
+    await check_admin(request)
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM movies WHERE code = $1", code)
+        if row:
+            return dict(row)
+        raise HTTPException(status_code=404, detail="Фильм не найден")
+
+@app.post("/api/movies")
+async def api_add_movie(request: Request, data: MovieCreate):
+    await check_admin(request)
+    async with pool.acquire() as conn:
+        try:
+            await conn.execute(
+                "INSERT INTO movies (code, title, year, poster, description, rating) VALUES ($1, $2, $3, $4, $5, $6)",
+                data.code, data.title, data.year, data.poster, data.description, data.rating
+            )
+            return {"success": True, "code": data.code}
+        except asyncpg.UniqueViolationError:
+            raise HTTPException(status_code=400, detail="Фильм с таким кодом уже существует")
+
+@app.put("/api/movies/{code}")
+async def api_update_movie(request: Request, code: str, data: MovieUpdate):
+    await check_admin(request)
+    async with pool.acquire() as conn:
+        for field, value in data.model_dump(exclude_unset=True).items():
+            if value is not None:
+                await conn.execute(f"UPDATE movies SET {field} = $1 WHERE code = $2", value, code)
+        return {"success": True}
+
+@app.delete("/api/movies/{code}")
+async def api_delete_movie(request: Request, code: str):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM movies WHERE code = $1", code)
+        return {"success": True}
+
+@app.get("/api/admins")
+async def api_admins(request: Request):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT user_id FROM admins")
+        return [{"user_id": r["user_id"]} for r in rows]
+
+@app.post("/api/admins")
+async def api_add_admin(request: Request, data: AdminAdd):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        await conn.execute("INSERT INTO admins (user_id) VALUES ($1) ON CONFLICT DO NOTHING", data.user_id)
+        return {"success": True}
+
+@app.delete("/api/admins/{user_id}")
+async def api_remove_admin(request: Request, user_id: int):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM admins WHERE user_id = $1", user_id)
+        return {"success": True}
+
+@app.get("/api/bans")
+async def api_bans(request: Request):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT user_id, reason FROM bans")
+        return [{"user_id": r["user_id"], "reason": r["reason"]} for r in rows]
+
+@app.post("/api/bans")
+async def api_add_ban(request: Request, data: BanAdd):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO bans (user_id, reason) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET reason = $2",
+            data.user_id, data.reason
+        )
+        return {"success": True}
+
+@app.delete("/api/bans/{user_id}")
+async def api_remove_ban(request: Request, user_id: int):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM bans WHERE user_id = $1", user_id)
+        return {"success": True}
+
+@app.get("/api/stats")
+async def api_stats(request: Request):
+    await check_admin(request)
+    async with pool.acquire() as conn:
+        movies = await conn.fetchval("SELECT COUNT(*) FROM movies") or 0
+        requests = await conn.fetchval("SELECT value FROM stats WHERE key = 'total_requests'") or 0
+        admins = await conn.fetchval("SELECT COUNT(*) FROM admins") or 0
+        bans = await conn.fetchval("SELECT COUNT(*) FROM bans") or 0
+    return {"movies": movies, "requests": requests, "admins": admins, "bans": bans}
+
+# ==================== ЗАПУСК ====================
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
