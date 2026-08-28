@@ -25,6 +25,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "@topzfilmz")
 DATABASE_URL = os.getenv("DATABASE_URL")
+BOT_ID = os.getenv("BOT_ID")  # ← добавить эту переменную
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-secret-key")
 
 super_admins_str = os.getenv("SUPER_ADMIN_IDS", "")
@@ -880,7 +881,11 @@ async def check_super_admin(request: Request):
 # ---------- Роуты ----------
 @app.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request, "BOT_TOKEN": BOT_TOKEN})
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "BOT_TOKEN": BOT_TOKEN,
+        "BOT_ID": BOT_ID  # ← обязательно передаём
+    })
 
 @app.post("/auth/telegram")
 async def auth_telegram(request: Request):
