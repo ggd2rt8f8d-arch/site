@@ -127,6 +127,10 @@
             margin-top: 15px;
             display: none;
         }
+        .loading-spinner {
+            display: none;
+            margin: 10px auto;
+        }
     </style>
 </head>
 <body>
@@ -142,9 +146,16 @@
             <i class="fab fa-telegram"></i> Войти через Telegram
         </button>
 
+        <div id="loadingSpinner" class="loading-spinner">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p style="color:rgba(255,255,255,0.6);font-size:14px;margin-top:10px;">Ожидание авторизации...</p>
+        </div>
+
         <hr class="divider">
 
-        <!-- Запасной вход по ID -->
+        <!-- Запасной вход по ID (на всякий случай) -->
         <form method="post" action="/auth/id">
             <label class="id-label"><i class="fas fa-key"></i> Или введите Telegram ID</label>
             <input type="number" name="user_id" placeholder="Например: 123456789" class="id-input" required>
@@ -167,12 +178,15 @@
     </div>
 
     <script>
-        // Глобальная функция для Telegram Widget
-        function onTelegramAuth(user) {
+        // ============================================================
+        // 1. ГЛОБАЛЬНАЯ ФУНКЦИЯ — её вызывает Telegram Widget
+        // ============================================================
+        window.onTelegramAuth = function(user) {
             console.log('✅ Авторизация через Telegram:', user);
             
             document.getElementById('successMsg').style.display = 'block';
             document.getElementById('successText').textContent = 'Авторизация успешна! Перенаправление...';
+            document.getElementById('loadingSpinner').style.display = 'none';
             
             // Отправляем данные на сервер
             fetch('/auth/telegram', {
@@ -190,7 +204,12 @@
                     hash: user.hash
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.error || 'Ошибка сервера'); });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     window.location.href = '/dashboard';
@@ -203,12 +222,15 @@
             .catch((err) => {
                 console.error('❌ Ошибка:', err);
                 document.getElementById('errorMsg').style.display = 'block';
-                document.getElementById('errorText').textContent = 'Ошибка соединения с сервером';
+                document.getElementById('errorText').textContent = err.message || 'Ошибка соединения с сервером';
                 document.getElementById('successMsg').style.display = 'none';
+                document.getElementById('loadingSpinner').style.display = 'none';
             });
-        }
+        };
 
-        // Запасной способ — открыть окно OAuth
+        // ============================================================
+        // 2. ЗАПУСК ВИДЖЕТА ЧЕРЕЗ iframe (надёжный способ)
+        // ============================================================
         function redirectToTelegram() {
             const botToken = '{{ BOT_TOKEN }}';
             const botId = botToken ? botToken.split(':')[0] : '';
@@ -219,42 +241,88 @@
                 return;
             }
             
-            const origin = encodeURIComponent(window.location.origin);
-            const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${origin}&embed=1&request_access=write`;
+            // Показываем спиннер
+            document.getElementById('loadingSpinner').style.display = 'block';
+            
+            // Создаём iframe с виджетом
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://oauth.telegram.org/embed/${botId}?origin=${encodeURIComponent(window.location.origin)}&return_to=${encodeURIComponent(window.location.href)}`;
+            iframe.style.cssText = 'display:none;';
+            iframe.onload = function() {
+                // Пытаемся отправить сообщение в iframe для авторизации
+                try {
+                    iframe.contentWindow.postMessage({
+                        event: 'auth_request',
+                        origin: window.location.origin
+                    }, 'https://oauth.telegram.org');
+                } catch(e) {
+                    console.log('Не удалось отправить сообщение, возможно iframe уже загружен');
+                }
+            };
+            
+            document.body.appendChild(iframe);
             
             // Открываем окно авторизации
+            const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(window.location.origin)}&embed=1&request_access=write`;
             const win = window.open(authUrl, '_blank', 'width=600,height=700,scrollbars=yes');
             
             // Проверяем закрытие окна
             const checkWin = setInterval(() => {
                 if (win.closed) {
                     clearInterval(checkWin);
+                    document.getElementById('loadingSpinner').style.display = 'none';
                     // Проверяем, авторизовались ли
-                    checkAuth();
+                    setTimeout(checkAuth, 1000);
                 }
             }, 500);
+            
+            // Таймаут на случай, если окно не открылось
+            setTimeout(() => {
+                if (win.closed) {
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                }
+            }, 10000);
         }
 
         function checkAuth() {
-            fetch('/api/check-auth')
+            fetch('/api/check-auth', { credentials: 'same-origin' })
                 .then(res => res.json())
                 .then(data => {
                     if (data.authenticated) {
                         window.location.href = '/dashboard';
+                    } else {
+                        console.log('⏳ Ещё не авторизован, проверьте Telegram');
                     }
                 })
                 .catch(() => {});
         }
 
-        // Если есть сообщение об ошибке в URL
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('error')) {
-            document.getElementById('errorMsg').style.display = 'block';
-            document.getElementById('errorText').textContent = decodeURIComponent(urlParams.get('error'));
-        }
-        
+        // ============================================================
+        // 3. ОБРАБОТКА СООБЩЕНИЙ ОТ iframe (postMessage)
+        // ============================================================
+        window.addEventListener('message', function(event) {
+            if (event.origin !== 'https://oauth.telegram.org') return;
+            
+            try {
+                const data = JSON.parse(event.data);
+                console.log('📩 Получено сообщение от Telegram:', data);
+                
+                if (data.event === 'auth_response' && data.result) {
+                    // Пользователь авторизован!
+                    const user = data.result;
+                    window.onTelegramAuth(user);
+                }
+            } catch(e) {
+                // Игнорируем невалидные сообщения
+            }
+        });
+
+        // ============================================================
+        // 4. ЛОГИ ДЛЯ ОТЛАДКИ
+        // ============================================================
         console.log('🔑 Bot ID:', '{{ BOT_TOKEN }}'.split(':')[0]);
         console.log('🌐 Origin:', window.location.origin);
+        console.log('✅ Функция onTelegramAuth зарегистрирована глобально');
     </script>
 </body>
 </html>
