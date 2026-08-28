@@ -362,92 +362,166 @@
             object-fit: cover;
             border: 4px solid #333;
         }
+
+        /* ===== ПРОФИЛЬ С БАННЕРОМ ===== */
         .profile-card {
             background: #141414;
             border: 1px solid #2a2a2a;
             border-radius: 14px;
-            padding: 30px 40px;
+            padding: 0;
             max-width: 100%;
             margin: 0 auto;
             width: 100%;
-            flex: 1; /* ← растягиваем на всю доступную высоту */
-            min-height: calc(100vh - 200px);
-        }
-        .profile-card .profile-header {
+            overflow: hidden;
             display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 20px;
+            flex-direction: column;
+            min-height: calc(100vh - 160px);
         }
-        .profile-card .profile-header .profile-info h3 {
+
+        /* Баннер */
+        .profile-banner-wrapper {
+            width: 100%;
+            height: 200px;
+            background: #1a1a1a;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .profile-banner {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .profile-banner-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            gap: 10px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .profile-banner-placeholder i {
+            font-size: 40px;
+        }
+        .profile-banner-placeholder span {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Наложение аватарки на баннер */
+        .profile-header-overlay {
+            display: flex;
+            align-items: flex-end;
+            gap: 24px;
+            padding: 0 40px 20px;
+            margin-top: -50px;
+            position: relative;
+            z-index: 2;
+        }
+        .profile-header-overlay .avatar-xl {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #141414;
+            flex-shrink: 0;
+        }
+        .profile-info-overlay {
+            padding-bottom: 4px;
+        }
+        .profile-info-overlay .name-line {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .profile-info-overlay .name-line h2 {
             font-weight: 300;
             color: #e8e8e8;
             margin: 0;
-            font-size: 20px;
+            font-size: 24px;
         }
-        .profile-card .profile-header .profile-info .sub {
-            color: #777;
-            font-size: 13px;
+        .profile-info-overlay .name-line .username-sub {
+            color: #999;
+            font-size: 16px;
+            font-weight: 300;
         }
-        .profile-card .profile-header .profile-info .badge-super {
-            font-size: 10px;
-            padding: 2px 12px;
+        .profile-info-overlay .sub {
+            color: #999;
+            font-size: 14px;
         }
+        .profile-info-overlay .badge-super {
+            font-size: 11px;
+            padding: 3px 14px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        /* Статистика */
         .profile-card .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 12px;
-            margin: 18px 0;
+            padding: 0 40px 20px;
         }
         .profile-card .stats-grid .stat-item {
             background: #1a1a1a;
             border: 1px solid #2a2a2a;
             border-radius: 10px;
-            padding: 12px 10px;
+            padding: 14px 12px;
             text-align: center;
         }
         .profile-card .stats-grid .stat-item .num {
-            font-size: 22px;
+            font-size: 26px;
             font-weight: 300;
             color: #e8e8e8;
         }
         .profile-card .stats-grid .stat-item .lbl {
             color: #777;
-            font-size: 11px;
+            font-size: 13px;
         }
-        .profile-card .stats-grid .stat-item .warn { color: #cc8888; }
-        .profile-card .stats-grid .stat-item .ok { color: #88cc88; }
 
-        .profile-card .section-title {
+        /* Две колонки */
+        .profile-grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 0 40px 30px;
+            flex: 1;
+        }
+        .profile-col {
+            display: flex;
+            flex-direction: column;
+        }
+        .profile-col .section-title {
             color: #999;
             font-weight: 300;
             font-size: 14px;
-            margin: 18px 0 10px;
+            margin: 0 0 10px 0;
             border-bottom: 1px solid #2a2a2a;
             padding-bottom: 8px;
         }
-        .profile-card .section-title i { margin-right: 8px; }
-
-        .punishment-item {
+        .profile-col .section-title i { margin-right: 8px; }
+        .profile-scroll {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 200px;
+        }
+        .profile-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .profile-scroll::-webkit-scrollbar-track {
             background: #1a1a1a;
-            border-left: 3px solid #4a2222;
-            border-radius: 8px;
-            padding: 10px 14px;
-            margin-bottom: 8px;
         }
-        .punishment-item.resolved { border-left-color: #224422; }
-        .punishment-item .p-header {
-            display: flex;
-            justify-content: space-between;
-            color: #777;
-            font-size: 11px;
-        }
-        .punishment-item .p-reason {
-            color: #ccc;
-            font-size: 13px;
-            margin-top: 2px;
+        .profile-scroll::-webkit-scrollbar-thumb {
+            background: #3a3a3a;
+            border-radius: 10px;
         }
 
+        /* Комментарии */
         .comment-item {
             background: #1a1a1a;
             border: 1px solid #2a2a2a;
@@ -469,7 +543,7 @@
         .comment-input-area {
             display: flex;
             gap: 10px;
-            margin-top: 12px;
+            margin-top: 10px;
         }
         .comment-input-area input {
             flex: 1;
@@ -483,6 +557,27 @@
         .comment-input-area input:focus {
             outline: none;
             border-color: #555;
+        }
+
+        /* Наказания */
+        .punishment-item {
+            background: #1a1a1a;
+            border-left: 3px solid #4a2222;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+        }
+        .punishment-item.resolved { border-left-color: #224422; }
+        .punishment-item .p-header {
+            display: flex;
+            justify-content: space-between;
+            color: #777;
+            font-size: 11px;
+        }
+        .punishment-item .p-reason {
+            color: #ccc;
+            font-size: 13px;
+            margin-top: 2px;
         }
 
         .badge-active {
@@ -527,7 +622,7 @@
 
         /* ===== СТРАНИЦА ФИЛЬМА ===== */
         .movie-page-container {
-            max-width: 100%; /* ← убрали ограничение 1000px */
+            max-width: 100%;
             margin: 0 auto;
             background: #141414;
             border: 1px solid #2a2a2a;
@@ -779,6 +874,7 @@
             background: #222;
         }
 
+        /* Адаптив для профиля */
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
@@ -813,17 +909,6 @@
             }
             .stat-card .number {
                 font-size: 20px;
-            }
-            .profile-card .profile-header {
-                flex-direction: column;
-                text-align: center;
-            }
-            .profile-card .stats-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
-            }
-            .profile-card .stats-grid .stat-item .num {
-                font-size: 18px;
             }
             .table th, .table td {
                 padding: 4px 4px;
@@ -870,6 +955,43 @@
                 width: 140px;
                 min-height: 200px;
             }
+
+            .profile-header-overlay {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                padding: 0 20px 16px;
+                margin-top: -40px;
+            }
+            .profile-header-overlay .avatar-xl {
+                width: 80px;
+                height: 80px;
+            }
+            .profile-info-overlay .name-line h2 {
+                font-size: 20px;
+            }
+            .profile-info-overlay .name-line .username-sub {
+                font-size: 14px;
+            }
+            .profile-card .stats-grid {
+                padding: 0 20px 16px;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            .profile-card .stats-grid .stat-item .num {
+                font-size: 20px;
+            }
+            .profile-grid-2col {
+                grid-template-columns: 1fr;
+                padding: 0 20px 20px;
+                gap: 16px;
+            }
+            .profile-banner-wrapper {
+                height: 120px;
+            }
+            .profile-scroll {
+                max-height: 150px;
+            }
         }
 
         @media (min-width: 1025px) {
@@ -901,6 +1023,31 @@
             .movie-page-container .movie-title-section .movie-poster-large {
                 width: 220px;
                 min-height: 320px;
+            }
+
+            .profile-header-overlay {
+                padding: 0 60px 24px;
+                margin-top: -60px;
+            }
+            .profile-header-overlay .avatar-xl {
+                width: 120px;
+                height: 120px;
+            }
+            .profile-info-overlay .name-line h2 {
+                font-size: 28px;
+            }
+            .profile-card .stats-grid {
+                padding: 0 60px 24px;
+            }
+            .profile-grid-2col {
+                padding: 0 60px 40px;
+                gap: 30px;
+            }
+            .profile-banner-wrapper {
+                height: 260px;
+            }
+            .profile-scroll {
+                max-height: 300px;
             }
         }
 
@@ -946,6 +1093,17 @@
             border-radius: 8px;
             padding: 4px 10px;
             width: 100%;
+        }
+
+        .badge-super {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #ccc;
+            border-radius: 30px;
+            font-size: 11px;
+            padding: 3px 14px;
+            display: inline-block;
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -1168,58 +1326,81 @@
     </div>
     {% endif %}
 
-<!-- ====== ПРОФИЛЬ (НА ВЕСЬ ЭКРАН) ====== -->
-<!-- ====== ПРОФИЛЬ (НА ВЕСЬ ЭКРАН) ====== -->
-<div id="page-profile" style="display:none" class="fade-in">
-    <div class="profile-card" id="profileCard">
-        <div class="profile-header">
-            <img src="{{ photo_url or 'https://ui-avatars.com/api/?name=' + user_id|string + '&background=2a2a2a&color=cccccc&size=72&rounded=true' }}" class="avatar-lg" id="profileAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2272%22 height=%2272%22%3E%3Crect fill=%22%23222%22 width=%2272%22 height=%2272%22/%3E%3Ctext x=%2236%22 y=%2244%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2230%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
-            <div class="profile-info">
-                <h3 id="profileName">{{ display_name or 'Загрузка...' }}</h3>
-                <div class="sub" id="profileId"><i class="fas fa-id-badge"></i> ID: {{ user_id }}</div>
-                <div class="sub" id="profileUsername">@{{ username or user_id }}</div>
-                {% if is_super %}
-                    <span class="badge-super"><i class="fas fa-crown"></i> Суперадмин</span>
-                {% elif is_admin %}
-                    <span class="badge-super"><i class="fas fa-user-shield"></i> Админ</span>
+    <!-- ====== ПРОФИЛЬ С БАННЕРОМ ====== -->
+    <div id="page-profile" style="display:none" class="fade-in">
+        <div class="profile-card" id="profileCard">
+            <!-- БАННЕР -->
+            <div class="profile-banner-wrapper">
+                {% if banner_url %}
+                    <img src="{{ banner_url }}" class="profile-banner" id="profileBanner" alt="Баннер">
                 {% else %}
-                    <span class="badge-super"><i class="fas fa-user"></i> Пользователь</span>
+                    <div class="profile-banner-placeholder" id="profileBannerPlaceholder">
+                        <i class="fas fa-image"></i>
+                        <span>Загрузите баннер в настройках</span>
+                    </div>
                 {% endif %}
             </div>
-        </div>
-
-        <div class="stats-grid" id="profileStats">
-            <div class="stat-item">
-                <div class="num" id="pMovies">0</div>
-                <div class="lbl"><i class="fas fa-film"></i> Фильмов</div>
+            
+            <!-- АВАТАРКА И ИМЯ (накладываются на баннер) -->
+            <div class="profile-header-overlay">
+                <img src="{{ photo_url or 'https://ui-avatars.com/api/?name=' + user_id|string + '&background=2a2a2a&color=cccccc&size=80&rounded=true' }}" class="avatar-xl" id="profileAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23222%22 width=%2280%22 height=%2280%22/%3E%3Ctext x=%2240%22 y=%2248%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2232%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
+                <div class="profile-info-overlay">
+                    <div class="name-line">
+                        <h2 id="profileName">{{ display_name or 'Загрузка...' }}</h2>
+                        <span class="username-sub" id="profileUsername">@{{ username or user_id }}</span>
+                    </div>
+                    <div class="sub" id="profileId"><i class="fas fa-id-badge"></i> ID: {{ user_id }}</div>
+                    {% if is_super %}
+                        <span class="badge-super"><i class="fas fa-crown"></i> Суперадмин</span>
+                    {% elif is_admin %}
+                        <span class="badge-super"><i class="fas fa-user-shield"></i> Админ</span>
+                    {% else %}
+                        <span class="badge-super"><i class="fas fa-user"></i> Пользователь</span>
+                    {% endif %}
+                </div>
             </div>
-            <div class="stat-item">
-                <div class="num" id="pReviews">0</div>
-                <div class="lbl"><i class="fas fa-star"></i> Отзывов</div>
-            </div>
-            <div class="stat-item">
-                <div class="num ok" id="pPunishments">0</div>
-                <div class="lbl"><i class="fas fa-gavel"></i> Наказаний</div>
-            </div>
-        </div>
 
-        <div class="section-title"><i class="fas fa-history"></i> История наказаний</div>
-        <div id="pHistory">
-            <p class="text-secondary-light text-center py-3">Нет наказаний</p>
-        </div>
+            <!-- СТАТИСТИКА -->
+            <div class="stats-grid" id="profileStats">
+                <div class="stat-item">
+                    <div class="num" id="pMovies">0</div>
+                    <div class="lbl"><i class="fas fa-film"></i> Фильмов</div>
+                </div>
+                <div class="stat-item">
+                    <div class="num" id="pReviews">0</div>
+                    <div class="lbl"><i class="fas fa-star"></i> Отзывов</div>
+                </div>
+                <div class="stat-item">
+                    <div class="num ok" id="pPunishments">0</div>
+                    <div class="lbl"><i class="fas fa-gavel"></i> Наказаний</div>
+                </div>
+            </div>
 
-        <div class="section-title"><i class="fas fa-comments"></i> Комментарии</div>
-        <div id="pComments">
-            <p class="text-secondary-light text-center py-3">Нет комментариев</p>
-        </div>
-        <div class="comment-input-area">
-            <input type="text" id="profileCommentInput" placeholder="Написать комментарий...">
-            <button class="btn btn-primary btn-sm" onclick="addProfileComment()">
-                <i class="fas fa-paper-plane"></i>
-            </button>
+            <div class="profile-grid-2col">
+                <!-- Левая колонка: История наказаний -->
+                <div class="profile-col">
+                    <div class="section-title"><i class="fas fa-history"></i> История наказаний</div>
+                    <div id="pHistory" class="profile-scroll">
+                        <p class="text-secondary-light text-center py-3">Нет наказаний</p>
+                    </div>
+                </div>
+                
+                <!-- Правая колонка: Комментарии -->
+                <div class="profile-col">
+                    <div class="section-title"><i class="fas fa-comments"></i> Комментарии</div>
+                    <div id="pComments" class="profile-scroll">
+                        <p class="text-secondary-light text-center py-3">Нет комментариев</p>
+                    </div>
+                    <div class="comment-input-area">
+                        <input type="text" id="profileCommentInput" placeholder="Написать комментарий...">
+                        <button class="btn btn-primary btn-sm" onclick="addProfileComment()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
     <!-- ====== СТРАНИЦА ФИЛЬМА ====== -->
     <div id="page-movie" style="display:none" class="fade-in">
@@ -1790,10 +1971,7 @@ async function saveMovieField(code, field, value) {
         });
         if (res.ok) {
             showToast('✅ Сохранено', 'success');
-            // Обновляем страницу без перезагрузки
-            if (currentMovieCode === code) {
-                // Просто обновляем данные
-            }
+            if (currentMovieCode === code) {}
             loadMovies();
         } else {
             showToast('❌ Ошибка', 'danger');
@@ -1870,7 +2048,6 @@ async function showMoviePage(code) {
         const reviewsRes = await apiRequest(`/api/movies/${code}/reviews`);
         const reviews = await reviewsRes.json();
         
-        // Получаем имена пользователей для отзывов
         const reviewUsers = {};
         if (reviews && reviews.length) {
             for (const r of reviews) {
@@ -1898,7 +2075,6 @@ async function showMoviePage(code) {
             reviewsHtml = reviews.map(r => {
                 const isOwner = r.user_id == CURRENT_USER;
                 const isAdmin = IS_ADMIN;
-                // Админ видит только кнопку "Удалить отзыв"
                 const showDelete = isAdmin ? true : isOwner;
                 const deleteLabel = isAdmin ? 'Удалить отзыв' : 'Удалить свой';
                 const userData = reviewUsers[r.user_id] || {};
@@ -2204,8 +2380,8 @@ async function loadProfile(user_id) {
         const res = await apiRequest(`/api/profile/${user_id}`);
         const data = await res.json();
         document.getElementById('profileName').textContent = data.display_name || `Пользователь ${user_id}`;
-        document.getElementById('profileId').innerHTML = `<i class="fas fa-id-badge"></i> ID: ${user_id}`;
         document.getElementById('profileUsername').textContent = `@${data.username || user_id}`;
+        document.getElementById('profileId').innerHTML = `<i class="fas fa-id-badge"></i> ID: ${user_id}`;
         document.getElementById('pMovies').textContent = data.movies_count || 0;
         document.getElementById('pReviews').textContent = data.reviews_count || 0;
         document.getElementById('pPunishments').textContent = data.total_punishments || 0;
@@ -2332,7 +2508,6 @@ async function loadProfileComments(user_id) {
         container.innerHTML = data.map(c => {
             const isOwner = c.author_id == CURRENT_USER;
             const isAdmin = IS_ADMIN;
-            // Админ видит только "Удалить комментарий", не "Удалить свой"
             const showDelete = isAdmin ? true : isOwner;
             const deleteLabel = isAdmin ? 'Удалить комментарий' : 'Удалить свой';
             return `
@@ -2470,7 +2645,6 @@ function loadSettings() {
     document.getElementById('settingsLanguage').value = lang;
     applyTheme(theme);
     
-    // Загружаем настройки конфиденциальности
     const privacyComments = localStorage.getItem('privacyComments') || 'true';
     document.getElementById('settingsPrivacyComments').value = privacyComments;
 }
