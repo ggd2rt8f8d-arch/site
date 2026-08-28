@@ -105,6 +105,7 @@
             object-fit: cover;
             border: 2px solid #333;
             transition: 0.2s;
+            order: 1;
         }
         .top-bar .user-info:hover .avatar-sm {
             border-color: #555;
@@ -117,6 +118,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            order: 2;
         }
 
         .dropdown-menu-custom {
@@ -186,6 +188,7 @@
             color: #555;
         }
 
+        /* Тёмные таблицы */
         .table-container {
             background: #141414;
             border: 1px solid #2a2a2a;
@@ -199,6 +202,7 @@
             margin-bottom: 0;
             font-size: 13px;
             width: 100%;
+            background: #141414;
         }
         .table th {
             font-weight: 400;
@@ -209,13 +213,21 @@
             letter-spacing: 0.5px;
             padding: 8px 6px;
             white-space: nowrap;
+            background: #141414;
         }
         .table td {
             border-bottom: 1px solid #222;
             vertical-align: middle;
             padding: 8px 6px;
+            background: #141414;
+            color: #ccc;
         }
-        .table tr:hover td { background: #1a1a1a; }
+        .table tr:hover td {
+            background: #1e1e1e;
+        }
+        .table tr {
+            background: #141414;
+        }
         .clickable-row { cursor: pointer; }
 
         .btn {
@@ -378,7 +390,6 @@
             min-height: calc(100vh - 160px);
         }
 
-        /* Баннер */
         .profile-banner-wrapper {
             width: 100%;
             height: 200px;
@@ -411,7 +422,6 @@
             color: #666;
         }
 
-        /* Наложение аватарки на баннер */
         .profile-header-overlay {
             display: flex;
             align-items: flex-end;
@@ -453,14 +463,29 @@
             color: #999;
             font-size: 14px;
         }
-        .profile-info-overlay .badge-super {
+
+        /* Ярко-жёлтый овал для Создателя */
+        .badge-creator {
+            background: #f5a623;
+            color: #1a1a1a;
+            border-radius: 30px;
+            font-size: 11px;
+            padding: 3px 14px;
+            display: inline-block;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+        .badge-super {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #ccc;
+            border-radius: 30px;
             font-size: 11px;
             padding: 3px 14px;
             display: inline-block;
             margin-top: 4px;
         }
 
-        /* Статистика */
         .profile-card .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -484,7 +509,6 @@
             font-size: 13px;
         }
 
-        /* Две колонки */
         .profile-grid-2col {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -521,7 +545,6 @@
             border-radius: 10px;
         }
 
-        /* Комментарии */
         .comment-item {
             background: #1a1a1a;
             border: 1px solid #2a2a2a;
@@ -559,7 +582,6 @@
             border-color: #555;
         }
 
-        /* Наказания */
         .punishment-item {
             background: #1a1a1a;
             border-left: 3px solid #4a2222;
@@ -620,7 +642,6 @@
             display: block;
         }
 
-        /* ===== СТРАНИЦА ФИЛЬМА ===== */
         .movie-page-container {
             max-width: 100%;
             margin: 0 auto;
@@ -799,20 +820,6 @@
             color: #e8c84a;
         }
 
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-        }
-        .file-input-wrapper input[type=file] {
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
         .image-preview {
             max-width: 150px;
             max-height: 100px;
@@ -874,7 +881,6 @@
             background: #222;
         }
 
-        /* Адаптив для профиля */
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
@@ -1095,15 +1101,9 @@
             width: 100%;
         }
 
-        .badge-super {
-            background: #2a2a2a;
-            border: 1px solid #3a3a3a;
-            color: #ccc;
-            border-radius: 30px;
-            font-size: 11px;
-            padding: 3px 14px;
-            display: inline-block;
-            margin-top: 4px;
+        /* Убираем загрузку с ПК */
+        .file-input-wrapper {
+            display: none !important;
         }
     </style>
 </head>
@@ -1149,8 +1149,9 @@
             <h4 id="pageTitle">Главная</h4>
         </div>
         <div class="user-info" onclick="toggleDropdown()" id="userMenu">
-            <span class="user-name" id="topBarName">{{ display_name or 'Загрузка...' }}</span>
+            <!-- Фото слева, ник справа -->
             <img src="{{ photo_url or 'https://ui-avatars.com/api/?name=' + user_id|string + '&background=2a2a2a&color=cccccc&size=34&rounded=true' }}" class="avatar-sm" id="topBarAvatar" onerror="this.style.display='none'">
+            <span class="user-name" id="topBarName">{{ display_name or 'Загрузка...' }}</span>
             <div class="dropdown-menu-custom" id="userDropdown">
                 <button class="dropdown-item" onclick="showProfilePage()">
                     <i class="fas fa-user"></i> Мой профиль
@@ -1329,7 +1330,6 @@
     <!-- ====== ПРОФИЛЬ С БАННЕРОМ ====== -->
     <div id="page-profile" style="display:none" class="fade-in">
         <div class="profile-card" id="profileCard">
-            <!-- БАННЕР -->
             <div class="profile-banner-wrapper">
                 {% if banner_url %}
                     <img src="{{ banner_url }}" class="profile-banner" id="profileBanner" alt="Баннер">
@@ -1341,7 +1341,6 @@
                 {% endif %}
             </div>
             
-            <!-- АВАТАРКА И ИМЯ (накладываются на баннер) -->
             <div class="profile-header-overlay">
                 <img src="{{ photo_url or 'https://ui-avatars.com/api/?name=' + user_id|string + '&background=2a2a2a&color=cccccc&size=80&rounded=true' }}" class="avatar-xl" id="profileAvatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23222%22 width=%2280%22 height=%2280%22/%3E%3Ctext x=%2240%22 y=%2248%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2232%22 font-family=%22sans-serif%22%3E👤%3C/text%3E%3C/svg%3E'">
                 <div class="profile-info-overlay">
@@ -1351,7 +1350,7 @@
                     </div>
                     <div class="sub" id="profileId"><i class="fas fa-id-badge"></i> ID: {{ user_id }}</div>
                     {% if is_super %}
-                        <span class="badge-super"><i class="fas fa-crown"></i> Суперадмин</span>
+                        <span class="badge-creator"><i class="fas fa-crown"></i> Создатель</span>
                     {% elif is_admin %}
                         <span class="badge-super"><i class="fas fa-user-shield"></i> Админ</span>
                     {% else %}
@@ -1360,7 +1359,6 @@
                 </div>
             </div>
 
-            <!-- СТАТИСТИКА -->
             <div class="stats-grid" id="profileStats">
                 <div class="stat-item">
                     <div class="num" id="pMovies">0</div>
@@ -1377,7 +1375,6 @@
             </div>
 
             <div class="profile-grid-2col">
-                <!-- Левая колонка: История наказаний -->
                 <div class="profile-col">
                     <div class="section-title"><i class="fas fa-history"></i> История наказаний</div>
                     <div id="pHistory" class="profile-scroll">
@@ -1385,7 +1382,6 @@
                     </div>
                 </div>
                 
-                <!-- Правая колонка: Комментарии -->
                 <div class="profile-col">
                     <div class="section-title"><i class="fas fa-comments"></i> Комментарии</div>
                     <div id="pComments" class="profile-scroll">
@@ -1427,25 +1423,13 @@
                 <input type="text" class="form-control" id="settingsUsername" placeholder="username" value="{{ username or '' }}">
             </div>
             <div class="mb-3">
-                <label class="form-label" style="color:#999;">Аватарка</label>
-                <div class="d-flex gap-2 align-items-center flex-wrap">
-                    <div class="file-input-wrapper">
-                        <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
-                        <input type="file" id="settingsPhotoFile" accept="image/*" onchange="previewImage(this, 'photoPreview')">
-                    </div>
-                    <input type="text" class="form-control" id="settingsPhotoUrl" placeholder="Или вставьте ссылку" style="flex:1;min-width:150px;" value="{{ photo_url or '' }}">
-                </div>
+                <label class="form-label" style="color:#999;">Аватарка (ссылка)</label>
+                <input type="text" class="form-control" id="settingsPhotoUrl" placeholder="Вставьте ссылку" value="{{ photo_url or '' }}">
                 <img id="photoPreview" class="image-preview" src="{{ photo_url or '' }}" style="display:{{ 'block' if photo_url else 'none' }}">
             </div>
             <div class="mb-3">
-                <label class="form-label" style="color:#999;">Баннер</label>
-                <div class="d-flex gap-2 align-items-center flex-wrap">
-                    <div class="file-input-wrapper">
-                        <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
-                        <input type="file" id="settingsBannerFile" accept="image/*" onchange="previewImage(this, 'bannerPreview')">
-                    </div>
-                    <input type="text" class="form-control" id="settingsBannerUrl" placeholder="Или вставьте ссылку" style="flex:1;min-width:150px;" value="{{ banner_url or '' }}">
-                </div>
+                <label class="form-label" style="color:#999;">Баннер (ссылка)</label>
+                <input type="text" class="form-control" id="settingsBannerUrl" placeholder="Вставьте ссылку" value="{{ banner_url or '' }}">
                 <img id="bannerPreview" class="banner-preview" src="{{ banner_url or '' }}" style="display:{{ 'block' if banner_url else 'none' }}">
             </div>
             <button class="btn btn-primary" onclick="saveProfileSettings()">
@@ -1558,24 +1542,12 @@
                 <div class="mb-3"><label class="form-label">Код</label><input type="text" class="form-control" id="movieCode" placeholder="the-matrix"></div>
                 <div class="mb-3"><label class="form-label">Название</label><input type="text" class="form-control" id="movieTitle" placeholder="Матрица"></div>
                 <div class="mb-3"><label class="form-label">Год</label><input type="number" class="form-control" id="movieYear" placeholder="1999"></div>
-                <div class="mb-3"><label class="form-label">Постер</label>
-                    <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <div class="file-input-wrapper">
-                            <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
-                            <input type="file" id="moviePosterFile" accept="image/*" onchange="previewImage(this, 'moviePosterPreview')">
-                        </div>
-                        <input type="text" class="form-control" id="moviePoster" placeholder="Или ссылка" style="flex:1;min-width:150px;">
-                    </div>
+                <div class="mb-3"><label class="form-label">Постер (ссылка)</label>
+                    <input type="text" class="form-control" id="moviePoster" placeholder="https://example.com/poster.jpg">
                     <img id="moviePosterPreview" class="image-preview" style="display:none;">
                 </div>
-                <div class="mb-3"><label class="form-label">Баннер</label>
-                    <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <div class="file-input-wrapper">
-                            <button class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Загрузить</button>
-                            <input type="file" id="movieBannerFile" accept="image/*" onchange="previewImage(this, 'movieBannerPreview')">
-                        </div>
-                        <input type="text" class="form-control" id="movieBanner" placeholder="Или ссылка" style="flex:1;min-width:150px;">
-                    </div>
+                <div class="mb-3"><label class="form-label">Баннер (ссылка)</label>
+                    <input type="text" class="form-control" id="movieBanner" placeholder="https://example.com/banner.jpg">
                     <img id="movieBannerPreview" class="banner-preview" style="display:none;">
                 </div>
                 <div class="mb-3"><label class="form-label">Описание</label><textarea class="form-control" id="movieDescription" rows="3"></textarea></div>
@@ -1897,7 +1869,6 @@ document.getElementById('movieSearch')?.addEventListener('input', function() {
     renderMovies(filtered);
 });
 
-// Добавление фильма
 document.getElementById('saveMovieBtn')?.addEventListener('click', async function() {
     const data = {
         code: document.getElementById('movieCode').value.trim(),
@@ -1940,7 +1911,6 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
     } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
 });
 
-// Редактирование - открываем страницу фильма в режиме редактирования
 function editMovieInline(code) {
     isEditingMode = true;
     showMoviePage(code);
@@ -1954,7 +1924,6 @@ async function deleteMovie(code) {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-// ==================== ИНЛАЙН-РЕДАКТИРОВАНИЕ ====================
 function toggleEditMode() {
     isEditingMode = !isEditingMode;
     if (currentMovieCode) showMoviePage(currentMovieCode);
@@ -1971,7 +1940,6 @@ async function saveMovieField(code, field, value) {
         });
         if (res.ok) {
             showToast('✅ Сохранено', 'success');
-            if (currentMovieCode === code) {}
             loadMovies();
         } else {
             showToast('❌ Ошибка', 'danger');
@@ -2039,7 +2007,6 @@ async function uploadMovieImage(code, field, input) {
     reader.readAsDataURL(file);
 }
 
-// ==================== СТРАНИЦА ФИЛЬМА ====================
 async function showMoviePage(code) {
     currentMovieCode = code;
     try {
@@ -2222,7 +2189,6 @@ async function showMoviePage(code) {
 
 function setReviewMovie(code) { currentReviewMovieCode = code; }
 
-// ==================== ОТЗЫВЫ ====================
 async function deleteReview(reviewId, movieCode) {
     if (!confirm('Удалить этот отзыв?')) return;
     try {
@@ -2257,7 +2223,6 @@ document.getElementById('saveReviewBtn')?.addEventListener('click', async functi
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 });
 
-// ==================== АДМИНЫ ====================
 async function loadAdmins() {
     if (!IS_ADMIN) return;
     try {
@@ -2311,7 +2276,6 @@ async function removeAdmin(user_id) {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-// ==================== БАНЫ ====================
 async function loadBans() {
     if (!IS_SUPER) return;
     try {
@@ -2374,7 +2338,6 @@ async function unbanUser(user_id) {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-// ==================== ПРОФИЛЬ ====================
 async function loadProfile(user_id) {
     try {
         const res = await apiRequest(`/api/profile/${user_id}`);
@@ -2414,7 +2377,6 @@ async function loadProfile(user_id) {
     } catch(e) { console.error(e); }
 }
 
-// ==================== ПРОФИЛЬ В МОДАЛКЕ ====================
 async function showProfileModal(user_id) {
     currentProfileUserId = user_id;
     try {
@@ -2495,7 +2457,6 @@ async function updateRole(user_id, role) {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-// ==================== КОММЕНТАРИИ ====================
 async function loadProfileComments(user_id) {
     try {
         const res = await apiRequest(`/api/profile/${user_id}/comments`);
@@ -2598,7 +2559,6 @@ async function addModalComment() {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-// ==================== НАКАЗАНИЯ ====================
 function showPunishModal() {
     if (!IS_SUPER) return;
     if (!currentProfileUserId) return;
@@ -2637,7 +2597,6 @@ document.getElementById('savePunishBtn')?.addEventListener('click', async functi
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 });
 
-// ==================== НАСТРОЙКИ ====================
 function loadSettings() {
     const theme = localStorage.getItem('theme') || 'dark';
     const lang = localStorage.getItem('lang') || 'ru';
@@ -2658,6 +2617,14 @@ function applyTheme(theme) {
             el.style.color = '#222';
             el.style.borderColor = '#ddd';
         });
+        document.querySelectorAll('.table, .table th, .table td, .table tr').forEach(el => {
+            el.style.background = '#fff';
+            el.style.color = '#222';
+        });
+        document.querySelectorAll('.table-container').forEach(el => {
+            el.style.background = '#f5f5f5';
+            el.style.borderColor = '#ddd';
+        });
     } else {
         document.body.style.background = '#0d0d0d';
         document.body.style.color = '#d4d4d4';
@@ -2665,6 +2632,10 @@ function applyTheme(theme) {
             el.style.background = '';
             el.style.color = '';
             el.style.borderColor = '';
+        });
+        document.querySelectorAll('.table, .table th, .table td, .table tr').forEach(el => {
+            el.style.background = '';
+            el.style.color = '';
         });
     }
 }
@@ -2704,7 +2675,6 @@ async function saveProfileSettings() {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-// ==================== ПОДДЕРЖКА ====================
 async function sendSupport() {
     const subject = document.getElementById('supportSubject').value.trim();
     const message = document.getElementById('supportMessage').value.trim();
@@ -2723,7 +2693,6 @@ async function sendSupport() {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-// ==================== ЗАГРУЗКА ====================
 loadStats();
 loadMovies();
 loadSettings();
