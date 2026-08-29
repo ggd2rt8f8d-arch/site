@@ -2336,6 +2336,22 @@ async def api_create_news(request: Request, data: NewsData):
     await create_news(data.title, data.content, user_id)
     return {"success": True}
 
+@app.delete("/api/news/{news_id}")
+async def api_delete_news(request: Request, news_id: int):
+    user_id = await check_super_admin(request)
+    async with pool.acquire() as conn:
+        result = await conn.execute("DELETE FROM news WHERE id = $1 AND author_id = $2", news_id, user_id)
+        if result == "DELETE 0":
+            # Если суперадмин удаляет, проверяем, существует ли новость вообще
+            exists = await conn.fetchval("SELECT 1 FROM news WHERE id = $1", news_id)
+            if not exists:
+                raise HTTPException(status_code=404, detail="Новость не найдена")
+            # Если новость существует, но автор не совпадает, пробуем удалить как суперадмин
+            result = await conn.execute("DELETE FROM news WHERE id = $1", news_id)
+            if result == "DELETE 0":
+                raise HTTPException(status_code=403, detail="Недостаточно прав")
+        return {"success": True}
+
 # ---------- Сообщения ----------
 @app.post("/api/messages/{receiver_id}")
 async def api_send_message(request: Request, receiver_id: int, data: MessageData):
