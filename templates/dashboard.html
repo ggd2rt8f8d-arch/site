@@ -1328,6 +1328,13 @@
             text-align: center;
         }
 
+        .news-item { position: relative; }
+        .news-item .delete-news-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
@@ -1461,6 +1468,10 @@
             }
             .chat-message {
                 max-width: 85%;
+            }
+            .news-item .delete-news-btn {
+                position: static;
+                margin-top: 10px;
             }
         }
 
@@ -1612,33 +1623,33 @@
         <h3>MOVIE ADMIN</h3>
     </div>
     <nav class="nav flex-column">
-        <a class="nav-link active" href="#" data-page="dashboard">
-            <i class="fas fa-home"></i> Главная
+        <a class="nav-link active" href="#" data-page="dashboard" data-i18n="nav_home">
+            <i class="fas fa-home"></i> <span data-i18n="nav_home">Главная</span>
         </a>
-        <a class="nav-link" href="#" data-page="movies">
-            <i class="fas fa-list"></i> Фильмы
+        <a class="nav-link" href="#" data-page="movies" data-i18n="nav_movies">
+            <i class="fas fa-list"></i> <span data-i18n="nav_movies">Фильмы</span>
         </a>
-        <a class="nav-link" href="#" data-page="news">
-            <i class="fas fa-newspaper"></i> Новости
+        <a class="nav-link" href="#" data-page="news" data-i18n="nav_news">
+            <i class="fas fa-newspaper"></i> <span data-i18n="nav_news">Новости</span>
         </a>
-        <a class="nav-link" href="#" data-page="friends">
-            <i class="fas fa-users"></i> Друзья
+        <a class="nav-link" href="#" data-page="friends" data-i18n="nav_friends">
+            <i class="fas fa-users"></i> <span data-i18n="nav_friends">Друзья</span>
         </a>
-        <a class="nav-link" href="#" data-page="chats">
-            <i class="fas fa-comments"></i> Чаты
+        <a class="nav-link" href="#" data-page="chats" data-i18n="nav_chats">
+            <i class="fas fa-comments"></i> <span data-i18n="nav_chats">Чаты</span>
         </a>
         {% if is_admin %}
-        <a class="nav-link" href="#" data-page="admins">
-            <i class="fas fa-users-cog"></i> Админы
+        <a class="nav-link" href="#" data-page="admins" data-i18n="nav_admins">
+            <i class="fas fa-users-cog"></i> <span data-i18n="nav_admins">Админы</span>
         </a>
         {% endif %}
         {% if is_super %}
-        <a class="nav-link" href="#" data-page="bans">
-            <i class="fas fa-ban"></i> Баны
+        <a class="nav-link" href="#" data-page="bans" data-i18n="nav_bans">
+            <i class="fas fa-ban"></i> <span data-i18n="nav_bans">Баны</span>
         </a>
         {% endif %}
-        <a class="nav-link" href="#" data-page="settings">
-            <i class="fas fa-cog"></i> Настройки
+        <a class="nav-link" href="#" data-page="settings" data-i18n="nav_settings">
+            <i class="fas fa-cog"></i> <span data-i18n="nav_settings">Настройки</span>
         </a>
     </nav>
 </div>
@@ -1651,7 +1662,7 @@
             <button class="sidebar-toggle" onclick="toggleSidebar()">
                 <i class="fas fa-bars"></i>
             </button>
-            <h4 id="pageTitle">Главная</h4>
+            <h4 id="pageTitle" data-i18n="page_title_dashboard">Главная</h4>
         </div>
         <div class="right-section">
             <div class="notification-bell" id="notificationBell" onclick="toggleNotifications()">
@@ -1755,8 +1766,8 @@
                 <input type="text" class="form-control" id="movieSearch" placeholder="Поиск по коду или названию...">
             </div>
             {% if is_admin %}
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMovieModal">
-                <i class="fas fa-plus"></i> Добавить фильм
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMovieModal" data-i18n="btn_add_movie">
+                <i class="fas fa-plus"></i> <span data-i18n="btn_add_movie">Добавить фильм</span>
             </button>
             {% endif %}
         </div>
@@ -1765,14 +1776,14 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Код</th>
-                            <th>Название</th>
-                            <th>Год</th>
-                            <th>Постер</th>
-                            <th>Рейтинг</th>
+                            <th data-i18n="label_code">Код</th>
+                            <th data-i18n="label_title">Название</th>
+                            <th data-i18n="label_year">Год</th>
+                            <th data-i18n="label_poster">Постер</th>
+                            <th data-i18n="label_rating">Рейтинг</th>
                             <th>TPZ</th>
                             {% if is_admin %}
-                            <th>Действия</th>
+                            <th data-i18n="btn_edit">Действия</th>
                             {% endif %}
                         </tr>
                     </thead>
@@ -1787,10 +1798,10 @@
     <!-- ====== НОВОСТИ ====== -->
     <div id="page-news" style="display:none" class="fade-in">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 style="font-weight:300;color:#ccc;"><i class="fas fa-newspaper"></i> Новости</h5>
+            <h5 style="font-weight:300;color:#ccc;" data-i18n="nav_news"><i class="fas fa-newspaper"></i> Новости</h5>
             {% if is_super %}
-            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addNewsModal">
-                <i class="fas fa-plus"></i> Создать новость
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addNewsModal" data-i18n="btn_create_news">
+                <i class="fas fa-plus"></i> <span data-i18n="btn_create_news">Создать новость</span>
             </button>
             {% endif %}
         </div>
@@ -1803,7 +1814,7 @@
     <div id="page-friends" style="display:none" class="fade-in">
         <div class="row">
             <div class="col-md-8">
-                <h5 style="font-weight:300;color:#ccc;"><i class="fas fa-users"></i> Мои друзья</h5>
+                <h5 style="font-weight:300;color:#ccc;" data-i18n="nav_friends"><i class="fas fa-users"></i> Мои друзья</h5>
                 <div id="friendsList">
                     <p class="text-secondary-light text-center py-4">У вас пока нет друзей</p>
                 </div>
@@ -1826,7 +1837,7 @@
 
     <!-- ====== ЧАТЫ ====== -->
     <div id="page-chats" style="display:none" class="fade-in">
-        <h5 style="font-weight:300;color:#ccc;margin-bottom:16px;"><i class="fas fa-comments"></i> Мои чаты</h5>
+        <h5 style="font-weight:300;color:#ccc;margin-bottom:16px;" data-i18n="nav_chats"><i class="fas fa-comments"></i> Мои чаты</h5>
         <div class="table-container">
             <div id="chatsList">
                 <p class="text-secondary-light text-center py-4">У вас пока нет чатов</p>
@@ -1838,10 +1849,10 @@
     {% if is_admin %}
     <div id="page-admins" style="display:none" class="fade-in">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 style="font-weight:300;color:#ccc;"><i class="fas fa-users-cog"></i> Администраторы</h5>
+            <h5 style="font-weight:300;color:#ccc;" data-i18n="nav_admins"><i class="fas fa-users-cog"></i> Администраторы</h5>
             {% if is_super %}
-            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAdminModal">
-                <i class="fas fa-user-plus"></i> Добавить
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAdminModal" data-i18n="btn_add_admin">
+                <i class="fas fa-user-plus"></i> <span data-i18n="btn_add_admin">Добавить</span>
             </button>
             {% endif %}
         </div>
@@ -1855,7 +1866,7 @@
                         <th><i class="fas fa-film"></i> Фильмов</th>
                         <th><i class="fas fa-exclamation-triangle"></i> Выговоров</th>
                         {% if is_super %}
-                        <th>Действия</th>
+                        <th data-i18n="btn_edit">Действия</th>
                         {% endif %}
                     </tr>
                 </thead>
@@ -1871,9 +1882,9 @@
     {% if is_super %}
     <div id="page-bans" style="display:none" class="fade-in">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 style="font-weight:300;color:#ccc;"><i class="fas fa-ban"></i> Забаненные</h5>
-            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addBanModal">
-                <i class="fas fa-user-slash"></i> Забанить
+            <h5 style="font-weight:300;color:#ccc;" data-i18n="nav_bans"><i class="fas fa-ban"></i> Забаненные</h5>
+            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addBanModal" data-i18n="btn_ban">
+                <i class="fas fa-user-slash"></i> <span data-i18n="btn_ban">Забанить</span>
             </button>
         </div>
         <div class="table-container">
@@ -1883,9 +1894,9 @@
                         <th style="width:40px;"></th>
                         <th>ID / Имя</th>
                         <th><i class="fas fa-circle"></i> Статус</th>
-                        <th>Причина</th>
+                        <th data-i18n="label_reason">Причина</th>
                         <th>До</th>
-                        <th>Действия</th>
+                        <th data-i18n="btn_edit">Действия</th>
                     </tr>
                 </thead>
                 <tbody id="bansBody">
@@ -2010,7 +2021,7 @@
                 </div>
                 <!-- Ввод -->
                 <div class="chat-input-area">
-                    <input type="text" id="chatInput" placeholder="Написать сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <input type="text" id="chatInput" placeholder="Написать сообщение...">
                     <button onclick="sendMessage()">
                         <i class="fas fa-paper-plane"></i>
                     </button>
@@ -2027,9 +2038,9 @@
             </h3>
             
             <div class="settings-tabs">
-                <button class="tab-btn active" data-tab="tab-account"><i class="fas fa-user"></i> Аккаунт</button>
-                <button class="tab-btn" data-tab="tab-appearance"><i class="fas fa-palette"></i> Внешний вид</button>
-                <button class="tab-btn" data-tab="tab-privacy"><i class="fas fa-lock"></i> Конфиденциальность</button>
+                <button class="tab-btn active" data-tab="tab-account" data-i18n="tab_account"><i class="fas fa-user"></i> Аккаунт</button>
+                <button class="tab-btn" data-tab="tab-appearance" data-i18n="tab_appearance"><i class="fas fa-palette"></i> Внешний вид</button>
+                <button class="tab-btn" data-tab="tab-privacy" data-i18n="tab_privacy"><i class="fas fa-lock"></i> Конфиденциальность</button>
             </div>
             
             <div class="settings-tab-content active" id="tab-account">
@@ -2051,6 +2062,9 @@
                     </div>
                     <input type="text" class="form-control mt-2" id="settingsPhotoUrl" placeholder="Или вставьте ссылку" value="{{ photo_url or '' }}" oninput="document.getElementById('photoPreview').src=this.value;document.getElementById('photoPreview').style.display=this.value?'block':'none'">
                     <img id="photoPreview" class="image-preview" src="{{ photo_url or '' }}" style="display:{{ 'block' if photo_url else 'none' }}">
+                    <p style="color:#666;font-size:11px;margin-top:4px;">
+                        <i class="fas fa-info-circle"></i> Для обрезки используйте встроенные инструменты вашего устройства
+                    </p>
                 </div>
                 <div class="mb-3">
                     <label class="form-label" style="color:#999;">Баннер</label>
@@ -2180,14 +2194,14 @@
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="mb-3"><label class="form-label">Код</label><input type="text" class="form-control" id="movieCode" placeholder="the-matrix"></div>
-                        <div class="mb-3"><label class="form-label">Название</label><input type="text" class="form-control" id="movieTitle" placeholder="Матрица"></div>
-                        <div class="mb-3"><label class="form-label">Год</label><input type="number" class="form-control" id="movieYear" placeholder="1999"></div>
-                        <div class="mb-3"><label class="form-label">IMDb</label><input type="text" class="form-control" id="movieRating" placeholder="8.7"></div>
+                        <div class="mb-3"><label class="form-label" data-i18n="label_code">Код</label><input type="text" class="form-control" id="movieCode" placeholder="the-matrix"></div>
+                        <div class="mb-3"><label class="form-label" data-i18n="label_title">Название</label><input type="text" class="form-control" id="movieTitle" placeholder="Матрица"></div>
+                        <div class="mb-3"><label class="form-label" data-i18n="label_year">Год</label><input type="number" class="form-control" id="movieYear" placeholder="1999"></div>
+                        <div class="mb-3"><label class="form-label" data-i18n="label_rating">Рейтинг</label><input type="text" class="form-control" id="movieRating" placeholder="8.7"></div>
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label class="form-label">Постер</label>
+                            <label class="form-label" data-i18n="label_poster">Постер</label>
                             <div class="file-upload-wrapper">
                                 <div class="file-upload-btn">
                                     <i class="fas fa-upload"></i> Выбрать файл
@@ -2198,7 +2212,7 @@
                             <img id="moviePosterPreview" class="image-preview" style="display:none;">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Баннер</label>
+                            <label class="form-label" data-i18n="label_banner">Баннер</label>
                             <div class="file-upload-wrapper">
                                 <div class="file-upload-btn">
                                     <i class="fas fa-upload"></i> Выбрать файл
@@ -2210,26 +2224,26 @@
                         </div>
                     </div>
                 </div>
-                <div class="mb-3"><label class="form-label">Описание</label><textarea class="form-control" id="movieDescription" rows="3"></textarea></div>
+                <div class="mb-3"><label class="form-label" data-i18n="label_description">Описание</label><textarea class="form-control" id="movieDescription" rows="3"></textarea></div>
                 <hr style="border-color:#2a2a2a;">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="mb-3"><label class="form-label">Режиссер</label><input type="text" class="form-control" id="movieDirector" placeholder="Режиссер"></div>
-                        <div class="mb-3"><label class="form-label">Сценарий</label><input type="text" class="form-control" id="movieWriters" placeholder="Сценаристы"></div>
-                        <div class="mb-3"><label class="form-label">Страна</label><input type="text" class="form-control" id="movieCountry" placeholder="США"></div>
+                        <div class="mb-3"><label class="form-label" data-i18n="label_director">Режиссер</label><input type="text" class="form-control" id="movieDirector" placeholder="Режиссер"></div>
+                        <div class="mb-3"><label class="form-label" data-i18n="label_writers">Сценарий</label><input type="text" class="form-control" id="movieWriters" placeholder="Сценаристы"></div>
+                        <div class="mb-3"><label class="form-label" data-i18n="label_country">Страна</label><input type="text" class="form-control" id="movieCountry" placeholder="США"></div>
                     </div>
                     <div class="col-md-6">
-                        <div class="mb-3"><label class="form-label">Жанры</label><input type="text" class="form-control" id="movieGenres" placeholder="Фантастика, Боевик"></div>
-                        <div class="mb-3"><label class="form-label">Бюджет</label><input type="text" class="form-control" id="movieBudget" placeholder="$100,000,000"></div>
-                        <div class="mb-3"><label class="form-label">Сборы в США</label><input type="text" class="form-control" id="movieBoxOfficeUS" placeholder="$100,000,000"></div>
+                        <div class="mb-3"><label class="form-label" data-i18n="label_genres">Жанры</label><input type="text" class="form-control" id="movieGenres" placeholder="Фантастика, Боевик"></div>
+                        <div class="mb-3"><label class="form-label" data-i18n="label_budget">Бюджет</label><input type="text" class="form-control" id="movieBudget" placeholder="$100,000,000"></div>
+                        <div class="mb-3"><label class="form-label" data-i18n="label_box_office_us">Сборы в США</label><input type="text" class="form-control" id="movieBoxOfficeUS" placeholder="$100,000,000"></div>
                     </div>
                 </div>
-                <div class="mb-3"><label class="form-label">Сборы в мире</label><input type="text" class="form-control" id="movieBoxOfficeWorld" placeholder="$500,000,000"></div>
-                <div class="mb-3"><label class="form-label">В главных ролях (через запятую)</label><input type="text" class="form-control" id="movieCast" placeholder="Том Холланд, Зендея"></div>
+                <div class="mb-3"><label class="form-label" data-i18n="label_box_office_world">Сборы в мире</label><input type="text" class="form-control" id="movieBoxOfficeWorld" placeholder="$500,000,000"></div>
+                <div class="mb-3"><label class="form-label" data-i18n="label_cast">В главных ролях (через запятую)</label><input type="text" class="form-control" id="movieCast" placeholder="Том Холланд, Зендея"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="saveMovieBtn">Сохранить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveMovieBtn" data-i18n="btn_save">Сохранить</button>
             </div>
         </div>
     </div>
@@ -2248,8 +2262,8 @@
                 <div class="mb-3"><label class="form-label">Содержание</label><textarea class="form-control" id="newsContent" rows="4"></textarea></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="saveNewsBtn">Опубликовать</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveNewsBtn" data-i18n="btn_save">Опубликовать</button>
             </div>
         </div>
     </div>
@@ -2268,8 +2282,8 @@
                 <div class="mb-3"><label class="form-label">Telegram ID</label><input type="number" class="form-control" id="adminIdInput"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="saveAdminBtn">Добавить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveAdminBtn" data-i18n="btn_save">Добавить</button>
             </div>
         </div>
     </div>
@@ -2286,12 +2300,12 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3"><label class="form-label">Telegram ID</label><input type="number" class="form-control" id="banIdInput"></div>
-                <div class="mb-3"><label class="form-label">Причина</label><input type="text" class="form-control" id="banReasonInput"></div>
-                <div class="mb-3"><label class="form-label">Срок (часов)</label><input type="number" class="form-control" id="banDurationInput" value="24"></div>
+                <div class="mb-3"><label class="form-label" data-i18n="label_reason">Причина</label><input type="text" class="form-control" id="banReasonInput"></div>
+                <div class="mb-3"><label class="form-label" data-i18n="label_duration">Срок (часов)</label><input type="number" class="form-control" id="banDurationInput" value="24"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-danger" id="saveBanBtn">Забанить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Отмена</button>
+                <button type="button" class="btn btn-danger" id="saveBanBtn" data-i18n="btn_ban">Забанить</button>
             </div>
         </div>
     </div>
@@ -2309,12 +2323,12 @@
                 <div class="text-center py-4 text-secondary-light">Загрузка...</div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                <button type="button" class="btn btn-primary" onclick="startChatFromModal()" id="modalChatBtn" style="display:none;">
-                    <i class="fas fa-comment"></i> Написать
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_close">Закрыть</button>
+                <button type="button" class="btn btn-primary" onclick="startChatFromModal()" id="modalChatBtn" style="display:none;" data-i18n="btn_write">
+                    <i class="fas fa-comment"></i> <span data-i18n="btn_write">Написать</span>
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="reportUserFromModal()" id="modalReportBtn" style="display:none;">
-                    <i class="fas fa-flag"></i> Пожаловаться
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="reportUserFromModal()" id="modalReportBtn" style="display:none;" data-i18n="btn_report">
+                    <i class="fas fa-flag"></i> <span data-i18n="btn_report">Пожаловаться</span>
                 </button>
                 {% if is_super %}
                     <button type="button" class="btn btn-danger" id="punishBtn" style="display:none;" onclick="showPunishModal()">
@@ -2335,7 +2349,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3"><label class="form-label">Тип</label>
+                <div class="mb-3"><label class="form-label" data-i18n="label_type">Тип</label>
                     <select class="form-control" id="punishType">
                         <option value="warning">⚠️ Выговор</option>
                         <option value="mute">🔇 Мут (1 день)</option>
@@ -2343,12 +2357,12 @@
                         <option value="permanent_ban">🚫 Перманентный бан</option>
                     </select>
                 </div>
-                <div class="mb-3"><label class="form-label">Причина</label><input type="text" class="form-control" id="punishReason"></div>
-                <div class="mb-3"><label class="form-label">Срок (часов)</label><input type="number" class="form-control" id="punishDuration" value="24"></div>
+                <div class="mb-3"><label class="form-label" data-i18n="label_reason">Причина</label><input type="text" class="form-control" id="punishReason"></div>
+                <div class="mb-3"><label class="form-label" data-i18n="label_duration">Срок (часов)</label><input type="number" class="form-control" id="punishDuration" value="24"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-danger" id="savePunishBtn">Выдать</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Отмена</button>
+                <button type="button" class="btn btn-danger" id="savePunishBtn" data-i18n="btn_save">Выдать</button>
             </div>
         </div>
     </div>
@@ -2367,8 +2381,8 @@
                 <div class="mb-3"><label class="form-label">Текст отзыва</label><textarea class="form-control" id="reviewText" rows="3"></textarea></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="saveReviewBtn">Оставить отзыв</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveReviewBtn" data-i18n="btn_save">Оставить отзыв</button>
             </div>
         </div>
     </div>
@@ -2387,6 +2401,126 @@ let currentReviewMovieCode = null;
 let isEditingMode = false;
 let chatPartnerId = null;
 let unreadCount = {{ unread_count or 0 }};
+
+// ==================== ПЕРЕВОДЫ ====================
+const translations = {
+    ru: {
+        'page_title_dashboard': 'Главная',
+        'page_title_movies': 'Управление фильмами',
+        'page_title_admins': 'Администраторы',
+        'page_title_bans': 'Забаненные',
+        'page_title_profile': 'Мой профиль',
+        'page_title_settings': 'Настройки',
+        'page_title_support': 'Поддержка',
+        'page_title_about': 'О нас',
+        'page_title_movie': 'Фильм',
+        'page_title_friends': 'Друзья',
+        'page_title_news': 'Новости',
+        'page_title_chats': 'Чаты',
+        'page_title_chat': 'Чат',
+        'nav_home': 'Главная',
+        'nav_movies': 'Фильмы',
+        'nav_news': 'Новости',
+        'nav_friends': 'Друзья',
+        'nav_chats': 'Чаты',
+        'nav_admins': 'Админы',
+        'nav_bans': 'Баны',
+        'nav_settings': 'Настройки',
+        'btn_add_movie': 'Добавить фильм',
+        'btn_create_news': 'Создать новость',
+        'btn_add_admin': 'Добавить админа',
+        'btn_ban': 'Забанить',
+        'btn_save': 'Сохранить',
+        'btn_cancel': 'Отмена',
+        'btn_delete': 'Удалить',
+        'btn_edit': 'Редактировать',
+        'btn_close': 'Закрыть',
+        'btn_write': 'Написать',
+        'btn_report': 'Пожаловаться',
+        'btn_friend_add': 'Добавить в друзья',
+        'btn_friend_accept': 'Принять',
+        'btn_friend_decline': 'Отклонить',
+        'label_code': 'Код',
+        'label_title': 'Название',
+        'label_year': 'Год',
+        'label_poster': 'Постер',
+        'label_banner': 'Баннер',
+        'label_description': 'Описание',
+        'label_rating': 'Рейтинг',
+        'label_director': 'Режиссер',
+        'label_writers': 'Сценарий',
+        'label_genres': 'Жанры',
+        'label_country': 'Страна',
+        'label_budget': 'Бюджет',
+        'label_box_office_us': 'Сборы в США',
+        'label_box_office_world': 'Сборы в мире',
+        'label_cast': 'В главных ролях',
+        'label_reason': 'Причина',
+        'label_duration': 'Срок (часов)',
+        'label_type': 'Тип',
+        'tab_account': 'Аккаунт',
+        'tab_appearance': 'Внешний вид',
+        'tab_privacy': 'Конфиденциальность'
+    },
+    en: {
+        'page_title_dashboard': 'Dashboard',
+        'page_title_movies': 'Manage Movies',
+        'page_title_admins': 'Admins',
+        'page_title_bans': 'Bans',
+        'page_title_profile': 'My Profile',
+        'page_title_settings': 'Settings',
+        'page_title_support': 'Support',
+        'page_title_about': 'About Us',
+        'page_title_movie': 'Movie',
+        'page_title_friends': 'Friends',
+        'page_title_news': 'News',
+        'page_title_chats': 'Chats',
+        'page_title_chat': 'Chat',
+        'nav_home': 'Home',
+        'nav_movies': 'Movies',
+        'nav_news': 'News',
+        'nav_friends': 'Friends',
+        'nav_chats': 'Chats',
+        'nav_admins': 'Admins',
+        'nav_bans': 'Bans',
+        'nav_settings': 'Settings',
+        'btn_add_movie': 'Add Movie',
+        'btn_create_news': 'Create News',
+        'btn_add_admin': 'Add Admin',
+        'btn_ban': 'Ban',
+        'btn_save': 'Save',
+        'btn_cancel': 'Cancel',
+        'btn_delete': 'Delete',
+        'btn_edit': 'Edit',
+        'btn_close': 'Close',
+        'btn_write': 'Write',
+        'btn_report': 'Report',
+        'btn_friend_add': 'Add Friend',
+        'btn_friend_accept': 'Accept',
+        'btn_friend_decline': 'Decline',
+        'label_code': 'Code',
+        'label_title': 'Title',
+        'label_year': 'Year',
+        'label_poster': 'Poster',
+        'label_banner': 'Banner',
+        'label_description': 'Description',
+        'label_rating': 'Rating',
+        'label_director': 'Director',
+        'label_writers': 'Writers',
+        'label_genres': 'Genres',
+        'label_country': 'Country',
+        'label_budget': 'Budget',
+        'label_box_office_us': 'Box Office (US)',
+        'label_box_office_world': 'Box Office (World)',
+        'label_cast': 'Cast',
+        'label_reason': 'Reason',
+        'label_duration': 'Duration (hours)',
+        'label_type': 'Type',
+        'tab_account': 'Account',
+        'tab_appearance': 'Appearance',
+        'tab_privacy': 'Privacy'
+    }
+};
 
 // ==================== ФУНКЦИИ ПРЕДПРОСМОТРА ====================
 function previewImageFile(input, previewId, urlInputId) {
@@ -2536,7 +2670,14 @@ function showPage(page) {
         chats: 'Чаты',
         chat: 'Чат'
     };
-    document.getElementById('pageTitle').textContent = titles[page] || page;
+    const titleEl = document.getElementById('pageTitle');
+    const lang = localStorage.getItem('lang') || 'ru';
+    const titleKey = `page_title_${page}`;
+    if (translations[lang] && translations[lang][titleKey]) {
+        titleEl.textContent = translations[lang][titleKey];
+    } else {
+        titleEl.textContent = titles[page] || page;
+    }
     if (window.innerWidth <= 768) toggleSidebar();
 }
 
@@ -2647,19 +2788,12 @@ function renderMovies(data) {
     }
     tbody.innerHTML = data.map(m => {
         let actions = '';
-        if (IS_ADMIN) {
-            actions = `
-                <button class="btn btn-warning btn-sm" onclick="event.stopPropagation();editMovieInline('${m.code}')" style="padding:3px 8px;font-size:11px;">
-                    <i class="fas fa-edit"></i>
+        if (IS_SUPER) {
+            actions += `
+                <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteMovie('${m.code}')" style="padding:3px 8px;font-size:11px;">
+                    <i class="fas fa-trash"></i>
                 </button>
             `;
-            if (IS_SUPER) {
-                actions += `
-                    <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteMovie('${m.code}')" style="padding:3px 8px;font-size:11px;">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
-            }
         }
         return `
             <tr class="clickable-row" onclick="showMoviePage('${m.code}')">
@@ -2735,11 +2869,6 @@ document.getElementById('saveMovieBtn')?.addEventListener('click', async functio
         }
     } catch(e) { showToast('❌ Ошибка соединения', 'danger'); }
 });
-
-function editMovieInline(code) {
-    isEditingMode = true;
-    showMoviePage(code);
-}
 
 async function deleteMovie(code) {
     if (!confirm(`Удалить фильм "${code}"?`)) return;
@@ -2850,6 +2979,7 @@ function saveEditChanges(code) {
         return;
     }
     
+    isEditingMode = false;
     saveAllMovieFields(code, data);
 }
 
@@ -3049,7 +3179,13 @@ async function showMoviePage(code) {
                 </div>
             </div>
         `;
-        document.getElementById('pageTitle').textContent = `🎬 ${m.title}`;
+        const lang = localStorage.getItem('lang') || 'ru';
+        const titleKey = `page_title_movie`;
+        if (translations[lang] && translations[lang][titleKey]) {
+            document.getElementById('pageTitle').textContent = `${translations[lang][titleKey]}: ${m.title}`;
+        } else {
+            document.getElementById('pageTitle').textContent = `🎬 ${m.title}`;
+        }
         showPage('movie');
     } catch(e) { 
         console.error(e);
@@ -3125,19 +3261,41 @@ async function loadNews() {
             return;
         }
         container.innerHTML = data.map(n => `
-            <div class="comment-item" style="margin-bottom:12px;">
+            <div class="comment-item news-item" style="margin-bottom:12px;position:relative;">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
                     <img src="${n.photo_url || 'https://ui-avatars.com/api/?name=' + n.author_id + '&background=2a2a2a&color=cccccc&size=24&rounded=true'}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
-                    <span style="color:#f5a623;font-weight:bold;">Создатель</span>
+                    <span style="color:#e8e8e8;font-weight:bold;">${n.username || 'Пользователь'}</span>
                     <span style="color:#666;font-size:12px;">${new Date(n.created_at).toLocaleString()}</span>
                 </div>
                 <h5 style="color:#e8e8e8;font-weight:400;">${n.title}</h5>
                 <p style="color:#ccc;font-size:14px;">${n.content}</p>
+                ${IS_SUPER ? `
+                    <button class="btn btn-danger btn-sm delete-news-btn" onclick="deleteNews(${n.id})" style="position:absolute;top:10px;right:10px;padding:3px 8px;font-size:11px;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                ` : ''}
             </div>
         `).join('');
     } catch(e) {
         console.error(e);
         document.getElementById('newsList').innerHTML = '<p class="text-danger text-center py-4">Ошибка загрузки новостей</p>';
+    }
+}
+
+async function deleteNews(newsId) {
+    if (!IS_SUPER) return;
+    if (!confirm('Удалить эту новость?')) return;
+    try {
+        const res = await apiRequest(`/api/news/${newsId}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('✅ Новость удалена', 'success');
+            loadNews();
+        } else {
+            const err = await res.json();
+            showToast('❌ ' + (err.detail || 'Ошибка'), 'danger');
+        }
+    } catch(e) {
+        showToast('❌ Ошибка', 'danger');
     }
 }
 
@@ -3401,19 +3559,16 @@ async function loadProfile(user_id) {
 
 async function getFriendStatus(user_id) {
     try {
-        // Проверяем друзей
         const res = await apiRequest('/api/friends');
         const friends = await res.json();
         const isFriend = friends.some(f => f.friend_id == user_id);
         if (isFriend) return 'accepted';
         
-        // Проверяем входящие запросы
         const reqRes = await apiRequest('/api/friends/requests');
         const requests = await reqRes.json();
         const isPending = requests.some(r => r.user_id == user_id);
         if (isPending) return 'received';
         
-        // Проверяем отправленные запросы
         const sentRes = await apiRequest('/api/friends/sent');
         const sentRequests = await sentRes.json();
         const isSent = sentRequests.some(r => r.friend_id == user_id);
@@ -3842,7 +3997,6 @@ async function startChatWith(user_id) {
     statusEl.className = 'chat-status' + (isOnline ? ' online' : '');
     showPage('chat');
     await loadChatMessages(user_id);
-    // Обновляем список чатов после открытия
     loadChats();
 }
 
@@ -3925,10 +4079,6 @@ async function sendMessage() {
     } catch(e) { showToast('❌ Ошибка', 'danger'); }
 }
 
-document.getElementById('chatInput')?.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') sendMessage();
-});
-
 // ==================== ЧАТЫ (список) ====================
 async function loadChats() {
     try {
@@ -3962,6 +4112,7 @@ function loadSettings() {
     document.getElementById('settingsTheme').value = theme;
     document.getElementById('settingsLanguage').value = lang;
     applyTheme(theme);
+    applyLanguage(lang);
     
     const privacyComments = localStorage.getItem('privacyComments') || 'all';
     const privacyChat = localStorage.getItem('privacyChat') || 'all';
@@ -3975,53 +4126,608 @@ function applyTheme(theme) {
     if (theme === 'light') {
         document.body.style.background = '#f5f5f5';
         document.body.style.color = '#222';
-        document.querySelectorAll('.stat-card, .table-container, .profile-card, .movie-page-container, .top-bar, .sidebar, .modal-content, .comment-item, .punishment-item, .chat-header, .chat-messages, .chat-input-area').forEach(el => {
-            el.style.background = '#fff';
-            el.style.color = '#222';
-            el.style.borderColor = '#ddd';
+        
+        // Основные элементы
+        document.querySelectorAll('.stat-card, .table-container, .profile-card, .movie-page-container, .top-bar, .sidebar, .modal-content, .comment-item, .punishment-item, .chat-header, .chat-messages, .chat-input-area, .banner-upload-placeholder, .poster-upload-placeholder, .profile-banner-placeholder, .settings-tabs').forEach(el => {
+            if (el) {
+                el.style.background = '#fff';
+                el.style.color = '#222';
+                el.style.borderColor = '#ddd';
+            }
         });
-        document.querySelectorAll('.table, .table th, .table td, .table tr').forEach(el => {
-            el.style.background = '#fff';
-            el.style.color = '#222';
+        
+        // Таблицы
+        document.querySelectorAll('.table, .table th, .table td, .table tr, .table-container .table').forEach(el => {
+            if (el) {
+                el.style.background = '#fff';
+                el.style.color = '#222';
+            }
         });
-        document.querySelectorAll('.table-container').forEach(el => {
-            el.style.background = '#f5f5f5';
-            el.style.borderColor = '#ddd';
+        document.querySelectorAll('.table th').forEach(el => {
+            if (el) el.style.borderBottom = '1px solid #ddd';
         });
-        document.querySelectorAll('.file-upload-btn, .editable-input, .editable-textarea, .form-control, .chat-input-area input').forEach(el => {
-            el.style.background = '#f0f0f0';
-            el.style.borderColor = '#ddd';
-            el.style.color = '#333';
+        document.querySelectorAll('.table td').forEach(el => {
+            if (el) el.style.borderBottom = '1px solid #eee';
         });
+        document.querySelectorAll('.table tr:hover td').forEach(el => {
+            if (el) el.style.background = '#f0f0f0';
+        });
+        
+        // Сайдбар
+        document.querySelectorAll('.sidebar .nav-link').forEach(el => {
+            if (el) {
+                el.style.color = '#666';
+                el.style.background = 'transparent';
+            }
+        });
+        document.querySelectorAll('.sidebar .nav-link:hover, .sidebar .nav-link.active').forEach(el => {
+            if (el) {
+                el.style.background = '#e8e8e8';
+                el.style.color = '#222';
+            }
+        });
+        document.querySelectorAll('.sidebar .brand').forEach(el => {
+            if (el) el.style.borderBottom = '1px solid #ddd';
+        });
+        
+        // Элементы ввода
+        document.querySelectorAll('.file-upload-btn, .editable-input, .editable-textarea, .form-control, .chat-input-area input, .search-box input, .comment-input-area input').forEach(el => {
+            if (el) {
+                el.style.background = '#f0f0f0';
+                el.style.borderColor = '#ddd';
+                el.style.color = '#333';
+            }
+        });
+        
+        // Модалки
+        document.querySelectorAll('.modal-header, .modal-footer').forEach(el => {
+            if (el) {
+                el.style.borderColor = '#ddd';
+            }
+        });
+        
+        // Чат
         document.querySelectorAll('.chat-message.sent').forEach(el => {
-            el.style.background = '#d0e8ff';
+            if (el) el.style.background = '#d0e8ff';
         });
         document.querySelectorAll('.chat-message.received').forEach(el => {
-            el.style.background = '#f0f0f0';
+            if (el) el.style.background = '#f0f0f0';
         });
+        
+        // Топбар
+        document.querySelectorAll('.top-bar .user-info:hover').forEach(el => {
+            if (el) el.style.background = '#e8e8e8';
+        });
+        
+        // Кнопки
+        document.querySelectorAll('.btn-primary, .btn-warning').forEach(el => {
+            if (el) {
+                el.style.background = '#e8e8e8';
+                el.style.borderColor = '#ccc';
+                el.style.color = '#333';
+            }
+        });
+        
+        document.querySelectorAll('.btn-secondary').forEach(el => {
+            if (el) {
+                el.style.background = '#f0f0f0';
+                el.style.borderColor = '#ddd';
+                el.style.color = '#555';
+            }
+        });
+        
+        document.querySelectorAll('.dropdown-menu-custom, .notification-dropdown, .search-results').forEach(el => {
+            if (el) {
+                el.style.background = '#fff';
+                el.style.borderColor = '#ddd';
+                el.style.color = '#222';
+            }
+        });
+        document.querySelectorAll('.dropdown-item').forEach(el => {
+            if (el) {
+                el.style.color = '#333';
+            }
+        });
+        document.querySelectorAll('.dropdown-item:hover').forEach(el => {
+            if (el) {
+                el.style.background = '#f0f0f0';
+                el.style.color = '#222';
+            }
+        });
+        document.querySelectorAll('.notification-dropdown .notif-item').forEach(el => {
+            if (el) {
+                el.style.borderBottom = '1px solid #ddd';
+            }
+        });
+        document.querySelectorAll('.notification-dropdown .notif-item.unread').forEach(el => {
+            if (el) {
+                el.style.background = '#e8f4ff';
+                el.style.borderLeft = '3px solid #0088cc';
+            }
+        });
+        
+        document.querySelectorAll('.notification-dropdown .notif-header').forEach(el => {
+            if (el) {
+                el.style.borderBottom = '1px solid #ddd';
+            }
+        });
+        
+        document.querySelectorAll('.profile-card .stats-grid .stat-item').forEach(el => {
+            if (el) {
+                el.style.background = '#f5f5f5';
+                el.style.borderColor = '#ddd';
+            }
+        });
+        
+        document.querySelectorAll('.movie-page-container .movie-title-section .movie-info .movie-meta span').forEach(el => {
+            if (el) {
+                el.style.background = '#f5f5f5';
+                el.style.borderColor = '#ddd';
+            }
+        });
+        
+        document.querySelectorAll('.movie-page-container .movie-details-grid').forEach(el => {
+            if (el) {
+                el.style.background = '#f5f5f5';
+                el.style.borderColor = '#ddd';
+            }
+        });
+        document.querySelectorAll('.movie-page-container .movie-details-grid .detail-item').forEach(el => {
+            if (el) {
+                el.style.borderBottom = '1px solid #ddd';
+            }
+        });
+        
+        document.querySelectorAll('.movie-page-container .cast-section .cast-grid .cast-item').forEach(el => {
+            if (el) {
+                el.style.background = '#f5f5f5';
+                el.style.borderColor = '#ddd';
+                el.style.color = '#333';
+            }
+        });
+        
+        document.querySelectorAll('.movie-page-container .reviews-section .review-item').forEach(el => {
+            if (el) {
+                el.style.background = '#f5f5f5';
+                el.style.borderColor = '#ddd';
+            }
+        });
+        
+        document.querySelectorAll('.profile-header-overlay .avatar-xl').forEach(el => {
+            if (el) {
+                el.style.borderColor = '#fff';
+            }
+        });
+        
+        document.querySelectorAll('.badge-super').forEach(el => {
+            if (el) {
+                el.style.background = '#f5f5f5';
+                el.style.borderColor = '#ddd';
+                el.style.color = '#555';
+            }
+        });
+        
+        document.querySelectorAll('.stat-card .number').forEach(el => {
+            if (el) el.style.color = '#222';
+        });
+        document.querySelectorAll('.stat-card .label').forEach(el => {
+            if (el) el.style.color = '#777';
+        });
+        document.querySelectorAll('.stat-card .icon').forEach(el => {
+            if (el) el.style.color = '#aaa';
+        });
+        
+        document.querySelectorAll('.top-bar h4, .profile-info-overlay .name-line h2, .movie-page-container .movie-title-section .movie-info h1').forEach(el => {
+            if (el) el.style.color = '#222';
+        });
+        document.querySelectorAll('.top-bar .user-info .user-name').forEach(el => {
+            if (el) el.style.color = '#555';
+        });
+        document.querySelectorAll('.text-secondary-light').forEach(el => {
+            if (el) el.style.color = '#888';
+        });
+        
+        document.querySelectorAll('.movie-page-container .movie-title-section .movie-info .movie-description').forEach(el => {
+            if (el) el.style.color = '#555';
+        });
+        document.querySelectorAll('.movie-page-container .movie-title-section .movie-info .movie-meta').forEach(el => {
+            if (el) el.style.color = '#777';
+        });
+        document.querySelectorAll('.movie-page-container .movie-title-section .movie-info .original-title').forEach(el => {
+            if (el) el.style.color = '#999';
+        });
+        
+        document.querySelectorAll('.profile-info-overlay .name-line .username-sub, .profile-info-overlay .sub').forEach(el => {
+            if (el) el.style.color = '#888';
+        });
+        
+        document.querySelectorAll('.comment-item .comment-text, .punishment-item .p-reason, .movie-page-container .reviews-section .review-item .review-text').forEach(el => {
+            if (el) el.style.color = '#333';
+        });
+        document.querySelectorAll('.comment-item .comment-header, .punishment-item .p-header').forEach(el => {
+            if (el) el.style.color = '#888';
+        });
+        
+        document.querySelectorAll('.chat-header .chat-user-info .chat-name').forEach(el => {
+            if (el) el.style.color = '#222';
+        });
+        document.querySelectorAll('.chat-message .msg-text').forEach(el => {
+            if (el) el.style.color = '#333';
+        });
+        document.querySelectorAll('.chat-message.received .msg-text').forEach(el => {
+            if (el) el.style.color = '#333';
+        });
+        document.querySelectorAll('.chat-message.sent .msg-text').forEach(el => {
+            if (el) el.style.color = '#fff';
+        });
+        
+        document.querySelectorAll('.chat-list-item .cl-info .cl-name').forEach(el => {
+            if (el) el.style.color = '#222';
+        });
+        document.querySelectorAll('.chat-list-item .cl-info .cl-last-msg').forEach(el => {
+            if (el) el.style.color = '#888';
+        });
+        document.querySelectorAll('.chat-list-item').forEach(el => {
+            if (el) el.style.borderBottom = '1px solid #ddd';
+        });
+        document.querySelectorAll('.chat-list-item:hover').forEach(el => {
+            if (el) el.style.background = '#f0f0f0';
+        });
+        
+        document.querySelectorAll('.settings-tabs .tab-btn').forEach(el => {
+            if (el) el.style.color = '#888';
+        });
+        document.querySelectorAll('.settings-tabs .tab-btn.active').forEach(el => {
+            if (el) el.style.color = '#222';
+        });
+        document.querySelectorAll('.settings-tabs').forEach(el => {
+            if (el) el.style.borderBottom = '1px solid #ddd';
+        });
+        
+        document.querySelectorAll('.profile-card .stats-grid .stat-item .lbl').forEach(el => {
+            if (el) el.style.color = '#888';
+        });
+        document.querySelectorAll('.profile-card .stats-grid .stat-item .num').forEach(el => {
+            if (el) el.style.color = '#222';
+        });
+        document.querySelectorAll('.profile-col .section-title').forEach(el => {
+            if (el) el.style.color = '#888';
+            if (el) el.style.borderBottom = '1px solid #ddd';
+        });
+        
+        document.querySelectorAll('.status-badge-offline').forEach(el => {
+            if (el) {
+                el.style.background = '#f0f0f0';
+                el.style.color = '#888';
+                el.style.borderColor = '#ddd';
+            }
+        });
+        document.querySelectorAll('.status-badge-online').forEach(el => {
+            if (el) {
+                el.style.background = '#e8f5e8';
+                el.style.color = '#2a6a2a';
+                el.style.borderColor = '#b8dbb8';
+            }
+        });
+        
+        document.querySelectorAll('.badge-active').forEach(el => {
+            if (el) {
+                el.style.background = '#f5e8e8';
+                el.style.color = '#aa5555';
+            }
+        });
+        document.querySelectorAll('.badge-resolved').forEach(el => {
+            if (el) {
+                el.style.background = '#e8f5e8';
+                el.style.color = '#55aa55';
+            }
+        });
+        
+        // Скрытые элементы
+        document.querySelectorAll('.sidebar, .main-content, .profile-card, .movie-page-container, .table-container').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.color = '';
+                el.style.borderColor = '';
+            }
+        });
+        
     } else {
+        // Тёмная тема (возвращаем стандартные стили)
         document.body.style.background = '#0d0d0d';
         document.body.style.color = '#d4d4d4';
-        document.querySelectorAll('.stat-card, .table-container, .profile-card, .movie-page-container, .top-bar, .sidebar, .modal-content, .comment-item, .punishment-item, .chat-header, .chat-messages, .chat-input-area').forEach(el => {
-            el.style.background = '';
-            el.style.color = '';
-            el.style.borderColor = '';
+        
+        // Сброс стилей для всех элементов
+        document.querySelectorAll('.stat-card, .table-container, .profile-card, .movie-page-container, .top-bar, .sidebar, .modal-content, .comment-item, .punishment-item, .chat-header, .chat-messages, .chat-input-area, .banner-upload-placeholder, .poster-upload-placeholder, .profile-banner-placeholder, .settings-tabs').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.color = '';
+                el.style.borderColor = '';
+            }
         });
-        document.querySelectorAll('.table, .table th, .table td, .table tr').forEach(el => {
-            el.style.background = '';
-            el.style.color = '';
+        
+        document.querySelectorAll('.table, .table th, .table td, .table tr, .table-container .table').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.color = '';
+            }
         });
-        document.querySelectorAll('.file-upload-btn, .editable-input, .editable-textarea, .form-control, .chat-input-area input').forEach(el => {
-            el.style.background = '';
-            el.style.borderColor = '';
-            el.style.color = '';
+        document.querySelectorAll('.table th').forEach(el => {
+            if (el) el.style.borderBottom = '';
         });
+        document.querySelectorAll('.table td').forEach(el => {
+            if (el) el.style.borderBottom = '';
+        });
+        document.querySelectorAll('.table tr:hover td').forEach(el => {
+            if (el) el.style.background = '';
+        });
+        
+        document.querySelectorAll('.sidebar .nav-link').forEach(el => {
+            if (el) {
+                el.style.color = '';
+                el.style.background = '';
+            }
+        });
+        document.querySelectorAll('.sidebar .nav-link:hover, .sidebar .nav-link.active').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.color = '';
+            }
+        });
+        document.querySelectorAll('.sidebar .brand').forEach(el => {
+            if (el) el.style.borderBottom = '';
+        });
+        
+        document.querySelectorAll('.file-upload-btn, .editable-input, .editable-textarea, .form-control, .chat-input-area input, .search-box input, .comment-input-area input').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.borderColor = '';
+                el.style.color = '';
+            }
+        });
+        
+        document.querySelectorAll('.modal-header, .modal-footer').forEach(el => {
+            if (el) el.style.borderColor = '';
+        });
+        
         document.querySelectorAll('.chat-message.sent').forEach(el => {
-            el.style.background = '#1a3a5a';
+            if (el) el.style.background = '#1a3a5a';
         });
         document.querySelectorAll('.chat-message.received').forEach(el => {
-            el.style.background = '#1a1a1a';
+            if (el) el.style.background = '#1a1a1a';
         });
+        
+        document.querySelectorAll('.top-bar .user-info:hover').forEach(el => {
+            if (el) el.style.background = '';
+        });
+        
+        document.querySelectorAll('.btn-primary, .btn-warning').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.borderColor = '';
+                el.style.color = '';
+            }
+        });
+        document.querySelectorAll('.btn-secondary').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.borderColor = '';
+                el.style.color = '';
+            }
+        });
+        
+        document.querySelectorAll('.dropdown-menu-custom, .notification-dropdown, .search-results').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.borderColor = '';
+                el.style.color = '';
+            }
+        });
+        document.querySelectorAll('.dropdown-item').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.dropdown-item:hover').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.color = '';
+            }
+        });
+        document.querySelectorAll('.notification-dropdown .notif-item').forEach(el => {
+            if (el) el.style.borderBottom = '';
+        });
+        document.querySelectorAll('.notification-dropdown .notif-item.unread').forEach(el => {
+            if (el) {
+                el.style.background = '#1a2a3a';
+                el.style.borderLeft = '3px solid #0088cc';
+            }
+        });
+        document.querySelectorAll('.notification-dropdown .notif-header').forEach(el => {
+            if (el) el.style.borderBottom = '';
+        });
+        document.querySelectorAll('.profile-card .stats-grid .stat-item').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.borderColor = '';
+            }
+        });
+        document.querySelectorAll('.movie-page-container .movie-title-section .movie-info .movie-meta span').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.borderColor = '';
+            }
+        });
+        document.querySelectorAll('.movie-page-container .movie-details-grid').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.borderColor = '';
+            }
+        });
+        document.querySelectorAll('.movie-page-container .movie-details-grid .detail-item').forEach(el => {
+            if (el) el.style.borderBottom = '';
+        });
+        document.querySelectorAll('.movie-page-container .cast-section .cast-grid .cast-item').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.borderColor = '';
+                el.style.color = '';
+            }
+        });
+        document.querySelectorAll('.movie-page-container .reviews-section .review-item').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.borderColor = '';
+            }
+        });
+        document.querySelectorAll('.profile-header-overlay .avatar-xl').forEach(el => {
+            if (el) el.style.borderColor = '';
+        });
+        document.querySelectorAll('.badge-super').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.borderColor = '';
+                el.style.color = '';
+            }
+        });
+        document.querySelectorAll('.stat-card .number').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.stat-card .label').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.stat-card .icon').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.top-bar h4, .profile-info-overlay .name-line h2, .movie-page-container .movie-title-section .movie-info h1').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.top-bar .user-info .user-name').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.text-secondary-light').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.movie-page-container .movie-title-section .movie-info .movie-description').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.movie-page-container .movie-title-section .movie-info .movie-meta').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.movie-page-container .movie-title-section .movie-info .original-title').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.profile-info-overlay .name-line .username-sub, .profile-info-overlay .sub').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.comment-item .comment-text, .punishment-item .p-reason, .movie-page-container .reviews-section .review-item .review-text').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.comment-item .comment-header, .punishment-item .p-header').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.chat-header .chat-user-info .chat-name').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.chat-message .msg-text').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.chat-message.received .msg-text').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.chat-message.sent .msg-text').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.chat-list-item .cl-info .cl-name').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.chat-list-item .cl-info .cl-last-msg').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.chat-list-item').forEach(el => {
+            if (el) el.style.borderBottom = '';
+        });
+        document.querySelectorAll('.chat-list-item:hover').forEach(el => {
+            if (el) el.style.background = '';
+        });
+        document.querySelectorAll('.settings-tabs .tab-btn').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.settings-tabs .tab-btn.active').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.settings-tabs').forEach(el => {
+            if (el) el.style.borderBottom = '';
+        });
+        document.querySelectorAll('.profile-card .stats-grid .stat-item .lbl').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.profile-card .stats-grid .stat-item .num').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.profile-col .section-title').forEach(el => {
+            if (el) {
+                el.style.color = '';
+                el.style.borderBottom = '';
+            }
+        });
+        document.querySelectorAll('.status-badge-offline').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.color = '';
+                el.style.borderColor = '';
+            }
+        });
+        document.querySelectorAll('.status-badge-online').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.color = '';
+                el.style.borderColor = '';
+            }
+        });
+        document.querySelectorAll('.badge-active').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.color = '';
+            }
+        });
+        document.querySelectorAll('.badge-resolved').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.color = '';
+            }
+        });
+    }
+}
+
+function applyLanguage(lang) {
+    const elements = document.querySelectorAll('[data-i18n]');
+    elements.forEach(el => {
+        const key = el.dataset.i18n;
+        if (translations[lang] && translations[lang][key]) {
+            // Проверяем, есть ли дочерние элементы, которые нужно сохранить
+            const hasChildren = el.children.length > 0;
+            if (hasChildren) {
+                // Сохраняем дочерние элементы (иконки)
+                const childHtml = el.innerHTML;
+                const textNode = document.createTextNode(translations[lang][key]);
+                el.innerHTML = '';
+                // Восстанавливаем дочерние элементы
+                el.appendChild(textNode);
+                // Если были дочерние элементы, добавляем их обратно
+                if (childHtml) {
+                    el.innerHTML = childHtml.replace(/[^<]*$/, translations[lang][key]);
+                }
+            } else {
+                el.textContent = translations[lang][key];
+            }
+        }
+    });
+    
+    // Обновляем название страницы
+    const currentPage = document.querySelector('.sidebar .nav-link.active')?.dataset.page || 'dashboard';
+    const titleKey = `page_title_${currentPage}`;
+    const titleEl = document.getElementById('pageTitle');
+    if (translations[lang] && translations[lang][titleKey]) {
+        titleEl.textContent = translations[lang][titleKey];
     }
 }
 
@@ -4031,6 +4737,7 @@ function saveAppSettings() {
     localStorage.setItem('theme', theme);
     localStorage.setItem('lang', lang);
     applyTheme(theme);
+    applyLanguage(lang);
     showToast('✅ Настройки сохранены', 'success');
 }
 
