@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
     <style>
-        /* ... все стили остаются без изменений ... */
+        /* ... все стили остаются без изменений до блока .settings-tabs ... */
         * { font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background: #0d0d0d; color: #d4d4d4; }
         ::-webkit-scrollbar { width: 5px; }
@@ -1016,40 +1016,197 @@
             background: #222;
         }
 
-        .settings-tabs {
+        /* ====== НОВЫЙ ДИЗАЙН НАСТРОЕК ====== */
+        .settings-layout {
             display: flex;
-            gap: 4px;
-            border-bottom: 1px solid #2a2a2a;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-            padding: 0 30px;
+            gap: 0;
+            flex: 1;
+            min-height: 500px;
         }
-        .settings-tabs .tab-btn {
-            background: none;
-            border: none;
-            color: #888;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 14px;
-            border-bottom: 2px solid transparent;
-            transition: 0.2s;
+
+        .settings-sidebar {
+            width: 240px;
+            min-height: 100%;
+            border-right: 1px solid #2a2a2a;
+            padding: 20px 0;
+            flex-shrink: 0;
+            background: #111;
+        }
+
+        .settings-sidebar .settings-sidebar-title {
+            padding: 0 20px 16px;
+            color: #666;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             font-weight: 400;
+            border-bottom: 1px solid #2a2a2a;
+            margin-bottom: 8px;
         }
-        .settings-tabs .tab-btn:hover {
+
+        .settings-sidebar .settings-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            color: #888;
+            cursor: pointer;
+            transition: 0.2s;
+            border-right: 2px solid transparent;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .settings-sidebar .settings-nav-item:hover {
+            background: #1a1a1a;
             color: #ccc;
         }
-        .settings-tabs .tab-btn.active {
+
+        .settings-sidebar .settings-nav-item.active {
             color: #e8e8e8;
-            border-bottom-color: #e8c84a;
+            background: #1a1a1a;
+            border-right-color: #e8c84a;
         }
-        .settings-tab-content {
+
+        .settings-sidebar .settings-nav-item i {
+            width: 20px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .settings-sidebar .settings-nav-item.active i {
+            color: #e8c84a;
+        }
+
+        .settings-sidebar .settings-nav-item:hover i {
+            color: #aaa;
+        }
+
+        .settings-content {
+            flex: 1;
+            padding: 24px 32px;
+            overflow-y: auto;
+            background: #141414;
+        }
+
+        .settings-content .settings-section {
             display: none;
             animation: fadeIn 0.3s ease;
-            padding: 0 30px 30px;
         }
-        .settings-tab-content.active {
+
+        .settings-content .settings-section.active {
             display: block;
         }
+
+        .settings-content .settings-section h4 {
+            font-weight: 300;
+            color: #e8e8e8;
+            margin-bottom: 20px;
+            font-size: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .settings-content .settings-section .form-control {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            color: #ccc;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            width: 100%;
+        }
+
+        .settings-content .settings-section .form-control:focus {
+            border-color: #555;
+            outline: none;
+        }
+
+        .settings-content .settings-section .form-label {
+            color: #999;
+            font-weight: 300;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .settings-content .settings-section .form-group {
+            margin-bottom: 16px;
+            max-width: 500px;
+        }
+
+        .settings-content .settings-section .form-group.full-width {
+            max-width: 100%;
+        }
+
+        .settings-content .settings-section .file-upload-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        .settings-content .settings-section .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+        }
+        .settings-content .settings-section .file-upload-wrapper .file-upload-btn {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 10px 16px;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+            width: 100%;
+            justify-content: center;
+        }
+        .settings-content .settings-section .file-upload-wrapper .file-upload-btn:hover {
+            background: #2a2a2a;
+            border-color: #555;
+        }
+        .settings-content .settings-section .file-upload-wrapper .file-upload-btn i {
+            font-size: 18px;
+        }
+
+        .settings-content .settings-section .image-preview,
+        .settings-content .settings-section .banner-preview {
+            max-width: 150px;
+            max-height: 100px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+            margin-top: 8px;
+        }
+
+        .settings-content .settings-section .banner-preview {
+            max-width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+        }
+
+        .settings-content .settings-section .btn-save {
+            padding: 8px 24px;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .settings-content .settings-section .divider {
+            border-top: 1px solid #2a2a2a;
+            margin: 20px 0;
+        }
+
+        .settings-content .settings-section .help-text {
+            color: #666;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        /* ====== КОНЕЦ НОВОГО ДИЗАЙНА НАСТРОЕК ====== */
 
         .file-upload-wrapper {
             position: relative;
@@ -1086,7 +1243,6 @@
             font-size: 18px;
         }
 
-        /* Цвета для ролей */
         .creator-name {
             color: #f5a623 !important;
             font-weight: bold !important;
@@ -1163,7 +1319,6 @@
             color: #666;
         }
 
-        /* Стили для чата в стиле Telegram */
         .chat-container {
             display: flex;
             flex-direction: column;
@@ -1280,7 +1435,6 @@
             background: #2a4a6a;
         }
 
-        /* Список чатов */
         .chat-list-item {
             display: flex;
             align-items: center;
@@ -1457,22 +1611,48 @@
             .profile-scroll {
                 max-height: 150px;
             }
-            .settings-tabs .tab-btn {
-                font-size: 12px;
-                padding: 8px 12px;
-            }
-            .settings-tab-content {
-                padding: 0 16px 20px;
-            }
-            .settings-tabs {
-                padding: 0 16px;
-            }
             .chat-message {
                 max-width: 85%;
             }
             .news-item .delete-news-btn {
                 position: static;
                 margin-top: 10px;
+            }
+
+            /* Настройки мобильная версия */
+            .settings-layout {
+                flex-direction: column;
+            }
+            .settings-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #2a2a2a;
+                padding: 10px 0;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                background: #141414;
+            }
+            .settings-sidebar .settings-sidebar-title {
+                display: none;
+            }
+            .settings-sidebar .settings-nav-item {
+                padding: 6px 14px;
+                font-size: 13px;
+                border-right: none;
+                border-bottom: 2px solid transparent;
+                flex: 1 1 auto;
+                justify-content: center;
+            }
+            .settings-sidebar .settings-nav-item.active {
+                border-right: none;
+                border-bottom-color: #e8c84a;
+            }
+            .settings-content {
+                padding: 16px 18px;
+            }
+            .settings-content .settings-section .form-group {
+                max-width: 100%;
             }
         }
 
@@ -1530,6 +1710,13 @@
             }
             .profile-scroll {
                 max-height: 300px;
+            }
+
+            .settings-content {
+                padding: 32px 48px;
+            }
+            .settings-content .settings-section .form-group {
+                max-width: 500px;
             }
         }
 
@@ -2005,7 +2192,6 @@
     <div id="page-chat" style="display:none" class="fade-in">
         <div class="profile-card">
             <div class="chat-container">
-                <!-- Хедер чата -->
                 <div class="chat-header" id="chatHeader" onclick="openChatProfile()">
                     <img class="chat-avatar" id="chatAvatar" src="https://ui-avatars.com/api/?name=U&background=2a2a2a&color=cccccc&size=40&rounded=true" alt="">
                     <div class="chat-user-info">
@@ -2016,11 +2202,9 @@
                         <i class="fas fa-arrow-left"></i>
                     </button>
                 </div>
-                <!-- Сообщения -->
                 <div class="chat-messages" id="chatMessages">
                     <p class="text-secondary-light text-center py-4">Нет сообщений</p>
                 </div>
-                <!-- Ввод -->
                 <div class="chat-input-area">
                     <input type="text" id="chatInput" placeholder="Написать сообщение...">
                     <button onclick="sendMessage()">
@@ -2031,106 +2215,131 @@
         </div>
     </div>
 
-    <!-- ====== НАСТРОЙКИ ====== -->
+    <!-- ====== НАСТРОЙКИ (НОВЫЙ ДИЗАЙН) ====== -->
     <div id="page-settings" style="display:none" class="fade-in">
-        <div class="profile-card" style="max-width:900px;min-height:80vh;">
-            <h3 style="font-weight:300;color:#e8e8e8;padding:20px 30px 0;">
-                <i class="fas fa-cog"></i> Настройки
-            </h3>
-            
-            <div class="settings-tabs">
-                <button class="tab-btn active" data-tab="tab-account" data-i18n="tab_account"><i class="fas fa-user"></i> Аккаунт</button>
-                <button class="tab-btn" data-tab="tab-appearance" data-i18n="tab_appearance"><i class="fas fa-palette"></i> Внешний вид</button>
-                <button class="tab-btn" data-tab="tab-privacy" data-i18n="tab_privacy"><i class="fas fa-lock"></i> Конфиденциальность</button>
-            </div>
-            
-            <div class="settings-tab-content active" id="tab-account">
-                <div class="mb-3">
-                    <label class="form-label" style="color:#999;">Отображаемое имя</label>
-                    <input type="text" class="form-control" id="settingsDisplayName" placeholder="Ваше имя" value="{{ display_name or '' }}">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label" style="color:#999;">Юзернейм (без @)</label>
-                    <input type="text" class="form-control" id="settingsUsername" placeholder="username" value="{{ username or '' }}">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label" style="color:#999;">Аватарка</label>
-                    <div class="file-upload-wrapper">
-                        <div class="file-upload-btn">
-                            <i class="fas fa-upload"></i> Выбрать файл
-                            <input type="file" accept="image/*" id="settingsPhotoFile" onchange="previewImageFile(this, 'photoPreview', 'settingsPhotoUrl')">
-                        </div>
+        <div class="profile-card" style="min-height:80vh;height:auto;">
+            <div class="settings-layout">
+                <!-- Левая боковая панель с вкладками -->
+                <div class="settings-sidebar">
+                    <div class="settings-sidebar-title"><i class="fas fa-cog"></i> Настройки</div>
+                    <div class="settings-nav-item active" data-settings-tab="tab-account">
+                        <i class="fas fa-user"></i> <span data-i18n="tab_account">Аккаунт</span>
                     </div>
-                    <input type="text" class="form-control mt-2" id="settingsPhotoUrl" placeholder="Или вставьте ссылку" value="{{ photo_url or '' }}" oninput="document.getElementById('photoPreview').src=this.value;document.getElementById('photoPreview').style.display=this.value?'block':'none'">
-                    <img id="photoPreview" class="image-preview" src="{{ photo_url or '' }}" style="display:{{ 'block' if photo_url else 'none' }}">
-                    <p style="color:#666;font-size:11px;margin-top:4px;">
-                        <i class="fas fa-info-circle"></i> Для обрезки используйте встроенные инструменты вашего устройства
-                    </p>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label" style="color:#999;">Баннер</label>
-                    <div class="file-upload-wrapper">
-                        <div class="file-upload-btn">
-                            <i class="fas fa-upload"></i> Выбрать файл
-                            <input type="file" accept="image/*" id="settingsBannerFile" onchange="previewImageFile(this, 'bannerPreview', 'settingsBannerUrl')">
-                        </div>
+                    <div class="settings-nav-item" data-settings-tab="tab-appearance">
+                        <i class="fas fa-palette"></i> <span data-i18n="tab_appearance">Внешний вид</span>
                     </div>
-                    <input type="text" class="form-control mt-2" id="settingsBannerUrl" placeholder="Или вставьте ссылку" value="{{ banner_url or '' }}" oninput="document.getElementById('bannerPreview').src=this.value;document.getElementById('bannerPreview').style.display=this.value?'block':'none'">
-                    <img id="bannerPreview" class="banner-preview" src="{{ banner_url or '' }}" style="display:{{ 'block' if banner_url else 'none' }}">
+                    <div class="settings-nav-item" data-settings-tab="tab-privacy">
+                        <i class="fas fa-lock"></i> <span data-i18n="tab_privacy">Конфиденциальность</span>
+                    </div>
                 </div>
-                <button class="btn btn-primary" onclick="saveProfileSettings()">
-                    <i class="fas fa-save"></i> Сохранить профиль
-                </button>
-            </div>
-            
-            <div class="settings-tab-content" id="tab-appearance">
-                <div class="mb-3">
-                    <label class="form-label" style="color:#999;">Тема</label>
-                    <select class="form-control" id="settingsTheme" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                        <option value="dark">Тёмная</option>
-                        <option value="light">Светлая</option>
-                    </select>
+                
+                <!-- Правая область с содержимым -->
+                <div class="settings-content">
+                    <!-- Аккаунт -->
+                    <div class="settings-section active" id="tab-account">
+                        <h4><i class="fas fa-user"></i> <span data-i18n="tab_account">Аккаунт</span></h4>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Отображаемое имя</label>
+                            <input type="text" class="form-control" id="settingsDisplayName" placeholder="Ваше имя" value="{{ display_name or '' }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Юзернейм (без @)</label>
+                            <input type="text" class="form-control" id="settingsUsername" placeholder="username" value="{{ username or '' }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Аватарка</label>
+                            <div class="file-upload-wrapper">
+                                <div class="file-upload-btn">
+                                    <i class="fas fa-upload"></i> Выбрать файл
+                                    <input type="file" accept="image/*" id="settingsPhotoFile" onchange="previewImageFile(this, 'photoPreview', 'settingsPhotoUrl')">
+                                </div>
+                            </div>
+                            <input type="text" class="form-control mt-2" id="settingsPhotoUrl" placeholder="Или вставьте ссылку" value="{{ photo_url or '' }}" oninput="document.getElementById('photoPreview').src=this.value;document.getElementById('photoPreview').style.display=this.value?'block':'none'">
+                            <img id="photoPreview" class="image-preview" src="{{ photo_url or '' }}" style="display:{{ 'block' if photo_url else 'none' }}">
+                            <div class="help-text"><i class="fas fa-info-circle"></i> Для обрезки используйте встроенные инструменты вашего устройства</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Баннер</label>
+                            <div class="file-upload-wrapper">
+                                <div class="file-upload-btn">
+                                    <i class="fas fa-upload"></i> Выбрать файл
+                                    <input type="file" accept="image/*" id="settingsBannerFile" onchange="previewImageFile(this, 'bannerPreview', 'settingsBannerUrl')">
+                                </div>
+                            </div>
+                            <input type="text" class="form-control mt-2" id="settingsBannerUrl" placeholder="Или вставьте ссылку" value="{{ banner_url or '' }}" oninput="document.getElementById('bannerPreview').src=this.value;document.getElementById('bannerPreview').style.display=this.value?'block':'none'">
+                            <img id="bannerPreview" class="banner-preview" src="{{ banner_url or '' }}" style="display:{{ 'block' if banner_url else 'none' }}">
+                        </div>
+                        
+                        <button class="btn btn-primary btn-save" onclick="saveProfileSettings()">
+                            <i class="fas fa-save"></i> Сохранить профиль
+                        </button>
+                    </div>
+                    
+                    <!-- Внешний вид -->
+                    <div class="settings-section" id="tab-appearance">
+                        <h4><i class="fas fa-palette"></i> <span data-i18n="tab_appearance">Внешний вид</span></h4>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Тема</label>
+                            <select class="form-control" id="settingsTheme" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:10px 14px;">
+                                <option value="dark">Тёмная</option>
+                                <option value="light">Светлая</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Язык</label>
+                            <select class="form-control" id="settingsLanguage" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:10px 14px;">
+                                <option value="ru">Русский</option>
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-primary btn-save" onclick="saveAppSettings()">
+                            <i class="fas fa-save"></i> Сохранить настройки
+                        </button>
+                    </div>
+                    
+                    <!-- Конфиденциальность -->
+                    <div class="settings-section" id="tab-privacy">
+                        <h4><i class="fas fa-lock"></i> <span data-i18n="tab_privacy">Конфиденциальность</span></h4>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Кто может писать вам в чат</label>
+                            <select class="form-control" id="settingsPrivacyChat" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:10px 14px;">
+                                <option value="all">Все</option>
+                                <option value="friends">Только друзья</option>
+                                <option value="none">Никто</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Комментарии к профилю</label>
+                            <select class="form-control" id="settingsPrivacyComments" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:10px 14px;">
+                                <option value="all">Разрешены всем</option>
+                                <option value="friends">Только друзья</option>
+                                <option value="none">Запрещены</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Показывать онлайн-статус</label>
+                            <select class="form-control" id="settingsPrivacyOnline" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:10px 14px;">
+                                <option value="true">Всем</option>
+                                <option value="friends">Только друзьям</option>
+                                <option value="false">Никому</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-primary btn-save" onclick="savePrivacySettings()">
+                            <i class="fas fa-save"></i> Сохранить
+                        </button>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label" style="color:#999;">Язык</label>
-                    <select class="form-control" id="settingsLanguage" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                        <option value="ru">Русский</option>
-                        <option value="en">English</option>
-                    </select>
-                </div>
-                <button class="btn btn-primary" onclick="saveAppSettings()">
-                    <i class="fas fa-save"></i> Сохранить настройки
-                </button>
-            </div>
-            
-            <div class="settings-tab-content" id="tab-privacy">
-                <div class="mb-3">
-                    <label class="form-label" style="color:#999;">Кто может писать вам в чат</label>
-                    <select class="form-control" id="settingsPrivacyChat" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                        <option value="all">Все</option>
-                        <option value="friends">Только друзья</option>
-                        <option value="none">Никто</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label" style="color:#999;">Комментарии к профилю</label>
-                    <select class="form-control" id="settingsPrivacyComments" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                        <option value="all">Разрешены всем</option>
-                        <option value="friends">Только друзья</option>
-                        <option value="none">Запрещены</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label" style="color:#999;">Показывать онлайн-статус</label>
-                    <select class="form-control" id="settingsPrivacyOnline" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:8px;padding:8px 12px;">
-                        <option value="true">Всем</option>
-                        <option value="friends">Только друзьям</option>
-                        <option value="false">Никому</option>
-                    </select>
-                </div>
-                <button class="btn btn-primary" onclick="savePrivacySettings()">
-                    <i class="fas fa-save"></i> Сохранить
-                </button>
             </div>
         </div>
     </div>
@@ -2704,13 +2913,14 @@ document.querySelectorAll('.sidebar .nav-link[data-page]').forEach(link => {
     });
 });
 
-// ==================== ВКЛАДКИ НАСТРОЕК ====================
-document.querySelectorAll('.settings-tabs .tab-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('.settings-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+// ==================== НАСТРОЙКИ - ВКЛАДКИ ====================
+document.querySelectorAll('.settings-nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+        document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
         this.classList.add('active');
-        document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById(this.dataset.tab).classList.add('active');
+        const tabId = this.dataset.settingsTab;
+        document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
     });
 });
 
@@ -4131,11 +4341,38 @@ function applyTheme(theme) {
         document.body.style.color = '#222';
         
         // Основные элементы
-        document.querySelectorAll('.stat-card, .table-container, .profile-card, .movie-page-container, .top-bar, .sidebar, .modal-content, .comment-item, .punishment-item, .chat-header, .chat-messages, .chat-input-area, .banner-upload-placeholder, .poster-upload-placeholder, .profile-banner-placeholder, .settings-tabs').forEach(el => {
+        document.querySelectorAll('.stat-card, .table-container, .profile-card, .movie-page-container, .top-bar, .sidebar, .modal-content, .comment-item, .punishment-item, .chat-header, .chat-messages, .chat-input-area, .banner-upload-placeholder, .poster-upload-placeholder, .profile-banner-placeholder, .settings-tabs, .settings-sidebar, .settings-content, .settings-layout').forEach(el => {
             if (el) {
                 el.style.background = '#fff';
                 el.style.color = '#222';
                 el.style.borderColor = '#ddd';
+            }
+        });
+        
+        // Настройки - боковая панель
+        document.querySelectorAll('.settings-sidebar .settings-nav-item').forEach(el => {
+            if (el) {
+                el.style.color = '#666';
+                el.style.background = 'transparent';
+            }
+        });
+        document.querySelectorAll('.settings-sidebar .settings-nav-item:hover').forEach(el => {
+            if (el) {
+                el.style.background = '#f0f0f0';
+                el.style.color = '#222';
+            }
+        });
+        document.querySelectorAll('.settings-sidebar .settings-nav-item.active').forEach(el => {
+            if (el) {
+                el.style.background = '#f0f0f0';
+                el.style.color = '#222';
+                el.style.borderRightColor = '#e8c84a';
+            }
+        });
+        document.querySelectorAll('.settings-sidebar .settings-sidebar-title').forEach(el => {
+            if (el) {
+                el.style.borderBottomColor = '#ddd';
+                el.style.color = '#999';
             }
         });
         
@@ -4174,7 +4411,7 @@ function applyTheme(theme) {
         });
         
         // Элементы ввода
-        document.querySelectorAll('.file-upload-btn, .editable-input, .editable-textarea, .form-control, .chat-input-area input, .search-box input, .comment-input-area input').forEach(el => {
+        document.querySelectorAll('.file-upload-btn, .editable-input, .editable-textarea, .form-control, .chat-input-area input, .search-box input, .comment-input-area input, .settings-content .settings-section .form-control').forEach(el => {
             if (el) {
                 el.style.background = '#f0f0f0';
                 el.style.borderColor = '#ddd';
@@ -4320,7 +4557,7 @@ function applyTheme(theme) {
             if (el) el.style.color = '#aaa';
         });
         
-        document.querySelectorAll('.top-bar h4, .profile-info-overlay .name-line h2, .movie-page-container .movie-title-section .movie-info h1').forEach(el => {
+        document.querySelectorAll('.top-bar h4, .profile-info-overlay .name-line h2, .movie-page-container .movie-title-section .movie-info h1, .settings-content .settings-section h4').forEach(el => {
             if (el) el.style.color = '#222';
         });
         document.querySelectorAll('.top-bar .user-info .user-name').forEach(el => {
@@ -4377,16 +4614,6 @@ function applyTheme(theme) {
             if (el) el.style.background = '#f0f0f0';
         });
         
-        document.querySelectorAll('.settings-tabs .tab-btn').forEach(el => {
-            if (el) el.style.color = '#888';
-        });
-        document.querySelectorAll('.settings-tabs .tab-btn.active').forEach(el => {
-            if (el) el.style.color = '#222';
-        });
-        document.querySelectorAll('.settings-tabs').forEach(el => {
-            if (el) el.style.borderBottom = '1px solid #ddd';
-        });
-        
         document.querySelectorAll('.profile-card .stats-grid .stat-item .lbl').forEach(el => {
             if (el) el.style.color = '#888';
         });
@@ -4394,8 +4621,10 @@ function applyTheme(theme) {
             if (el) el.style.color = '#222';
         });
         document.querySelectorAll('.profile-col .section-title').forEach(el => {
-            if (el) el.style.color = '#888';
-            if (el) el.style.borderBottom = '1px solid #ddd';
+            if (el) {
+                el.style.color = '#888';
+                el.style.borderBottom = '1px solid #ddd';
+            }
         });
         
         document.querySelectorAll('.status-badge-offline').forEach(el => {
@@ -4426,17 +4655,50 @@ function applyTheme(theme) {
             }
         });
         
+        document.querySelectorAll('.settings-content .settings-section .form-label').forEach(el => {
+            if (el) el.style.color = '#888';
+        });
+        document.querySelectorAll('.settings-content .settings-section .help-text').forEach(el => {
+            if (el) el.style.color = '#999';
+        });
+        
     } else {
         // Тёмная тема (возвращаем стандартные стили)
         document.body.style.background = '#0d0d0d';
         document.body.style.color = '#d4d4d4';
         
         // Сброс стилей для всех элементов
-        document.querySelectorAll('.stat-card, .table-container, .profile-card, .movie-page-container, .top-bar, .sidebar, .modal-content, .comment-item, .punishment-item, .chat-header, .chat-messages, .chat-input-area, .banner-upload-placeholder, .poster-upload-placeholder, .profile-banner-placeholder, .settings-tabs').forEach(el => {
+        document.querySelectorAll('.stat-card, .table-container, .profile-card, .movie-page-container, .top-bar, .sidebar, .modal-content, .comment-item, .punishment-item, .chat-header, .chat-messages, .chat-input-area, .banner-upload-placeholder, .poster-upload-placeholder, .profile-banner-placeholder, .settings-tabs, .settings-sidebar, .settings-content, .settings-layout').forEach(el => {
             if (el) {
                 el.style.background = '';
                 el.style.color = '';
                 el.style.borderColor = '';
+            }
+        });
+        
+        document.querySelectorAll('.settings-sidebar .settings-nav-item').forEach(el => {
+            if (el) {
+                el.style.color = '';
+                el.style.background = '';
+            }
+        });
+        document.querySelectorAll('.settings-sidebar .settings-nav-item:hover').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.color = '';
+            }
+        });
+        document.querySelectorAll('.settings-sidebar .settings-nav-item.active').forEach(el => {
+            if (el) {
+                el.style.background = '';
+                el.style.color = '';
+                el.style.borderRightColor = '';
+            }
+        });
+        document.querySelectorAll('.settings-sidebar .settings-sidebar-title').forEach(el => {
+            if (el) {
+                el.style.borderBottomColor = '';
+                el.style.color = '';
             }
         });
         
@@ -4472,7 +4734,7 @@ function applyTheme(theme) {
             if (el) el.style.borderBottom = '';
         });
         
-        document.querySelectorAll('.file-upload-btn, .editable-input, .editable-textarea, .form-control, .chat-input-area input, .search-box input, .comment-input-area input').forEach(el => {
+        document.querySelectorAll('.file-upload-btn, .editable-input, .editable-textarea, .form-control, .chat-input-area input, .search-box input, .comment-input-area input, .settings-content .settings-section .form-control').forEach(el => {
             if (el) {
                 el.style.background = '';
                 el.style.borderColor = '';
@@ -4591,7 +4853,7 @@ function applyTheme(theme) {
         document.querySelectorAll('.stat-card .icon').forEach(el => {
             if (el) el.style.color = '';
         });
-        document.querySelectorAll('.top-bar h4, .profile-info-overlay .name-line h2, .movie-page-container .movie-title-section .movie-info h1').forEach(el => {
+        document.querySelectorAll('.top-bar h4, .profile-info-overlay .name-line h2, .movie-page-container .movie-title-section .movie-info h1, .settings-content .settings-section h4').forEach(el => {
             if (el) el.style.color = '';
         });
         document.querySelectorAll('.top-bar .user-info .user-name').forEach(el => {
@@ -4642,15 +4904,6 @@ function applyTheme(theme) {
         document.querySelectorAll('.chat-list-item:hover').forEach(el => {
             if (el) el.style.background = '';
         });
-        document.querySelectorAll('.settings-tabs .tab-btn').forEach(el => {
-            if (el) el.style.color = '';
-        });
-        document.querySelectorAll('.settings-tabs .tab-btn.active').forEach(el => {
-            if (el) el.style.color = '';
-        });
-        document.querySelectorAll('.settings-tabs').forEach(el => {
-            if (el) el.style.borderBottom = '';
-        });
         document.querySelectorAll('.profile-card .stats-grid .stat-item .lbl').forEach(el => {
             if (el) el.style.color = '';
         });
@@ -4689,6 +4942,12 @@ function applyTheme(theme) {
                 el.style.color = '';
             }
         });
+        document.querySelectorAll('.settings-content .settings-section .form-label').forEach(el => {
+            if (el) el.style.color = '';
+        });
+        document.querySelectorAll('.settings-content .settings-section .help-text').forEach(el => {
+            if (el) el.style.color = '';
+        });
     }
 }
 
@@ -4697,21 +4956,16 @@ function applyLanguage(lang) {
     elements.forEach(el => {
         const key = el.dataset.i18n;
         if (translations[lang] && translations[lang][key]) {
-            // Сохраняем иконку (первый дочерний элемент с тегом i)
             const icon = el.querySelector('i');
             const iconHtml = icon ? icon.outerHTML : '';
-            // Очищаем содержимое
             el.innerHTML = '';
-            // Добавляем иконку обратно
             if (iconHtml) {
                 el.innerHTML = iconHtml + ' ';
             }
-            // Добавляем текст
             el.appendChild(document.createTextNode(translations[lang][key]));
         }
     });
     
-    // Обновляем название страницы
     const currentPage = document.querySelector('.sidebar .nav-link.active')?.dataset.page || 'dashboard';
     const titleKey = `page_title_${currentPage}`;
     const titleEl = document.getElementById('pageTitle');
