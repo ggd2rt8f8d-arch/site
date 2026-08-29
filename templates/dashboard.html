@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
     <style>
+        /* ... все стили остаются без изменений ... */
         * { font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background: #0d0d0d; color: #d4d4d4; }
         ::-webkit-scrollbar { width: 5px; }
@@ -1623,32 +1624,32 @@
         <h3>MOVIE ADMIN</h3>
     </div>
     <nav class="nav flex-column">
-        <a class="nav-link active" href="#" data-page="dashboard" data-i18n="nav_home">
+        <a class="nav-link active" href="#" data-page="dashboard">
             <i class="fas fa-home"></i> <span data-i18n="nav_home">Главная</span>
         </a>
-        <a class="nav-link" href="#" data-page="movies" data-i18n="nav_movies">
+        <a class="nav-link" href="#" data-page="movies">
             <i class="fas fa-list"></i> <span data-i18n="nav_movies">Фильмы</span>
         </a>
-        <a class="nav-link" href="#" data-page="news" data-i18n="nav_news">
+        <a class="nav-link" href="#" data-page="news">
             <i class="fas fa-newspaper"></i> <span data-i18n="nav_news">Новости</span>
         </a>
-        <a class="nav-link" href="#" data-page="friends" data-i18n="nav_friends">
+        <a class="nav-link" href="#" data-page="friends">
             <i class="fas fa-users"></i> <span data-i18n="nav_friends">Друзья</span>
         </a>
-        <a class="nav-link" href="#" data-page="chats" data-i18n="nav_chats">
+        <a class="nav-link" href="#" data-page="chats">
             <i class="fas fa-comments"></i> <span data-i18n="nav_chats">Чаты</span>
         </a>
         {% if is_admin %}
-        <a class="nav-link" href="#" data-page="admins" data-i18n="nav_admins">
+        <a class="nav-link" href="#" data-page="admins">
             <i class="fas fa-users-cog"></i> <span data-i18n="nav_admins">Админы</span>
         </a>
         {% endif %}
         {% if is_super %}
-        <a class="nav-link" href="#" data-page="bans" data-i18n="nav_bans">
+        <a class="nav-link" href="#" data-page="bans">
             <i class="fas fa-ban"></i> <span data-i18n="nav_bans">Баны</span>
         </a>
         {% endif %}
-        <a class="nav-link" href="#" data-page="settings" data-i18n="nav_settings">
+        <a class="nav-link" href="#" data-page="settings">
             <i class="fas fa-cog"></i> <span data-i18n="nav_settings">Настройки</span>
         </a>
     </nav>
@@ -1766,7 +1767,7 @@
                 <input type="text" class="form-control" id="movieSearch" placeholder="Поиск по коду или названию...">
             </div>
             {% if is_admin %}
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMovieModal" data-i18n="btn_add_movie">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMovieModal">
                 <i class="fas fa-plus"></i> <span data-i18n="btn_add_movie">Добавить фильм</span>
             </button>
             {% endif %}
@@ -1800,7 +1801,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 style="font-weight:300;color:#ccc;" data-i18n="nav_news"><i class="fas fa-newspaper"></i> Новости</h5>
             {% if is_super %}
-            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addNewsModal" data-i18n="btn_create_news">
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addNewsModal">
                 <i class="fas fa-plus"></i> <span data-i18n="btn_create_news">Создать новость</span>
             </button>
             {% endif %}
@@ -1851,7 +1852,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 style="font-weight:300;color:#ccc;" data-i18n="nav_admins"><i class="fas fa-users-cog"></i> Администраторы</h5>
             {% if is_super %}
-            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAdminModal" data-i18n="btn_add_admin">
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAdminModal">
                 <i class="fas fa-user-plus"></i> <span data-i18n="btn_add_admin">Добавить</span>
             </button>
             {% endif %}
@@ -1883,7 +1884,7 @@
     <div id="page-bans" style="display:none" class="fade-in">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 style="font-weight:300;color:#ccc;" data-i18n="nav_bans"><i class="fas fa-ban"></i> Забаненные</h5>
-            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addBanModal" data-i18n="btn_ban">
+            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addBanModal">
                 <i class="fas fa-user-slash"></i> <span data-i18n="btn_ban">Забанить</span>
             </button>
         </div>
@@ -2324,10 +2325,10 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_close">Закрыть</button>
-                <button type="button" class="btn btn-primary" onclick="startChatFromModal()" id="modalChatBtn" style="display:none;" data-i18n="btn_write">
+                <button type="button" class="btn btn-primary" onclick="startChatFromModal()" id="modalChatBtn" style="display:none;">
                     <i class="fas fa-comment"></i> <span data-i18n="btn_write">Написать</span>
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="reportUserFromModal()" id="modalReportBtn" style="display:none;" data-i18n="btn_report">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="reportUserFromModal()" id="modalReportBtn" style="display:none;">
                     <i class="fas fa-flag"></i> <span data-i18n="btn_report">Пожаловаться</span>
                 </button>
                 {% if is_super %}
@@ -2433,7 +2434,7 @@ const translations = {
         'btn_save': 'Сохранить',
         'btn_cancel': 'Отмена',
         'btn_delete': 'Удалить',
-        'btn_edit': 'Редактировать',
+        'btn_edit': 'Действия',
         'btn_close': 'Закрыть',
         'btn_write': 'Написать',
         'btn_report': 'Пожаловаться',
@@ -2491,7 +2492,7 @@ const translations = {
         'btn_save': 'Save',
         'btn_cancel': 'Cancel',
         'btn_delete': 'Delete',
-        'btn_edit': 'Edit',
+        'btn_edit': 'Actions',
         'btn_close': 'Close',
         'btn_write': 'Write',
         'btn_report': 'Report',
@@ -2655,27 +2656,28 @@ function showPage(page) {
     document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
     const target = document.getElementById(`page-${page}`);
     if (target) target.style.display = 'block';
-    const titles = {
-        dashboard: 'Главная',
-        movies: 'Управление фильмами',
-        admins: 'Администраторы',
-        bans: 'Забаненные',
-        profile: 'Мой профиль',
-        settings: 'Настройки',
-        support: 'Поддержка',
-        about: 'О нас',
-        movie: 'Фильм',
-        friends: 'Друзья',
-        news: 'Новости',
-        chats: 'Чаты',
-        chat: 'Чат'
-    };
-    const titleEl = document.getElementById('pageTitle');
+    
     const lang = localStorage.getItem('lang') || 'ru';
     const titleKey = `page_title_${page}`;
+    const titleEl = document.getElementById('pageTitle');
     if (translations[lang] && translations[lang][titleKey]) {
         titleEl.textContent = translations[lang][titleKey];
     } else {
+        const titles = {
+            dashboard: 'Главная',
+            movies: 'Управление фильмами',
+            admins: 'Администраторы',
+            bans: 'Забаненные',
+            profile: 'Мой профиль',
+            settings: 'Настройки',
+            support: 'Поддержка',
+            about: 'О нас',
+            movie: 'Фильм',
+            friends: 'Друзья',
+            news: 'Новости',
+            chats: 'Чаты',
+            chat: 'Чат'
+        };
         titleEl.textContent = titles[page] || page;
     }
     if (window.innerWidth <= 768) toggleSidebar();
@@ -3181,10 +3183,11 @@ async function showMoviePage(code) {
         `;
         const lang = localStorage.getItem('lang') || 'ru';
         const titleKey = `page_title_movie`;
+        const titleEl = document.getElementById('pageTitle');
         if (translations[lang] && translations[lang][titleKey]) {
-            document.getElementById('pageTitle').textContent = `${translations[lang][titleKey]}: ${m.title}`;
+            titleEl.textContent = `${translations[lang][titleKey]}: ${m.title}`;
         } else {
-            document.getElementById('pageTitle').textContent = `🎬 ${m.title}`;
+            titleEl.textContent = `🎬 ${m.title}`;
         }
         showPage('movie');
     } catch(e) { 
@@ -4423,15 +4426,6 @@ function applyTheme(theme) {
             }
         });
         
-        // Скрытые элементы
-        document.querySelectorAll('.sidebar, .main-content, .profile-card, .movie-page-container, .table-container').forEach(el => {
-            if (el) {
-                el.style.background = '';
-                el.style.color = '';
-                el.style.borderColor = '';
-            }
-        });
-        
     } else {
         // Тёмная тема (возвращаем стандартные стили)
         document.body.style.background = '#0d0d0d';
@@ -4703,22 +4697,17 @@ function applyLanguage(lang) {
     elements.forEach(el => {
         const key = el.dataset.i18n;
         if (translations[lang] && translations[lang][key]) {
-            // Проверяем, есть ли дочерние элементы, которые нужно сохранить
-            const hasChildren = el.children.length > 0;
-            if (hasChildren) {
-                // Сохраняем дочерние элементы (иконки)
-                const childHtml = el.innerHTML;
-                const textNode = document.createTextNode(translations[lang][key]);
-                el.innerHTML = '';
-                // Восстанавливаем дочерние элементы
-                el.appendChild(textNode);
-                // Если были дочерние элементы, добавляем их обратно
-                if (childHtml) {
-                    el.innerHTML = childHtml.replace(/[^<]*$/, translations[lang][key]);
-                }
-            } else {
-                el.textContent = translations[lang][key];
+            // Сохраняем иконку (первый дочерний элемент с тегом i)
+            const icon = el.querySelector('i');
+            const iconHtml = icon ? icon.outerHTML : '';
+            // Очищаем содержимое
+            el.innerHTML = '';
+            // Добавляем иконку обратно
+            if (iconHtml) {
+                el.innerHTML = iconHtml + ' ';
             }
+            // Добавляем текст
+            el.appendChild(document.createTextNode(translations[lang][key]));
         }
     });
     
