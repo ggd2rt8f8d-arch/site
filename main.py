@@ -24,6 +24,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 # ==================== ПЕРЕМЕННЫЕ ====================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 BOT_ID = os.getenv("BOT_ID")
+BOT_USERNAME = os.getenv("BOT_USERNAME", "topzfilmz_bot")
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "@topzfilmz")
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-secret-key")
@@ -44,6 +45,9 @@ logger = logging.getLogger(__name__)
 
 # ==================== БАЗА ДАННЫХ ====================
 pool: asyncpg.Pool = None
+
+# ==================== ХРАНИЛИЩЕ СЕССИЙ АВТОРИЗАЦИИ ====================
+auth_sessions = {}
 
 async def init_db():
     global pool
@@ -321,9 +325,6 @@ async def init_db():
 async def get_pool():
     return pool
 
-# ==================== ХРАНИЛИЩЕ КОДОВ ====================
-verification_codes = {}
-
 # ==================== БОТ ====================
 bot = Bot(token=BOT_TOKEN)
 storage = MemoryStorage()
@@ -542,24 +543,6 @@ async def get_telegram_user(user_id: int):
         logger.error(f"Ошибка получения данных пользователя {user_id}: {e}")
         return None
 
-async def send_verification_code(user_id: int):
-    code = str(random.randint(100000, 999999))
-    expires_at = datetime.now() + timedelta(minutes=5)
-    verification_codes[user_id] = {"code": code, "expires_at": expires_at}
-    try:
-        await bot.send_message(
-            user_id,
-            f"🔐 <b>Код подтверждения</b>\n\n"
-            f"Ваш код для входа в админ-панель:\n\n"
-            f"<code>{code}</code>\n\n"
-            f"⏳ Код действителен <b>5 минут</b>.",
-            parse_mode="HTML"
-        )
-        return True
-    except Exception as e:
-        logger.error(f"Ошибка отправки кода: {e}")
-        return False
-
 # ---------- Отзывы и рейтинг ----------
 async def add_review(movie_code: str, user_id: int, rating: int, text: str):
     async with pool.acquire() as conn:
@@ -678,10 +661,8 @@ async def get_user_name(user_id: int):
 
 async def get_user_profile(user_id: int):
     async with pool.acquire() as conn:
-        # Проверяем и создаём запись в user_names если её нет
         user_name_exists = await conn.fetchval("SELECT 1 FROM user_names WHERE user_id = $1", user_id)
         if not user_name_exists:
-            # Проверяем в google_users
             google_user = await conn.fetchrow("SELECT * FROM google_users WHERE user_id = $1", user_id)
             if google_user:
                 username = google_user["name"].lower().replace(" ", "_")
@@ -693,7 +674,6 @@ async def get_user_profile(user_id: int):
                        VALUES ($1, $2, $3, $4, $5, $6)""",
                     user_id, username, google_user["name"], None, google_user["name"], google_user["picture"]
                 )
-                # Проверяем users
                 user_exists = await conn.fetchval("SELECT 1 FROM users WHERE user_id = $1", user_id)
                 if not user_exists:
                     await conn.execute(
@@ -701,7 +681,6 @@ async def get_user_profile(user_id: int):
                         user_id, username, google_user["name"], None, google_user["picture"]
                     )
             else:
-                # Проверяем в users
                 user = await conn.fetchrow("SELECT * FROM users WHERE user_id = $1", user_id)
                 if user:
                     username = user["username"] or str(user_id)
@@ -787,7 +766,6 @@ async def get_or_create_user_from_google(email: str, name: str, picture: str):
         row = await conn.fetchrow("SELECT user_id FROM google_users WHERE email = $1", email)
         if row:
             user_id = row["user_id"]
-            # Проверяем, есть ли пользователь в таблице users
             user_exists = await conn.fetchval("SELECT 1 FROM users WHERE user_id = $1", user_id)
             if not user_exists:
                 username = email.split('@')[0]
@@ -802,7 +780,6 @@ async def get_or_create_user_from_google(email: str, name: str, picture: str):
             await update_user_online(user_id)
             return user_id
         
-        # Создаём нового пользователя
         user_id = random.randint(100000000, 999999999)
         username = email.split('@')[0]
         existing = await conn.fetchval("SELECT user_id FROM users WHERE username = $1", username)
@@ -988,6 +965,16 @@ async def get_news(limit: int = 20):
         """, limit)
         return [dict(r) for r in rows]
 
+async def delete_news(news_id: int, user_id: int):
+    async with pool.acquire() as conn:
+        # Проверяем, является ли пользователь автором или суперадмином
+        is_author = await conn.fetchval("SELECT 1 FROM news WHERE id = $1 AND author_id = $2", news_id, user_id)
+        is_super = await is_super_admin(user_id)
+        if is_author or is_super:
+            await conn.execute("DELETE FROM news WHERE id = $1", news_id)
+            return True
+        return False
+
 # ---------- Сообщения ----------
 async def send_message(sender_id: int, receiver_id: int, text: str):
     async with pool.acquire() as conn:
@@ -1104,9 +1091,71 @@ def review_only_back_kb(code: str):
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     await update_user_online(message.from_user.id)
+    
+    # Проверяем, есть ли токен в команде
+    args = message.text.split()
+    if len(args) > 1:
+        token = args[1]
+        
+        # Проверяем, существует ли сессия
+        if token in auth_sessions:
+            # Обновляем статус сессии
+            auth_sessions[token]["status"] = "authenticated"
+            auth_sessions[token]["user_id"] = message.from_user.id
+            
+            # Добавляем пользователя в БД если его нет
+            if not await is_user_exists(message.from_user.id):
+                user_data = await get_telegram_user(message.from_user.id)
+                if user_data:
+                    try:
+                        await save_user_data(
+                            message.from_user.id,
+                            user_data.get("username"),
+                            user_data.get("first_name"),
+                            user_data.get("last_name"),
+                            None,
+                            user_data.get("photo_url"),
+                            None
+                        )
+                    except ValueError:
+                        await save_user_data(
+                            message.from_user.id,
+                            str(message.from_user.id),
+                            user_data.get("first_name"),
+                            user_data.get("last_name"),
+                            None,
+                            user_data.get("photo_url"),
+                            None
+                        )
+            
+            # Проверяем, является ли пользователь админом
+            if await is_admin(message.from_user.id):
+                await message.answer(
+                    "✅ <b>Авторизация успешна!</b>\n\n"
+                    "Вы вошли как администратор.\n"
+                    "Вы можете закрыть это окно и вернуться на сайт.",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="🌐 Перейти на сайт", url="https://ваш-сайт.com/dashboard")]
+                    ])
+                )
+            else:
+                await message.answer(
+                    "✅ <b>Авторизация успешна!</b>\n\n"
+                    "Вы можете закрыть это окно и вернуться на сайт.",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="🌐 Перейти на сайт", url="https://ваш-сайт.com/dashboard")]
+                    ])
+                )
+            return
+    
+    # Обычный /start без токена
     if await is_banned(message.from_user.id):
         return await message.answer("🚫 Вы заблокированы в боте.")
+    
     is_user_admin = await is_admin(message.from_user.id)
+    
     if await check_sub(message.from_user.id):
         text = "Привет! 👋\nВведи код фильма:"
         if is_user_admin:
@@ -1309,7 +1358,6 @@ async def cb_movie_back(callback: CallbackQuery, state: FSMContext):
         reply_markup=movie_review_kb(code, has_reviews)
     )
 
-# ---------- Остальные хэндлеры бота ----------
 @dp.callback_query(F.data == "admin_add")
 async def cb_add(callback: CallbackQuery, state: FSMContext):
     if not await is_admin(callback.from_user.id):
@@ -1617,6 +1665,77 @@ async def check_super_admin(request: Request):
 def get_user_or_none(request: Request) -> Optional[int]:
     return get_user_id_from_cookie(request)
 
+# ==================== АВТОРИЗАЦИЯ ЧЕРЕЗ БОТА ====================
+
+@app.post("/api/auth/init")
+async def auth_init(request: Request, data: dict):
+    """Инициализация авторизации через бота"""
+    token = data.get("token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Token required")
+    
+    # Сохраняем токен со статусом 'waiting'
+    auth_sessions[token] = {
+        "status": "waiting",
+        "created_at": datetime.now(),
+        "user_id": None
+    }
+    
+    # Автоматически очищаем старые сессии (старше 10 минут)
+    expired_tokens = []
+    for t, session in auth_sessions.items():
+        if datetime.now() - session["created_at"] > timedelta(minutes=10):
+            expired_tokens.append(t)
+    for t in expired_tokens:
+        del auth_sessions[t]
+    
+    logger.info(f"Auth session initialized: {token}")
+    return {"success": True}
+
+@app.post("/api/auth/status")
+async def auth_status(request: Request, data: dict):
+    """Проверка статуса авторизации"""
+    token = data.get("token")
+    if not token:
+        return {"status": "error", "error": "Token required"}
+    
+    session = auth_sessions.get(token)
+    if not session:
+        return {"status": "error", "error": "Session not found"}
+    
+    # Проверяем срок действия (5 минут)
+    if datetime.now() - session["created_at"] > timedelta(minutes=5):
+        auth_sessions[token]["status"] = "expired"
+        return {"status": "expired"}
+    
+    if session["status"] == "authenticated":
+        return {
+            "authenticated": True,
+            "user_id": session.get("user_id")
+        }
+    elif session["status"] == "expired":
+        return {"status": "expired"}
+    else:
+        return {"status": "waiting"}
+
+@app.post("/api/auth/complete")
+async def auth_complete(request: Request, data: dict):
+    """Завершение авторизации (установка cookie)"""
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+    
+    response = JSONResponse({"success": True})
+    response.set_cookie(
+        key="user_id",
+        value=str(user_id),
+        httponly=True,
+        max_age=60*60*24*7,
+        secure=False,
+        samesite="lax"
+    )
+    return response
+
 # ---------- Роуты входа ----------
 @app.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -1624,60 +1743,21 @@ async def login_page(request: Request):
         "request": request,
         "BOT_TOKEN": BOT_TOKEN,
         "BOT_ID": BOT_ID,
+        "BOT_USERNAME": BOT_USERNAME,
         "GOOGLE_CLIENT_ID": GOOGLE_CLIENT_ID
     })
 
 @app.post("/auth/request-code")
 async def request_code(request: Request, user_id: int = Form(...)):
+    # Устаревший метод, оставлен для совместимости
     if not await is_user_exists(user_id):
         await add_user(user_id)
-    if user_id in verification_codes:
-        stored = verification_codes[user_id]
-        if datetime.now() < stored["expires_at"]:
-            return JSONResponse(status_code=400, content={"error": "Код уже отправлен. Проверьте Telegram."})
-    success = await send_verification_code(user_id)
-    if success:
-        return {"success": True, "message": "Код отправлен в Telegram"}
-    else:
-        return JSONResponse(status_code=500, content={"error": "Не удалось отправить код"})
+    return JSONResponse(status_code=400, content={"error": "Используйте вход через бота"})
 
 @app.post("/auth/verify-code")
 async def verify_code(request: Request, user_id: int = Form(...), code: str = Form(...)):
-    stored = verification_codes.get(user_id)
-    if not stored:
-        return JSONResponse(status_code=400, content={"error": "Код не запрошен или истёк"})
-    if datetime.now() > stored["expires_at"]:
-        del verification_codes[user_id]
-        return JSONResponse(status_code=400, content={"error": "Код истёк. Запросите новый"})
-    if stored["code"] != code:
-        return JSONResponse(status_code=400, content={"error": "Неверный код"})
-    del verification_codes[user_id]
-    user_data = await get_telegram_user(user_id)
-    if user_data:
-        try:
-            await save_user_data(
-                user_id,
-                user_data.get("username"),
-                user_data.get("first_name"),
-                user_data.get("last_name"),
-                None,
-                user_data.get("photo_url"),
-                None
-            )
-        except ValueError:
-            await save_user_data(
-                user_id,
-                str(user_id),
-                user_data.get("first_name"),
-                user_data.get("last_name"),
-                None,
-                user_data.get("photo_url"),
-                None
-            )
-    await update_user_online(user_id)
-    response = JSONResponse({"success": True})
-    response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
-    return response
+    # Устаревший метод, оставлен для совместимости
+    return JSONResponse(status_code=400, content={"error": "Используйте вход через бота"})
 
 @app.post("/auth/google")
 async def google_auth(request: Request, data: dict):
@@ -1717,45 +1797,6 @@ async def check_auth_api(request: Request):
 async def logout():
     response = RedirectResponse(url="/", status_code=302)
     response.delete_cookie("user_id")
-    return response
-
-# В main.py добавить:
-
-@app.post("/api/auth/init")
-async def auth_init(request: Request, data: dict):
-    token = data.get("token")
-    if not token:
-        raise HTTPException(status_code=400, detail="Token required")
-    # Сохраняем токен в памяти или БД со статусом 'waiting'
-    auth_sessions[token] = {"status": "waiting", "created_at": datetime.now()}
-    return {"success": True}
-
-@app.post("/api/auth/status")
-async def auth_status(request: Request, data: dict):
-    token = data.get("token")
-    if not token:
-        return {"status": "error", "error": "Token required"}
-    
-    session = auth_sessions.get(token)
-    if not session:
-        return {"status": "error", "error": "Session not found"}
-    
-    if session["status"] == "authenticated":
-        return {"authenticated": True, "user_id": session.get("user_id")}
-    elif session["status"] == "expired":
-        return {"status": "expired"}
-    else:
-        return {"status": "waiting"}
-
-@app.post("/api/auth/complete")
-async def auth_complete(request: Request, data: dict):
-    user_id = data.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="User ID required")
-    
-    # Устанавливаем cookie
-    response = JSONResponse({"success": True})
-    response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
     return response
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -2378,18 +2419,10 @@ async def api_create_news(request: Request, data: NewsData):
 @app.delete("/api/news/{news_id}")
 async def api_delete_news(request: Request, news_id: int):
     user_id = await check_super_admin(request)
-    async with pool.acquire() as conn:
-        result = await conn.execute("DELETE FROM news WHERE id = $1 AND author_id = $2", news_id, user_id)
-        if result == "DELETE 0":
-            # Если суперадмин удаляет, проверяем, существует ли новость вообще
-            exists = await conn.fetchval("SELECT 1 FROM news WHERE id = $1", news_id)
-            if not exists:
-                raise HTTPException(status_code=404, detail="Новость не найдена")
-            # Если новость существует, но автор не совпадает, пробуем удалить как суперадмин
-            result = await conn.execute("DELETE FROM news WHERE id = $1", news_id)
-            if result == "DELETE 0":
-                raise HTTPException(status_code=403, detail="Недостаточно прав")
-        return {"success": True}
+    success = await delete_news(news_id, user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Новость не найдена или нет прав")
+    return {"success": True}
 
 # ---------- Сообщения ----------
 @app.post("/api/messages/{receiver_id}")
