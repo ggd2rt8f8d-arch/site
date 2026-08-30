@@ -66,20 +66,6 @@
             cursor: not-allowed;
             transform: none;
         }
-        .btn-secondary {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 50px;
-            padding: 10px 30px;
-            color: rgba(255,255,255,0.7);
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-        }
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.15);
-            color: #fff;
-        }
         .btn-telegram {
             background: #0088cc;
             border: none;
@@ -106,17 +92,30 @@
         .btn-telegram i {
             font-size: 20px;
         }
+        .btn-telegram:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
         .error-msg {
             color: #ff6b6b;
             font-size: 14px;
             margin-top: 12px;
             display: none;
+            background: rgba(220,53,69,0.1);
+            border: 1px solid rgba(220,53,69,0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
         }
         .success-msg {
             color: #88dd88;
             font-size: 14px;
             margin-top: 12px;
             display: none;
+            background: rgba(40,167,69,0.1);
+            border: 1px solid rgba(40,167,69,0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
         }
         .divider {
             border: none;
@@ -144,9 +143,12 @@
             margin-top: 20px;
         }
         .info-text {
-            color: rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.4);
             font-size: 13px;
             margin-top: 10px;
+        }
+        .info-text i {
+            color: #0088cc;
         }
         .status-badge {
             display: inline-block;
@@ -222,8 +224,9 @@
             margin-bottom: 8px;
         }
         .login-status .status-text {
-            color: rgba(255,255,255,0.7);
+            color: rgba(255,255,255,0.8);
             font-size: 14px;
+            font-weight: 500;
         }
         .login-status .status-detail {
             color: rgba(255,255,255,0.4);
@@ -258,10 +261,10 @@
 
         <!-- ====== ВХОД ЧЕРЕЗ TELEGRAM ====== -->
         <div class="telegram-btn-wrapper">
-            <a href="https://t.me/{{ BOT_USERNAME }}?start=auth" target="_blank" class="btn-telegram">
+            <button class="btn-telegram" id="telegramLoginBtn">
                 <i class="fab fa-telegram"></i>
                 Войти через Telegram
-            </a>
+            </button>
         </div>
         <div class="info-text">
             <i class="fas fa-info-circle"></i> Нажмите кнопку, чтобы открыть бота в Telegram
@@ -305,8 +308,8 @@
         
         const BOT_USERNAME = "{{ BOT_USERNAME or 'topzfilmz_bot' }}";
         const GOOGLE_CLIENT_ID = "{{ GOOGLE_CLIENT_ID }}";
-        const POLL_INTERVAL = 2000; // Проверка каждые 2 секунды
-        const MAX_POLL_ATTEMPTS = 90; // Максимум 3 минуты (90 * 2 сек)
+        const POLL_INTERVAL = 2000;
+        const MAX_POLL_ATTEMPTS = 60;
 
         // ============================================================
         // TELEGRAM LOGIN
@@ -315,13 +318,12 @@
         let pollInterval = null;
         let pollAttempts = 0;
         let authToken = null;
+        let isPolling = false;
 
-        // Генерация уникального токена для сессии
         function generateAuthToken() {
             return 'auth_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
 
-        // Проверка статуса авторизации
         async function checkAuthStatus(token) {
             try {
                 const response = await fetch('/api/auth/status', {
@@ -332,42 +334,52 @@
                     body: JSON.stringify({ token })
                 });
 
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || 'Ошибка проверки статуса');
+                }
+
                 const data = await response.json();
 
-                if (response.ok && data.authenticated) {
-                    // Авторизация успешна!
+                if (data.authenticated) {
                     clearInterval(pollInterval);
+                    isPolling = false;
                     showAuthSuccess(data.user_id);
                     return true;
-                } else if (response.ok && data.status === 'expired') {
-                    // Токен истек
+                } else if (data.status === 'expired') {
                     clearInterval(pollInterval);
+                    isPolling = false;
                     showAuthError('Время сессии истекло. Попробуйте снова.');
                     return false;
-                } else if (response.ok && data.status === 'waiting') {
-                    // Все еще ждем
-                    updateStatus('waiting', 'Ожидание авторизации...', 'Нажмите /start в боте');
+                } else if (data.status === 'error') {
+                    clearInterval(pollInterval);
+                    isPolling = false;
+                    showAuthError(data.error || 'Ошибка авторизации');
                     return false;
                 } else {
-                    // Ошибка
-                    clearInterval(pollInterval);
-                    showAuthError(data.error || 'Ошибка авторизации');
+                    updateStatus('waiting', 'Ожидание авторизации...', 'Нажмите /start в боте');
                     return false;
                 }
             } catch (err) {
                 console.error('Polling error:', err);
+                // Не показываем ошибку при каждой попытке, только если их много
+                if (pollAttempts > 5) {
+                    updateStatus('waiting', 'Ожидание авторизации...', 'Проверка соединения...');
+                }
                 return false;
             }
         }
 
-        // Начать проверку авторизации
         function startAuthPolling(token) {
+            if (isPolling) return;
+            isPolling = true;
             pollAttempts = 0;
+            
             const statusEl = document.getElementById('loginStatus');
             statusEl.classList.add('show');
             updateStatus('waiting', 'Ожидание авторизации...', 'Откройте бота и нажмите /start');
 
-            // Первая проверка через 1 секунду
+            // Первая проверка через 1.5 секунды
             setTimeout(async () => {
                 const success = await checkAuthStatus(token);
                 if (success) return;
@@ -377,28 +389,26 @@
                     pollAttempts++;
                     if (pollAttempts > MAX_POLL_ATTEMPTS) {
                         clearInterval(pollInterval);
+                        isPolling = false;
                         showAuthError('Время ожидания истекло. Попробуйте снова.');
                         return;
                     }
                     await checkAuthStatus(token);
                 }, POLL_INTERVAL);
-            }, 1000);
+            }, 1500);
         }
 
-        // Обновление статуса
         function updateStatus(status, text, detail) {
-            const statusEl = document.getElementById('loginStatus');
             const icon = document.getElementById('statusIcon');
             const textEl = document.getElementById('statusText');
             const detailEl = document.getElementById('statusDetail');
             const badge = document.getElementById('statusBadge');
 
-            statusEl.classList.add('show');
-
             if (status === 'waiting') {
                 icon.textContent = '⏳';
                 badge.textContent = 'Ожидание';
                 badge.className = 'status-badge waiting';
+                document.getElementById('errorMsg').style.display = 'none';
             } else if (status === 'success') {
                 icon.textContent = '✅';
                 badge.textContent = 'Успешно';
@@ -415,13 +425,13 @@
             }
         }
 
-        // Показать успешную авторизацию
         function showAuthSuccess(userId) {
             updateStatus('success', '✅ Авторизация успешна!', `Пользователь ID: ${userId}`);
             document.getElementById('successMsg').style.display = 'block';
             document.getElementById('successText').textContent = 'Вход выполнен! Перенаправление...';
+            document.getElementById('telegramLoginBtn').disabled = true;
             
-            // Сохраняем userId в cookie и перенаправляем
+            // Сохраняем userId в cookie
             fetch('/api/auth/complete', {
                 method: 'POST',
                 headers: {
@@ -440,44 +450,59 @@
             });
         }
 
-        // Показать ошибку авторизации
         function showAuthError(message) {
             updateStatus('error', '❌ Ошибка авторизации', message);
             document.getElementById('errorMsg').style.display = 'block';
             document.getElementById('errorText').textContent = message;
+            document.getElementById('telegramLoginBtn').disabled = false;
+            isPolling = false;
         }
 
         // Обработчик клика по кнопке Telegram
-        document.querySelector('.btn-telegram')?.addEventListener('click', function(e) {
+        document.getElementById('telegramLoginBtn')?.addEventListener('click', async function(e) {
             e.preventDefault();
             
-            // Генерируем токен
-            authToken = generateAuthToken();
+            if (this.disabled) return;
             
-            // Сохраняем токен на сервере
-            fetch('/api/auth/init', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: authToken })
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.success) {
-                      // Открываем бота с токеном
-                      const botUrl = `https://t.me/${BOT_USERNAME}?start=${authToken}`;
-                      window.open(botUrl, '_blank');
-                      
-                      // Начинаем проверку авторизации
-                      startAuthPolling(authToken);
-                  } else {
-                      showAuthError('Не удалось инициализировать авторизацию');
-                  }
-              })
-              .catch(err => {
-                  console.error('Init error:', err);
-                  showAuthError('Ошибка соединения с сервером');
-              });
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Инициализация...';
+            
+            try {
+                // Генерируем токен
+                authToken = generateAuthToken();
+                
+                // Сохраняем токен на сервере
+                const response = await fetch('/api/auth/init', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token: authToken })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Открываем бота с токеном
+                    const botUrl = `https://t.me/${BOT_USERNAME}?start=${authToken}`;
+                    window.open(botUrl, '_blank');
+                    
+                    // Восстанавливаем кнопку
+                    this.innerHTML = '<i class="fab fa-telegram"></i> Войти через Telegram';
+                    
+                    // Начинаем проверку авторизации
+                    startAuthPolling(authToken);
+                } else {
+                    this.innerHTML = '<i class="fab fa-telegram"></i> Войти через Telegram';
+                    this.disabled = false;
+                    showAuthError(data.error || 'Не удалось инициализировать авторизацию');
+                }
+            } catch (err) {
+                console.error('Init error:', err);
+                this.innerHTML = '<i class="fab fa-telegram"></i> Войти через Telegram';
+                this.disabled = false;
+                showAuthError('Ошибка соединения с сервером');
+            }
         });
 
         // ============================================================
@@ -545,7 +570,8 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    showSuccess('✅ Вход через Google выполнен! Перенаправление...');
+                    document.getElementById('successMsg').style.display = 'block';
+                    document.getElementById('successText').textContent = '✅ Вход через Google выполнен! Перенаправление...';
                     setTimeout(() => {
                         window.location.href = '/dashboard';
                     }, 1500);
@@ -585,12 +611,6 @@
             document.getElementById('successMsg').style.display = 'none';
         }
 
-        function showSuccess(msg) {
-            document.getElementById('successMsg').style.display = 'block';
-            document.getElementById('successText').textContent = msg;
-            document.getElementById('errorMsg').style.display = 'none';
-        }
-
         // ============================================================
         // ИНИЦИАЛИЗАЦИЯ
         // ============================================================
@@ -602,10 +622,8 @@
             const statusFromUrl = urlParams.get('status');
 
             if (tokenFromUrl && statusFromUrl === 'success') {
-                // Пользователь вернулся с бота с подтверждением
                 authToken = tokenFromUrl;
                 startAuthPolling(authToken);
-                // Удаляем параметры из URL
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
 
