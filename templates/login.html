@@ -1,38 +1,617 @@
-# В main.py добавить:
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — Админ-панель</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        .login-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 40px 35px;
+            max-width: 460px;
+            width: 100%;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .login-card h1 {
+            color: #fff;
+            font-weight: 700;
+            font-size: 28px;
+            margin-bottom: 6px;
+        }
+        .login-card .subtitle {
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+        .login-card .icon {
+            font-size: 56px;
+            color: #0088cc;
+            margin-bottom: 16px;
+        }
+        .btn-primary {
+            background: #0088cc;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 40px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background: #006699;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,136,204,0.3);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 50px;
+            padding: 10px 30px;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+        }
+        .btn-telegram {
+            background: #0088cc;
+            border: none;
+            border-radius: 50px;
+            padding: 14px 40px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .btn-telegram:hover {
+            background: #006699;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,136,204,0.3);
+            color: #fff;
+            text-decoration: none;
+        }
+        .btn-telegram i {
+            font-size: 20px;
+        }
+        .error-msg {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 12px;
+            display: none;
+        }
+        .success-msg {
+            color: #88dd88;
+            font-size: 14px;
+            margin-top: 12px;
+            display: none;
+        }
+        .divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin: 20px 0;
+        }
+        .or-divider {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: rgba(255,255,255,0.2);
+            font-size: 12px;
+            margin: 16px 0;
+        }
+        .or-divider::before,
+        .or-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+        }
+        .footer-text {
+            color: rgba(255,255,255,0.2);
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        .info-text {
+            color: rgba(255,255,255,0.3);
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .status-badge.waiting {
+            background: rgba(255,193,7,0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255,193,7,0.3);
+        }
+        .status-badge.success {
+            background: rgba(40,167,69,0.2);
+            color: #28a745;
+            border: 1px solid rgba(40,167,69,0.3);
+        }
+        .status-badge.error {
+            background: rgba(220,53,69,0.2);
+            color: #dc3545;
+            border: 1px solid rgba(220,53,69,0.3);
+        }
+        .loading {
+            display: none;
+        }
+        .loading.show {
+            display: inline-block;
+        }
+        .telegram-login-hint {
+            color: rgba(255,255,255,0.3);
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .telegram-login-hint i {
+            color: #0088cc;
+        }
+        .google-btn-wrapper {
+            margin: 8px 0;
+        }
+        .google-btn-wrapper .gsi-material-button {
+            width: 100% !important;
+            max-width: 100% !important;
+            justify-content: center !important;
+            background: rgba(255,255,255,0.08) !important;
+            border: 1px solid rgba(255,255,255,0.15) !important;
+            border-radius: 50px !important;
+            padding: 10px !important;
+        }
+        .google-btn-wrapper .gsi-material-button:hover {
+            background: rgba(255,255,255,0.15) !important;
+        }
+        .telegram-btn-wrapper {
+            margin: 8px 0;
+        }
+        .telegram-btn-wrapper a {
+            text-decoration: none;
+        }
+        .login-status {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-top: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            display: none;
+        }
+        .login-status.show {
+            display: block;
+        }
+        .login-status .status-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        .login-status .status-text {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+        }
+        .login-status .status-detail {
+            color: rgba(255,255,255,0.4);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .login-status .spinner-border {
+            width: 24px;
+            height: 24px;
+        }
 
-@app.post("/api/auth/init")
-async def auth_init(request: Request, data: dict):
-    token = data.get("token")
-    if not token:
-        raise HTTPException(status_code=400, detail="Token required")
-    # Сохраняем токен в памяти или БД со статусом 'waiting'
-    auth_sessions[token] = {"status": "waiting", "created_at": datetime.now()}
-    return {"success": True}
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 30px 20px;
+            }
+            .login-card h1 {
+                font-size: 24px;
+            }
+            .login-card .icon {
+                font-size: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="icon">
+            <i class="fas fa-film"></i>
+        </div>
+        <h1>Movie Admin</h1>
+        <p class="subtitle">Войдите в админ-панель</p>
 
-@app.post("/api/auth/status")
-async def auth_status(request: Request, data: dict):
-    token = data.get("token")
-    if not token:
-        return {"status": "error", "error": "Token required"}
-    
-    session = auth_sessions.get(token)
-    if not session:
-        return {"status": "error", "error": "Session not found"}
-    
-    if session["status"] == "authenticated":
-        return {"authenticated": True, "user_id": session.get("user_id")}
-    elif session["status"] == "expired":
-        return {"status": "expired"}
-    else:
-        return {"status": "waiting"}
+        <!-- ====== ВХОД ЧЕРЕЗ TELEGRAM ====== -->
+        <div class="telegram-btn-wrapper">
+            <a href="https://t.me/{{ BOT_USERNAME }}?start=auth" target="_blank" class="btn-telegram">
+                <i class="fab fa-telegram"></i>
+                Войти через Telegram
+            </a>
+        </div>
+        <div class="info-text">
+            <i class="fas fa-info-circle"></i> Нажмите кнопку, чтобы открыть бота в Telegram
+        </div>
 
-@app.post("/api/auth/complete")
-async def auth_complete(request: Request, data: dict):
-    user_id = data.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="User ID required")
-    
-    # Устанавливаем cookie
-    response = JSONResponse({"success": True})
-    response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
-    return response
+        <!-- Статус авторизации -->
+        <div class="login-status" id="loginStatus">
+            <div class="status-icon" id="statusIcon">⏳</div>
+            <div class="status-text" id="statusText">Ожидание авторизации...</div>
+            <div class="status-detail" id="statusDetail">Откройте бота и нажмите /start</div>
+            <div class="mt-2">
+                <span class="status-badge waiting" id="statusBadge">Ожидание</span>
+            </div>
+        </div>
+
+        <div id="errorMsg" class="error-msg">
+            <i class="fas fa-exclamation-circle"></i> <span id="errorText">Ошибка</span>
+        </div>
+
+        <div id="successMsg" class="success-msg">
+            <i class="fas fa-check-circle"></i> <span id="successText">Успешно! Перенаправление...</span>
+        </div>
+
+        <!-- ====== ИЛИ ====== -->
+        <div class="or-divider">или</div>
+
+        <!-- ====== GOOGLE LOGIN ====== -->
+        <div class="google-btn-wrapper" id="googleButtonContainer"></div>
+
+        <hr class="divider">
+
+        <div class="footer-text">
+            <i class="fas fa-shield-alt"></i> Безопасный вход через Telegram или Google
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // КОНФИГУРАЦИЯ
+        // ============================================================
+        
+        const BOT_USERNAME = "{{ BOT_USERNAME or 'topzfilmz_bot' }}";
+        const GOOGLE_CLIENT_ID = "{{ GOOGLE_CLIENT_ID }}";
+        const POLL_INTERVAL = 2000; // Проверка каждые 2 секунды
+        const MAX_POLL_ATTEMPTS = 90; // Максимум 3 минуты (90 * 2 сек)
+
+        // ============================================================
+        // TELEGRAM LOGIN
+        // ============================================================
+
+        let pollInterval = null;
+        let pollAttempts = 0;
+        let authToken = null;
+
+        // Генерация уникального токена для сессии
+        function generateAuthToken() {
+            return 'auth_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Проверка статуса авторизации
+        async function checkAuthStatus(token) {
+            try {
+                const response = await fetch('/api/auth/status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.authenticated) {
+                    // Авторизация успешна!
+                    clearInterval(pollInterval);
+                    showAuthSuccess(data.user_id);
+                    return true;
+                } else if (response.ok && data.status === 'expired') {
+                    // Токен истек
+                    clearInterval(pollInterval);
+                    showAuthError('Время сессии истекло. Попробуйте снова.');
+                    return false;
+                } else if (response.ok && data.status === 'waiting') {
+                    // Все еще ждем
+                    updateStatus('waiting', 'Ожидание авторизации...', 'Нажмите /start в боте');
+                    return false;
+                } else {
+                    // Ошибка
+                    clearInterval(pollInterval);
+                    showAuthError(data.error || 'Ошибка авторизации');
+                    return false;
+                }
+            } catch (err) {
+                console.error('Polling error:', err);
+                return false;
+            }
+        }
+
+        // Начать проверку авторизации
+        function startAuthPolling(token) {
+            pollAttempts = 0;
+            const statusEl = document.getElementById('loginStatus');
+            statusEl.classList.add('show');
+            updateStatus('waiting', 'Ожидание авторизации...', 'Откройте бота и нажмите /start');
+
+            // Первая проверка через 1 секунду
+            setTimeout(async () => {
+                const success = await checkAuthStatus(token);
+                if (success) return;
+
+                // Запускаем периодическую проверку
+                pollInterval = setInterval(async () => {
+                    pollAttempts++;
+                    if (pollAttempts > MAX_POLL_ATTEMPTS) {
+                        clearInterval(pollInterval);
+                        showAuthError('Время ожидания истекло. Попробуйте снова.');
+                        return;
+                    }
+                    await checkAuthStatus(token);
+                }, POLL_INTERVAL);
+            }, 1000);
+        }
+
+        // Обновление статуса
+        function updateStatus(status, text, detail) {
+            const statusEl = document.getElementById('loginStatus');
+            const icon = document.getElementById('statusIcon');
+            const textEl = document.getElementById('statusText');
+            const detailEl = document.getElementById('statusDetail');
+            const badge = document.getElementById('statusBadge');
+
+            statusEl.classList.add('show');
+
+            if (status === 'waiting') {
+                icon.textContent = '⏳';
+                badge.textContent = 'Ожидание';
+                badge.className = 'status-badge waiting';
+            } else if (status === 'success') {
+                icon.textContent = '✅';
+                badge.textContent = 'Успешно';
+                badge.className = 'status-badge success';
+            } else if (status === 'error') {
+                icon.textContent = '❌';
+                badge.textContent = 'Ошибка';
+                badge.className = 'status-badge error';
+            }
+
+            textEl.textContent = text;
+            if (detail) {
+                detailEl.textContent = detail;
+            }
+        }
+
+        // Показать успешную авторизацию
+        function showAuthSuccess(userId) {
+            updateStatus('success', '✅ Авторизация успешна!', `Пользователь ID: ${userId}`);
+            document.getElementById('successMsg').style.display = 'block';
+            document.getElementById('successText').textContent = 'Вход выполнен! Перенаправление...';
+            
+            // Сохраняем userId в cookie и перенаправляем
+            fetch('/api/auth/complete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ user_id: userId })
+            }).then(() => {
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1500);
+            }).catch(() => {
+                // Если ошибка, все равно перенаправляем
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1500);
+            });
+        }
+
+        // Показать ошибку авторизации
+        function showAuthError(message) {
+            updateStatus('error', '❌ Ошибка авторизации', message);
+            document.getElementById('errorMsg').style.display = 'block';
+            document.getElementById('errorText').textContent = message;
+        }
+
+        // Обработчик клика по кнопке Telegram
+        document.querySelector('.btn-telegram')?.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Генерируем токен
+            authToken = generateAuthToken();
+            
+            // Сохраняем токен на сервере
+            fetch('/api/auth/init', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: authToken })
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Открываем бота с токеном
+                      const botUrl = `https://t.me/${BOT_USERNAME}?start=${authToken}`;
+                      window.open(botUrl, '_blank');
+                      
+                      // Начинаем проверку авторизации
+                      startAuthPolling(authToken);
+                  } else {
+                      showAuthError('Не удалось инициализировать авторизацию');
+                  }
+              })
+              .catch(err => {
+                  console.error('Init error:', err);
+                  showAuthError('Ошибка соединения с сервером');
+              });
+        });
+
+        // ============================================================
+        // GOOGLE LOGIN
+        // ============================================================
+
+        function initGoogleLogin() {
+            if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "" || GOOGLE_CLIENT_ID === "{{ GOOGLE_CLIENT_ID }}") {
+                console.warn("Google Client ID не задан");
+                return;
+            }
+
+            try {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleGoogleCredentialResponse,
+                    cancel_on_tap_outside: false,
+                    context: 'signin',
+                    ux_mode: 'popup'
+                });
+
+                google.accounts.id.renderButton(
+                    document.getElementById('googleButtonContainer'),
+                    { 
+                        theme: 'outline',
+                        size: 'large',
+                        type: 'standard',
+                        shape: 'pill',
+                        logo_alignment: 'center',
+                        text: 'signin_with',
+                        width: '100%'
+                    }
+                );
+            } catch(e) {
+                console.error('Google init error:', e);
+            }
+        }
+
+        async function handleGoogleCredentialResponse(response) {
+            try {
+                const payload = parseJwt(response.credential);
+                
+                if (!payload) {
+                    showError('Не удалось получить данные от Google');
+                    return;
+                }
+
+                const email = payload.email;
+                const name = payload.name;
+                const picture = payload.picture;
+
+                if (!email) {
+                    showError('Email не получен от Google');
+                    return;
+                }
+
+                const res = await fetch('/auth/google', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, name, picture })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    showSuccess('✅ Вход через Google выполнен! Перенаправление...');
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1500);
+                } else {
+                    showError(data.detail || 'Ошибка входа через Google');
+                }
+            } catch (err) {
+                console.error('Google auth error:', err);
+                showError('Ошибка соединения с сервером');
+            }
+        }
+
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                    atob(base64)
+                        .split('')
+                        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                        .join('')
+                );
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('JWT parse error:', e);
+                return null;
+            }
+        }
+
+        // ============================================================
+        // ОБЩИЕ ФУНКЦИИ
+        // ============================================================
+
+        function showError(msg) {
+            document.getElementById('errorMsg').style.display = 'block';
+            document.getElementById('errorText').textContent = msg;
+            document.getElementById('successMsg').style.display = 'none';
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('successMsg').style.display = 'block';
+            document.getElementById('successText').textContent = msg;
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        // ============================================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // ============================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Проверяем, есть ли токен в URL (возврат с бота)
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            const statusFromUrl = urlParams.get('status');
+
+            if (tokenFromUrl && statusFromUrl === 'success') {
+                // Пользователь вернулся с бота с подтверждением
+                authToken = tokenFromUrl;
+                startAuthPolling(authToken);
+                // Удаляем параметры из URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            // Инициализация Google
+            setTimeout(initGoogleLogin, 500);
+        });
+    </script>
+</body>
+</html>
