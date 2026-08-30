@@ -1719,6 +1719,45 @@ async def logout():
     response.delete_cookie("user_id")
     return response
 
+# В main.py добавить:
+
+@app.post("/api/auth/init")
+async def auth_init(request: Request, data: dict):
+    token = data.get("token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Token required")
+    # Сохраняем токен в памяти или БД со статусом 'waiting'
+    auth_sessions[token] = {"status": "waiting", "created_at": datetime.now()}
+    return {"success": True}
+
+@app.post("/api/auth/status")
+async def auth_status(request: Request, data: dict):
+    token = data.get("token")
+    if not token:
+        return {"status": "error", "error": "Token required"}
+    
+    session = auth_sessions.get(token)
+    if not session:
+        return {"status": "error", "error": "Session not found"}
+    
+    if session["status"] == "authenticated":
+        return {"authenticated": True, "user_id": session.get("user_id")}
+    elif session["status"] == "expired":
+        return {"status": "expired"}
+    else:
+        return {"status": "waiting"}
+
+@app.post("/api/auth/complete")
+async def auth_complete(request: Request, data: dict):
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+    
+    # Устанавливаем cookie
+    response = JSONResponse({"success": True})
+    response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
+    return response
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     user_id = get_user_id_from_cookie(request)
