@@ -4,14 +4,19 @@ import logging
 import asyncpg
 import random
 import json
+import smtplib
+import secrets
+import hashlib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from typing import Optional
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
-from fastapi import FastAPI, Request, HTTPException, Form
+from fastapi import FastAPI, Request, HTTPException, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
@@ -30,6 +35,14 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-secret-key")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+SITE_URL = os.getenv("SITE_URL", "http://localhost:8000")
+
+# Email настройки
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
 
 super_admins_str = os.getenv("SUPER_ADMIN_IDS", "")
 SUPER_ADMIN_IDS = [int(x.strip()) for x in super_admins_str.split(",") if x.strip().isdigit()]
@@ -46,14 +59,150 @@ logger = logging.getLogger(__name__)
 # ==================== БАЗА ДАННЫХ ====================
 pool: asyncpg.Pool = None
 
-# ==================== ХРАНИЛИЩЕ СЕССИЙ АВТОРИЗАЦИИ ====================
+# ==================== ХРАНИЛИЩА ====================
 auth_sessions = {}
+email_verification_codes = {}
+movie_id_counter = 10000001
 
+# ==================== EMAIL ====================
+def send_verification_email(email: str, code: str):
+    """Отправка кода подтверждения на email"""
+    try:
+        if not SMTP_USER or not SMTP_PASSWORD:
+            logger.warning("SMTP не настроен, код отправлен в лог")
+            logger.info(f"Код для {email}: {code}")
+            return True
+            
+        msg = MIMEMultipart()
+        msg['From'] = SMTP_FROM
+        msg['To'] = email
+        msg['Subject'] = 'Подтверждение регистрации — Movie Admin'
+        
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; background: #0d0d0d; color: #d4d4d4; padding: 40px;">
+            <div style="max-width: 500px; margin: 0 auto; background: #1a1a1a; border-radius: 16px; padding: 30px; border: 1px solid #2a2a2a;">
+                <h1 style="color: #e8e8e8; font-weight: 300; text-align: center;">Movie Admin</h1>
+                <p style="color: #ccc; text-align: center;">Код подтверждения регистрации</p>
+                <div style="background: #0d0d0d; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+                    <span style="font-size: 36px; font-weight: 700; color: #0088cc; letter-spacing: 8px;">{code}</span>
+                </div>
+                <p style="color: #888; font-size: 14px; text-align: center;">Код действителен <b>10 минут</b>.</p>
+                <p style="color: #666; font-size: 12px; text-align: center; margin-top: 20px;">
+                    Если вы не регистрировались, проигнорируйте это письмо.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(html, 'html'))
+        
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        logger.error(f"Email send error: {e}")
+        return False
+
+# ==================== БАЗА ДАННЫХ — ИНИЦИАЛИЗАЦИЯ ====================
 async def init_db():
-    global pool
+    global pool, movie_id_counter
     pool = await asyncpg.create_pool(DATABASE_URL)
     async with pool.acquire() as conn:
-        # Основные таблицы
+        # Таблица пользователей с Movie ID
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                movie_id INTEGER PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                username TEXT UNIQUE,
+                password_hash TEXT NOT NULL,
+                display_name TEXT,
+                first_name TEXT,
+                last_name TEXT,
+                photo_url TEXT,
+                banner_url TEXT,
+                is_verified BOOLEAN DEFAULT FALSE,
+                is_admin BOOLEAN DEFAULT FALSE,
+                is_super_admin BOOLEAN DEFAULT FALSE,
+                is_banned BOOLEAN DEFAULT FALSE,
+                ban_reason TEXT,
+                ban_expires_at TIMESTAMP,
+                last_seen TIMESTAMP DEFAULT NOW(),
+                is_online BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        
+        # Проверяем существование колонок
+        await conn.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='movie_id') THEN
+                    ALTER TABLE users ADD COLUMN movie_id INTEGER;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='email') THEN
+                    ALTER TABLE users ADD COLUMN email TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='username') THEN
+                    ALTER TABLE users ADD COLUMN username TEXT UNIQUE;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='password_hash') THEN
+                    ALTER TABLE users ADD COLUMN password_hash TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='display_name') THEN
+                    ALTER TABLE users ADD COLUMN display_name TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='first_name') THEN
+                    ALTER TABLE users ADD COLUMN first_name TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='last_name') THEN
+                    ALTER TABLE users ADD COLUMN last_name TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='photo_url') THEN
+                    ALTER TABLE users ADD COLUMN photo_url TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='banner_url') THEN
+                    ALTER TABLE users ADD COLUMN banner_url TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_verified') THEN
+                    ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_admin') THEN
+                    ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_super_admin') THEN
+                    ALTER TABLE users ADD COLUMN is_super_admin BOOLEAN DEFAULT FALSE;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_banned') THEN
+                    ALTER TABLE users ADD COLUMN is_banned BOOLEAN DEFAULT FALSE;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='ban_reason') THEN
+                    ALTER TABLE users ADD COLUMN ban_reason TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='ban_expires_at') THEN
+                    ALTER TABLE users ADD COLUMN ban_expires_at TIMESTAMP;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='last_seen') THEN
+                    ALTER TABLE users ADD COLUMN last_seen TIMESTAMP DEFAULT NOW();
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_online') THEN
+                    ALTER TABLE users ADD COLUMN is_online BOOLEAN DEFAULT FALSE;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='created_at') THEN
+                    ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT NOW();
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='updated_at') THEN
+                    ALTER TABLE users ADD COLUMN updated_at TIMESTAMP DEFAULT NOW();
+                END IF;
+            END $$;
+        """)
+        
+        # Создаем остальные таблицы
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS movies (
                 code TEXT PRIMARY KEY,
@@ -63,7 +212,7 @@ async def init_db():
                 description TEXT,
                 rating TEXT,
                 banner TEXT,
-                added_by BIGINT,
+                added_by INTEGER,
                 director TEXT,
                 writers TEXT,
                 genres TEXT,
@@ -71,31 +220,18 @@ async def init_db():
                 box_office_us TEXT,
                 box_office_world TEXT,
                 cast_list TEXT,
-                country TEXT
-            )
-        """)
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS admins (user_id BIGINT PRIMARY KEY)
-        """)
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id BIGINT PRIMARY KEY,
-                username TEXT UNIQUE,
-                first_name TEXT,
-                last_name TEXT,
-                photo_url TEXT,
-                last_seen TIMESTAMP DEFAULT NOW(),
-                is_online BOOLEAN DEFAULT FALSE,
+                country TEXT,
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        
         await conn.execute("""
-            CREATE TABLE IF NOT EXISTS bans (
-                user_id BIGINT PRIMARY KEY,
-                reason TEXT DEFAULT '',
-                expires_at TIMESTAMP
+            CREATE TABLE IF NOT EXISTS admin_stats (
+                user_id INTEGER PRIMARY KEY,
+                movies_added INTEGER DEFAULT 0
             )
         """)
+        
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS stats (
                 key TEXT PRIMARY KEY,
@@ -106,66 +242,43 @@ async def init_db():
             INSERT INTO stats (key, value) VALUES ('total_requests', 0)
             ON CONFLICT (key) DO NOTHING
         """)
+        
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS punishments (
                 id SERIAL PRIMARY KEY,
-                user_id BIGINT NOT NULL,
+                user_id INTEGER NOT NULL,
                 type TEXT NOT NULL,
                 reason TEXT,
-                issued_by BIGINT,
+                issued_by INTEGER,
                 created_at TIMESTAMP DEFAULT NOW(),
                 expires_at TIMESTAMP,
                 resolved BOOLEAN DEFAULT FALSE,
-                resolved_by BIGINT,
+                resolved_by INTEGER,
                 resolved_at TIMESTAMP
             )
         """)
+        
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS movie_reviews (
                 id SERIAL PRIMARY KEY,
                 movie_code TEXT NOT NULL,
-                user_id BIGINT NOT NULL,
+                user_id INTEGER NOT NULL,
                 rating INTEGER,
                 text TEXT,
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS movie_comments (
                 id SERIAL PRIMARY KEY,
                 movie_code TEXT NOT NULL,
-                user_id BIGINT NOT NULL,
+                user_id INTEGER NOT NULL,
                 text TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS admin_stats (
-                user_id BIGINT PRIMARY KEY,
-                movies_added INTEGER DEFAULT 0
-            )
-        """)
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_names (
-                user_id BIGINT PRIMARY KEY,
-                username TEXT UNIQUE,
-                first_name TEXT,
-                last_name TEXT,
-                display_name TEXT,
-                photo_url TEXT,
-                banner_url TEXT,
-                updated_at TIMESTAMP DEFAULT NOW()
-            )
-        """)
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS profile_comments (
-                id SERIAL PRIMARY KEY,
-                target_user_id BIGINT NOT NULL,
-                author_id BIGINT NOT NULL,
-                text TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT NOW()
-            )
-        """)
+        
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS movie_ratings (
                 movie_code TEXT PRIMARY KEY,
@@ -173,32 +286,32 @@ async def init_db():
                 votes_count INTEGER DEFAULT 0
             )
         """)
+        
         await conn.execute("""
-            CREATE TABLE IF NOT EXISTS super_admins (user_id BIGINT PRIMARY KEY)
-        """)
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS google_users (
-                email TEXT PRIMARY KEY,
-                user_id BIGINT UNIQUE,
-                name TEXT,
-                picture TEXT,
+            CREATE TABLE IF NOT EXISTS profile_comments (
+                id SERIAL PRIMARY KEY,
+                target_user_id INTEGER NOT NULL,
+                author_id INTEGER NOT NULL,
+                text TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS friends (
                 id SERIAL PRIMARY KEY,
-                user_id BIGINT NOT NULL,
-                friend_id BIGINT NOT NULL,
+                user_id INTEGER NOT NULL,
+                friend_id INTEGER NOT NULL,
                 status TEXT DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT NOW(),
                 UNIQUE(user_id, friend_id)
             )
         """)
+        
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
                 id SERIAL PRIMARY KEY,
-                user_id BIGINT NOT NULL,
+                user_id INTEGER NOT NULL,
                 type TEXT NOT NULL,
                 content TEXT NOT NULL,
                 link TEXT,
@@ -206,96 +319,55 @@ async def init_db():
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS news (
                 id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
-                author_id BIGINT NOT NULL,
+                author_id INTEGER NOT NULL,
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS reports (
                 id SERIAL PRIMARY KEY,
-                reporter_id BIGINT NOT NULL,
-                reported_id BIGINT NOT NULL,
+                reporter_id INTEGER NOT NULL,
+                reported_id INTEGER NOT NULL,
                 reason TEXT NOT NULL,
                 status TEXT DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS messages (
                 id SERIAL PRIMARY KEY,
-                sender_id BIGINT NOT NULL,
-                receiver_id BIGINT NOT NULL,
+                sender_id INTEGER NOT NULL,
+                receiver_id INTEGER NOT NULL,
                 text TEXT NOT NULL,
                 is_read BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
-
-        # Добавляем колонки
+        
         await conn.execute("""
-            DO $$
-            BEGIN
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='added_by') THEN
-                    ALTER TABLE movies ADD COLUMN added_by BIGINT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='banner') THEN
-                    ALTER TABLE movies ADD COLUMN banner TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='country') THEN
-                    ALTER TABLE movies ADD COLUMN country TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='director') THEN
-                    ALTER TABLE movies ADD COLUMN director TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='writers') THEN
-                    ALTER TABLE movies ADD COLUMN writers TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='genres') THEN
-                    ALTER TABLE movies ADD COLUMN genres TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='budget') THEN
-                    ALTER TABLE movies ADD COLUMN budget TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='box_office_us') THEN
-                    ALTER TABLE movies ADD COLUMN box_office_us TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='box_office_world') THEN
-                    ALTER TABLE movies ADD COLUMN box_office_world TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='movies' AND column_name='cast_list') THEN
-                    ALTER TABLE movies ADD COLUMN cast_list TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bans' AND column_name='expires_at') THEN
-                    ALTER TABLE bans ADD COLUMN expires_at TIMESTAMP;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_names' AND column_name='photo_url') THEN
-                    ALTER TABLE user_names ADD COLUMN photo_url TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_names' AND column_name='banner_url') THEN
-                    ALTER TABLE user_names ADD COLUMN banner_url TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_names' AND column_name='display_name') THEN
-                    ALTER TABLE user_names ADD COLUMN display_name TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_names' AND column_name='username') THEN
-                    ALTER TABLE user_names ADD COLUMN username TEXT UNIQUE;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='last_seen') THEN
-                    ALTER TABLE users ADD COLUMN last_seen TIMESTAMP DEFAULT NOW();
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_online') THEN
-                    ALTER TABLE users ADD COLUMN is_online BOOLEAN DEFAULT FALSE;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='username') THEN
-                    ALTER TABLE users ADD COLUMN username TEXT UNIQUE;
-                END IF;
-            END $$;
+            CREATE TABLE IF NOT EXISTS google_users (
+                email TEXT PRIMARY KEY,
+                user_id INTEGER UNIQUE,
+                name TEXT,
+                picture TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
         """)
+        
+        # Получаем текущий максимальный Movie ID
+        max_id = await conn.fetchval("SELECT MAX(movie_id) FROM users")
+        if max_id:
+            movie_id_counter = max_id + 1
+        else:
+            movie_id_counter = 10000001
 
         # Триггеры
         await conn.execute("""
@@ -325,35 +397,131 @@ async def init_db():
 async def get_pool():
     return pool
 
-# ==================== БОТ ====================
-bot = Bot(token=BOT_TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(storage=storage)
+# ==================== ФУНКЦИИ БД ДЛЯ ПОЛЬЗОВАТЕЛЕЙ ====================
 
-# ---------- FSM ----------
-class ReviewState(StatesGroup):
-    waiting_review = State()
-    waiting_rating = State()
+async def get_user_by_movie_id(movie_id: int):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM users WHERE movie_id = $1", movie_id)
+        return dict(row) if row else None
 
-class AddMovie(StatesGroup):
-    code = State()
-    title = State()
-    year = State()
-    poster = State()
-    description = State()
-    rating = State()
-    banner = State()
+async def get_user_by_email(email: str):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM users WHERE email = $1", email)
+        return dict(row) if row else None
 
-class EditMovie(StatesGroup):
-    waiting_value = State()
+async def get_user_by_username(username: str):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM users WHERE username = $1", username)
+        return dict(row) if row else None
 
-class BanUser(StatesGroup):
-    waiting_id = State()
+async def create_user(email: str, password_hash: str, username: str = None, display_name: str = None):
+    global movie_id_counter
+    async with pool.acquire() as conn:
+        movie_id = movie_id_counter
+        movie_id_counter += 1
+        
+        await conn.execute("""
+            INSERT INTO users (movie_id, email, password_hash, username, display_name, is_verified)
+            VALUES ($1, $2, $3, $4, $5, TRUE)
+        """, movie_id, email, password_hash, username, display_name or username or email.split('@')[0])
+        
+        return movie_id
 
-class AddAdmin(StatesGroup):
-    waiting_id = State()
+async def update_user_profile(movie_id: int, data: dict):
+    async with pool.acquire() as conn:
+        fields = []
+        values = []
+        for key, value in data.items():
+            if value is not None:
+                fields.append(f"{key} = ${len(values) + 1}")
+                values.append(value)
+        values.append(movie_id)
+        if fields:
+            await conn.execute(
+                f"UPDATE users SET {', '.join(fields)}, updated_at = NOW() WHERE movie_id = ${len(values)}",
+                *values
+            )
+        return True
 
-# ---------- Функции БД ----------
+async def is_admin_user(movie_id: int) -> bool:
+    if movie_id in SUPER_ADMIN_IDS:
+        return True
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT is_admin FROM users WHERE movie_id = $1", movie_id)
+        return row and row["is_admin"]
+
+async def is_super_admin_user(movie_id: int) -> bool:
+    if movie_id in SUPER_ADMIN_IDS:
+        return True
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT is_super_admin FROM users WHERE movie_id = $1", movie_id)
+        return row and row["is_super_admin"]
+
+async def is_banned_user(movie_id: int) -> bool:
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT is_banned, ban_expires_at FROM users WHERE movie_id = $1",
+            movie_id
+        )
+        if row:
+            if row["ban_expires_at"] and row["ban_expires_at"] < datetime.now():
+                await conn.execute(
+                    "UPDATE users SET is_banned = FALSE, ban_reason = NULL, ban_expires_at = NULL WHERE movie_id = $1",
+                    movie_id
+                )
+                return False
+            return row["is_banned"]
+        return False
+
+async def update_user_online_by_id(movie_id: int):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE users SET last_seen = NOW(), is_online = TRUE WHERE movie_id = $1",
+            movie_id
+        )
+
+async def is_user_online_by_id(movie_id: int) -> bool:
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT is_online, last_seen FROM users WHERE movie_id = $1",
+            movie_id
+        )
+        if row:
+            if row["is_online"] and row["last_seen"]:
+                delta = datetime.now() - row["last_seen"]
+                if delta.total_seconds() > 300:
+                    await conn.execute("UPDATE users SET is_online = FALSE WHERE movie_id = $1", movie_id)
+                    return False
+                return True
+        return False
+
+async def get_user_profile_data(movie_id: int):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM users WHERE movie_id = $1", movie_id)
+        if row:
+            return dict(row)
+        return None
+
+async def add_punishment_by_id(user_id: int, ptype: str, reason: str, issued_by: int, duration_hours: int = 0):
+    async with pool.acquire() as conn:
+        if duration_hours > 0:
+            await conn.execute(
+                "INSERT INTO punishments (user_id, type, reason, issued_by, expires_at) VALUES ($1, $2, $3, $4, NOW() + ($5 || ' hours')::INTERVAL)",
+                user_id, ptype, reason, issued_by, duration_hours
+            )
+        else:
+            await conn.execute(
+                "INSERT INTO punishments (user_id, type, reason, issued_by) VALUES ($1, $2, $3, $4)",
+                user_id, ptype, reason, issued_by
+            )
+        if ptype in ("ban", "permanent_ban"):
+            await conn.execute(
+                "UPDATE users SET is_banned = TRUE, ban_reason = $1, ban_expires_at = $2 WHERE movie_id = $3",
+                reason, datetime.now() + timedelta(hours=duration_hours) if duration_hours > 0 else None, user_id
+            )
+
+# ==================== ФУНКЦИИ БД ДЛЯ ФИЛЬМОВ ====================
+
 async def get_movie(code: str):
     async with pool.acquire() as conn:
         row = await conn.fetchrow("SELECT * FROM movies WHERE code = $1", code)
@@ -397,113 +565,6 @@ async def delete_movie(code: str):
         await conn.execute("DELETE FROM movie_reviews WHERE movie_code = $1", code)
         await conn.execute("DELETE FROM movie_comments WHERE movie_code = $1", code)
 
-async def is_admin(user_id: int) -> bool:
-    if user_id in SUPER_ADMIN_IDS:
-        return True
-    async with pool.acquire() as conn:
-        return await conn.fetchval("SELECT 1 FROM admins WHERE user_id = $1", user_id) is not None
-
-async def is_super_admin(user_id: int) -> bool:
-    if user_id in SUPER_ADMIN_IDS:
-        return True
-    async with pool.acquire() as conn:
-        return await conn.fetchval("SELECT 1 FROM super_admins WHERE user_id = $1", user_id) is not None
-
-async def is_user_exists(user_id: int) -> bool:
-    async with pool.acquire() as conn:
-        return await conn.fetchval("SELECT 1 FROM users WHERE user_id = $1", user_id) is not None
-
-async def add_user(user_id: int, username: str = None, first_name: str = None, last_name: str = None, photo_url: str = None):
-    async with pool.acquire() as conn:
-        if username:
-            existing = await conn.fetchval("SELECT user_id FROM users WHERE username = $1 AND user_id != $2", username, user_id)
-            if existing:
-                raise ValueError("Username already taken")
-        await conn.execute(
-            """INSERT INTO users (user_id, username, first_name, last_name, photo_url, last_seen, is_online) 
-               VALUES ($1, $2, $3, $4, $5, NOW(), TRUE) 
-               ON CONFLICT (user_id) DO UPDATE 
-               SET username = $2, first_name = $3, last_name = $4, photo_url = $5, last_seen = NOW(), is_online = TRUE""",
-            user_id, username, first_name, last_name, photo_url
-        )
-        await save_user_data(user_id, username, first_name, last_name, first_name or username, photo_url, None)
-
-async def update_user_online(user_id: int):
-    async with pool.acquire() as conn:
-        await conn.execute(
-            "UPDATE users SET last_seen = NOW(), is_online = TRUE WHERE user_id = $1",
-            user_id
-        )
-
-async def is_user_online(user_id: int) -> bool:
-    async with pool.acquire() as conn:
-        row = await conn.fetchrow(
-            "SELECT is_online, last_seen FROM users WHERE user_id = $1",
-            user_id
-        )
-        if row:
-            if row["is_online"] and row["last_seen"]:
-                delta = datetime.now() - row["last_seen"]
-                if delta.total_seconds() > 300:
-                    await conn.execute("UPDATE users SET is_online = FALSE WHERE user_id = $1", user_id)
-                    return False
-                return True
-        return False
-
-async def add_admin(user_id: int):
-    async with pool.acquire() as conn:
-        await conn.execute("INSERT INTO admins (user_id) VALUES ($1) ON CONFLICT DO NOTHING", user_id)
-
-async def remove_admin(user_id: int):
-    async with pool.acquire() as conn:
-        await conn.execute("DELETE FROM admins WHERE user_id = $1", user_id)
-        await conn.execute("DELETE FROM super_admins WHERE user_id = $1", user_id)
-
-async def get_admins_with_stats():
-    async with pool.acquire() as conn:
-        rows = await conn.fetch("""
-            SELECT a.user_id, 
-                   COALESCE(ast.movies_added, 0) as movies_count,
-                   COALESCE((
-                       SELECT COUNT(*) FROM punishments 
-                       WHERE user_id = a.user_id 
-                       AND type = 'warning' 
-                       AND resolved = FALSE
-                   ), 0) as warns
-            FROM admins a
-            LEFT JOIN admin_stats ast ON a.user_id = ast.user_id
-            ORDER BY a.user_id
-        """)
-        return [dict(r) for r in rows]
-
-async def ban_user(user_id: int, reason: str = "", duration_hours: int = 0):
-    async with pool.acquire() as conn:
-        if duration_hours > 0:
-            await conn.execute(
-                "INSERT INTO bans (user_id, reason, expires_at) VALUES ($1, $2, NOW() + ($3 || ' hours')::INTERVAL) ON CONFLICT (user_id) DO UPDATE SET reason = $2, expires_at = NOW() + ($3 || ' hours')::INTERVAL",
-                user_id, reason, duration_hours
-            )
-        else:
-            await conn.execute(
-                "INSERT INTO bans (user_id, reason, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (user_id) DO UPDATE SET reason = $2, expires_at = NULL",
-                user_id, reason
-            )
-
-async def unban_user(user_id: int):
-    async with pool.acquire() as conn:
-        await conn.execute("DELETE FROM bans WHERE user_id = $1", user_id)
-
-async def is_banned(user_id: int) -> bool:
-    async with pool.acquire() as conn:
-        await conn.execute("DELETE FROM bans WHERE expires_at IS NOT NULL AND expires_at < NOW()")
-        return await conn.fetchval("SELECT 1 FROM bans WHERE user_id = $1", user_id) is not None
-
-async def get_banned_users():
-    async with pool.acquire() as conn:
-        await conn.execute("DELETE FROM bans WHERE expires_at IS NOT NULL AND expires_at < NOW()")
-        rows = await conn.fetch("SELECT user_id, reason, expires_at FROM bans")
-        return [dict(r) for r in rows]
-
 async def increment_requests():
     async with pool.acquire() as conn:
         await conn.execute("UPDATE stats SET value = value + 1 WHERE key = 'total_requests'")
@@ -512,38 +573,8 @@ async def get_total_requests():
     async with pool.acquire() as conn:
         return await conn.fetchval("SELECT value FROM stats WHERE key = 'total_requests'") or 0
 
-async def check_sub(user_id: int) -> bool:
-    try:
-        member = await bot.get_chat_member(CHANNEL_USERNAME, user_id)
-        return member.status in {ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.CREATOR}
-    except Exception:
-        return False
+# ==================== ФУНКЦИИ БД ДЛЯ ОТЗЫВОВ ====================
 
-# ---------- Telegram API ----------
-async def get_telegram_user(user_id: int):
-    try:
-        chat = await bot.get_chat(user_id)
-        user_info = {
-            "id": user_id,
-            "username": chat.username,
-            "first_name": chat.first_name,
-            "last_name": chat.last_name,
-            "photo_url": None
-        }
-        try:
-            photos = await bot.get_user_profile_photos(user_id, limit=1)
-            if photos.photos:
-                file = photos.photos[0][-1]
-                file_info = await bot.get_file(file.file_id)
-                user_info["photo_url"] = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_info.file_path}"
-        except:
-            pass
-        return user_info
-    except Exception as e:
-        logger.error(f"Ошибка получения данных пользователя {user_id}: {e}")
-        return None
-
-# ---------- Отзывы и рейтинг ----------
 async def add_review(movie_code: str, user_id: int, rating: int, text: str):
     async with pool.acquire() as conn:
         await conn.execute(
@@ -557,7 +588,6 @@ async def add_review(movie_code: str, user_id: int, rating: int, text: str):
             SET total_rating = movie_ratings.total_rating + $2,
                 votes_count = movie_ratings.votes_count + 1
         """, movie_code, rating)
-        await update_user_online(user_id)
 
 async def get_reviews(movie_code: str, limit: int = 10):
     async with pool.acquire() as conn:
@@ -592,14 +622,6 @@ async def delete_review(review_id: int, user_id: int):
             return True
         return False
 
-async def delete_profile_comment(comment_id: int, user_id: int):
-    async with pool.acquire() as conn:
-        result = await conn.execute(
-            "DELETE FROM profile_comments WHERE id = $1 AND (author_id = $2 OR $2 IN (SELECT user_id FROM super_admins))",
-            comment_id, user_id
-        )
-        return result != "DELETE 0"
-
 async def get_reviews_count(movie_code: str):
     async with pool.acquire() as conn:
         return await conn.fetchval("SELECT COUNT(*) FROM movie_reviews WHERE movie_code = $1", movie_code) or 0
@@ -608,196 +630,27 @@ async def get_user_review(movie_code: str, user_id: int):
     async with pool.acquire() as conn:
         return await conn.fetchrow("SELECT * FROM movie_reviews WHERE movie_code = $1 AND user_id = $2", movie_code, user_id)
 
-# ---------- Профили ----------
-async def save_user_data(user_id: int, username: str = None, first_name: str = None, last_name: str = None, 
-                          display_name: str = None, photo_url: str = None, banner_url: str = None):
-    async with pool.acquire() as conn:
-        if username:
-            existing = await conn.fetchval("SELECT user_id FROM user_names WHERE username = $1 AND user_id != $2", username, user_id)
-            if existing:
-                raise ValueError("Username already taken")
-        await conn.execute(
-            """INSERT INTO user_names (user_id, username, first_name, last_name, display_name, photo_url, banner_url, updated_at) 
-               VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) 
-               ON CONFLICT (user_id) DO UPDATE 
-               SET username = $2, first_name = $3, last_name = $4, display_name = $5, photo_url = $6, banner_url = $7, updated_at = NOW()""",
-            user_id, username, first_name, last_name, display_name, photo_url, banner_url
-        )
-        await update_user_online(user_id)
-
-async def get_user_name(user_id: int):
-    async with pool.acquire() as conn:
-        row = await conn.fetchrow(
-            "SELECT username, first_name, last_name, display_name, photo_url, banner_url FROM user_names WHERE user_id = $1",
-            user_id
-        )
-        is_super = user_id in SUPER_ADMIN_IDS or await is_super_admin(user_id)
-        is_admin_user = await is_admin(user_id)
-        if row:
-            display = row["display_name"] or row["first_name"] or f"Пользователь {user_id}"
-            username = row["username"] or str(user_id)
-            return {
-                "display_name": display,
-                "username": username,
-                "photo_url": row["photo_url"],
-                "banner_url": row["banner_url"],
-                "first_name": row["first_name"],
-                "last_name": row["last_name"],
-                "is_super": is_super,
-                "is_admin": is_admin_user,
-                "is_online": await is_user_online(user_id)
-            }
-        return {
-            "display_name": f"Пользователь {user_id}",
-            "username": str(user_id),
-            "photo_url": None,
-            "banner_url": None,
-            "first_name": None,
-            "last_name": None,
-            "is_super": is_super,
-            "is_admin": is_admin_user,
-            "is_online": False
-        }
-
-async def get_user_profile(user_id: int):
-    async with pool.acquire() as conn:
-        user_name_exists = await conn.fetchval("SELECT 1 FROM user_names WHERE user_id = $1", user_id)
-        if not user_name_exists:
-            google_user = await conn.fetchrow("SELECT * FROM google_users WHERE user_id = $1", user_id)
-            if google_user:
-                username = google_user["name"].lower().replace(" ", "_")
-                existing = await conn.fetchval("SELECT user_id FROM user_names WHERE username = $1", username)
-                if existing:
-                    username = f"{username}_{user_id}"
-                await conn.execute(
-                    """INSERT INTO user_names (user_id, username, first_name, last_name, display_name, photo_url) 
-                       VALUES ($1, $2, $3, $4, $5, $6)""",
-                    user_id, username, google_user["name"], None, google_user["name"], google_user["picture"]
-                )
-                user_exists = await conn.fetchval("SELECT 1 FROM users WHERE user_id = $1", user_id)
-                if not user_exists:
-                    await conn.execute(
-                        "INSERT INTO users (user_id, username, first_name, last_name, photo_url, last_seen, is_online) VALUES ($1, $2, $3, $4, $5, NOW(), TRUE)",
-                        user_id, username, google_user["name"], None, google_user["picture"]
-                    )
-            else:
-                user = await conn.fetchrow("SELECT * FROM users WHERE user_id = $1", user_id)
-                if user:
-                    username = user["username"] or str(user_id)
-                    await conn.execute(
-                        """INSERT INTO user_names (user_id, username, first_name, last_name, display_name, photo_url) 
-                           VALUES ($1, $2, $3, $4, $5, $6)""",
-                        user_id, username, user["first_name"], user["last_name"], user["first_name"] or f"Пользователь {user_id}", user["photo_url"]
-                    )
-                else:
-                    return None
-        
-        is_admin_user = await is_admin(user_id)
-        is_super_user = await is_super_admin(user_id)
-        is_banned_user = await is_banned(user_id)
-        is_online = await is_user_online(user_id)
-        
-        movies_count = await conn.fetchval("SELECT movies_added FROM admin_stats WHERE user_id = $1", user_id) or 0
-        warns = await conn.fetchval("SELECT COUNT(*) FROM punishments WHERE user_id = $1 AND type = 'warning' AND resolved = FALSE", user_id) or 0
-        punishments = await conn.fetch("SELECT * FROM punishments WHERE user_id = $1 ORDER BY created_at DESC", user_id)
-        user_name_data = await get_user_name(user_id)
-        reviews_count = await conn.fetchval("SELECT COUNT(*) FROM movie_reviews WHERE user_id = $1", user_id) or 0
-        friends_count = await conn.fetchval("""
-            SELECT COUNT(*) FROM friends 
-            WHERE (user_id = $1 OR friend_id = $1) AND status = 'accepted'
-        """, user_id) or 0
-        
-        return {
-            "user_id": user_id,
-            "display_name": user_name_data["display_name"],
-            "username": user_name_data["username"],
-            "photo_url": user_name_data["photo_url"],
-            "banner_url": user_name_data["banner_url"],
-            "is_admin": is_admin_user,
-            "is_super_admin": is_super_user,
-            "is_banned": is_banned_user,
-            "is_online": is_online,
-            "movies_count": movies_count,
-            "warns": warns,
-            "reviews_count": reviews_count,
-            "total_punishments": len(punishments),
-            "punishments": [dict(p) for p in punishments],
-            "friends_count": friends_count
-        }
-
-async def add_punishment(user_id: int, ptype: str, reason: str, issued_by: int, duration_hours: int = 0):
-    async with pool.acquire() as conn:
-        if duration_hours > 0:
-            await conn.execute(
-                "INSERT INTO punishments (user_id, type, reason, issued_by, expires_at) VALUES ($1, $2, $3, $4, NOW() + ($5 || ' hours')::INTERVAL)",
-                user_id, ptype, reason, issued_by, duration_hours
-            )
-        else:
-            await conn.execute(
-                "INSERT INTO punishments (user_id, type, reason, issued_by) VALUES ($1, $2, $3, $4)",
-                user_id, ptype, reason, issued_by
-            )
-        if ptype in ("ban", "permanent_ban"):
-            await ban_user(user_id, reason, duration_hours if ptype == "ban" else 0)
-
-async def resolve_punishment(punishment_id: int, resolved_by: int):
-    async with pool.acquire() as conn:
-        punishment = await conn.fetchrow("SELECT user_id, type FROM punishments WHERE id = $1", punishment_id)
-        if punishment:
-            await conn.execute("UPDATE punishments SET resolved = TRUE, resolved_by = $1, resolved_at = NOW() WHERE id = $2", resolved_by, punishment_id)
-            if punishment["type"] in ("ban", "permanent_ban"):
-                await unban_user(punishment["user_id"])
-            return True
-        return False
+# ==================== ФУНКЦИИ БД ДЛЯ ПРОФИЛЯ ====================
 
 async def add_profile_comment(target_user_id: int, author_id: int, text: str):
     async with pool.acquire() as conn:
         await conn.execute("INSERT INTO profile_comments (target_user_id, author_id, text) VALUES ($1, $2, $3)", target_user_id, author_id, text)
-        await update_user_online(author_id)
 
 async def get_profile_comments(target_user_id: int):
     async with pool.acquire() as conn:
         rows = await conn.fetch("SELECT * FROM profile_comments WHERE target_user_id = $1 ORDER BY created_at DESC", target_user_id)
         return [dict(r) for r in rows]
 
-# ---------- Google Auth ----------
-async def get_or_create_user_from_google(email: str, name: str, picture: str):
+async def delete_profile_comment(comment_id: int, user_id: int):
     async with pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT user_id FROM google_users WHERE email = $1", email)
-        if row:
-            user_id = row["user_id"]
-            user_exists = await conn.fetchval("SELECT 1 FROM users WHERE user_id = $1", user_id)
-            if not user_exists:
-                username = email.split('@')[0]
-                existing = await conn.fetchval("SELECT user_id FROM users WHERE username = $1", username)
-                if existing:
-                    username = f"{username}_{random.randint(100, 999)}"
-                await conn.execute(
-                    "INSERT INTO users (user_id, username, first_name, last_name, photo_url, last_seen, is_online) VALUES ($1, $2, $3, $4, $5, NOW(), TRUE)",
-                    user_id, username, name, None, picture
-                )
-                await save_user_data(user_id, username, name, None, name, picture, None)
-            await update_user_online(user_id)
-            return user_id
-        
-        user_id = random.randint(100000000, 999999999)
-        username = email.split('@')[0]
-        existing = await conn.fetchval("SELECT user_id FROM users WHERE username = $1", username)
-        if existing:
-            username = f"{username}_{random.randint(100, 999)}"
-        
-        await conn.execute(
-            "INSERT INTO google_users (email, user_id, name, picture) VALUES ($1, $2, $3, $4)",
-            email, user_id, name, picture
+        result = await conn.execute(
+            "DELETE FROM profile_comments WHERE id = $1 AND (author_id = $2 OR $2 IN (SELECT movie_id FROM users WHERE is_super_admin = TRUE))",
+            comment_id, user_id
         )
-        await conn.execute(
-            "INSERT INTO users (user_id, username, first_name, last_name, photo_url, last_seen, is_online) VALUES ($1, $2, $3, $4, $5, NOW(), TRUE)",
-            user_id, username, name, None, picture
-        )
-        await save_user_data(user_id, username, name, None, name, picture, None)
-        return user_id
+        return result != "DELETE 0"
 
-# ---------- Друзья ----------
+# ==================== ФУНКЦИИ БД ДЛЯ ДРУЗЕЙ ====================
+
 async def send_friend_request(user_id: int, friend_id: int):
     async with pool.acquire() as conn:
         existing = await conn.fetchval(
@@ -850,12 +703,12 @@ async def get_friends(user_id: int):
         rows = await conn.fetch("""
             SELECT f.friend_id, f.status, u.username, u.photo_url, u.is_online
             FROM friends f
-            JOIN users u ON f.friend_id = u.user_id
+            JOIN users u ON f.friend_id = u.movie_id
             WHERE f.user_id = $1 AND f.status = 'accepted'
             UNION
             SELECT f.user_id as friend_id, f.status, u.username, u.photo_url, u.is_online
             FROM friends f
-            JOIN users u ON f.user_id = u.user_id
+            JOIN users u ON f.user_id = u.movie_id
             WHERE f.friend_id = $1 AND f.status = 'accepted'
         """, user_id)
         return [dict(r) for r in rows]
@@ -865,7 +718,7 @@ async def get_friend_requests(user_id: int):
         rows = await conn.fetch("""
             SELECT f.user_id, f.status, u.username, u.photo_url
             FROM friends f
-            JOIN users u ON f.user_id = u.user_id
+            JOIN users u ON f.user_id = u.movie_id
             WHERE f.friend_id = $1 AND f.status = 'pending'
         """, user_id)
         return [dict(r) for r in rows]
@@ -875,7 +728,7 @@ async def get_sent_friend_requests(user_id: int):
         rows = await conn.fetch("""
             SELECT f.friend_id, f.status, u.username, u.photo_url
             FROM friends f
-            JOIN users u ON f.friend_id = u.user_id
+            JOIN users u ON f.friend_id = u.movie_id
             WHERE f.user_id = $1 AND f.status = 'pending'
         """, user_id)
         return [dict(r) for r in rows]
@@ -883,11 +736,10 @@ async def get_sent_friend_requests(user_id: int):
 async def search_users(query: str, current_user_id: int):
     async with pool.acquire() as conn:
         rows = await conn.fetch("""
-            SELECT DISTINCT un.user_id, un.username, un.display_name, un.photo_url, u.is_online
-            FROM user_names un
-            JOIN users u ON un.user_id = u.user_id
-            WHERE (un.username ILIKE $1 OR un.display_name ILIKE $1)
-            AND un.user_id != $2
+            SELECT DISTINCT u.movie_id, u.username, u.display_name, u.photo_url, u.is_online
+            FROM users u
+            WHERE (u.username ILIKE $1 OR u.display_name ILIKE $1)
+            AND u.movie_id != $2
             LIMIT 20
         """, f"%{query}%", current_user_id)
         result = []
@@ -896,9 +748,9 @@ async def search_users(query: str, current_user_id: int):
                 SELECT id FROM friends 
                 WHERE (user_id = $1 AND friend_id = $2 OR user_id = $2 AND friend_id = $1) 
                 AND status = 'accepted'
-            """, current_user_id, row["user_id"])
+            """, current_user_id, row["movie_id"])
             result.append({
-                "user_id": row["user_id"],
+                "user_id": row["movie_id"],
                 "username": row["username"],
                 "display_name": row["display_name"] or row["username"],
                 "photo_url": row["photo_url"],
@@ -907,50 +759,19 @@ async def search_users(query: str, current_user_id: int):
             })
         return result
 
-# ---------- Уведомления ----------
-async def get_notifications(user_id: int, unread_only: bool = False):
-    async with pool.acquire() as conn:
-        query = "SELECT * FROM notifications WHERE user_id = $1"
-        params = [user_id]
-        if unread_only:
-            query += " AND is_read = FALSE"
-        query += " ORDER BY created_at DESC LIMIT 50"
-        rows = await conn.fetch(query, *params)
-        return [dict(r) for r in rows]
+# ==================== ФУНКЦИИ БД ДЛЯ НОВОСТЕЙ ====================
 
-async def mark_notification_read(notification_id: int):
-    async with pool.acquire() as conn:
-        await conn.execute(
-            "UPDATE notifications SET is_read = TRUE WHERE id = $1",
-            notification_id
-        )
-
-async def mark_all_notifications_read(user_id: int):
-    async with pool.acquire() as conn:
-        await conn.execute(
-            "UPDATE notifications SET is_read = TRUE WHERE user_id = $1",
-            user_id
-        )
-
-async def get_unread_count(user_id: int):
-    async with pool.acquire() as conn:
-        return await conn.fetchval(
-            "SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = FALSE",
-            user_id
-        ) or 0
-
-# ---------- Новости ----------
 async def create_news(title: str, content: str, author_id: int):
     async with pool.acquire() as conn:
         await conn.execute(
             "INSERT INTO news (title, content, author_id) VALUES ($1, $2, $3)",
             title, content, author_id
         )
-        users = await conn.fetch("SELECT user_id FROM users")
+        users = await conn.fetch("SELECT movie_id FROM users")
         for user in users:
             await conn.execute(
                 "INSERT INTO notifications (user_id, type, content, link) VALUES ($1, $2, $3, $4)",
-                user["user_id"], 'news', f'📰 {title}', '/news'
+                user["movie_id"], 'news', f'📰 {title}', '/news'
             )
         return True
 
@@ -959,7 +780,7 @@ async def get_news(limit: int = 20):
         rows = await conn.fetch("""
             SELECT n.*, u.username, u.photo_url
             FROM news n
-            JOIN users u ON n.author_id = u.user_id
+            JOIN users u ON n.author_id = u.movie_id
             ORDER BY n.created_at DESC
             LIMIT $1
         """, limit)
@@ -967,15 +788,15 @@ async def get_news(limit: int = 20):
 
 async def delete_news(news_id: int, user_id: int):
     async with pool.acquire() as conn:
-        # Проверяем, является ли пользователь автором или суперадмином
         is_author = await conn.fetchval("SELECT 1 FROM news WHERE id = $1 AND author_id = $2", news_id, user_id)
-        is_super = await is_super_admin(user_id)
+        is_super = await is_super_admin_user(user_id)
         if is_author or is_super:
             await conn.execute("DELETE FROM news WHERE id = $1", news_id)
             return True
         return False
 
-# ---------- Сообщения ----------
+# ==================== ФУНКЦИИ БД ДЛЯ СООБЩЕНИЙ ====================
+
 async def send_message(sender_id: int, receiver_id: int, text: str):
     async with pool.acquire() as conn:
         await conn.execute(
@@ -1018,20 +839,58 @@ async def get_chat_users(user_id: int):
         """, user_id)
         result = []
         for row in rows:
-            user_data = await get_user_name(row["other_user_id"])
-            user_data["user_id"] = row["other_user_id"]
-            user_data["is_online"] = await is_user_online(row["other_user_id"])
-            last_msg = await conn.fetchval("""
-                SELECT text FROM messages 
-                WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)
-                ORDER BY created_at DESC LIMIT 1
-            """, user_id, row["other_user_id"])
-            user_data["last_message"] = last_msg
-            user_data["last_time"] = row["last_time"]
-            result.append(user_data)
+            user_data = await get_user_profile_data(row["other_user_id"])
+            if user_data:
+                result.append({
+                    "user_id": row["other_user_id"],
+                    "display_name": user_data.get("display_name") or f"User {row['other_user_id']}",
+                    "username": user_data.get("username"),
+                    "photo_url": user_data.get("photo_url"),
+                    "is_online": user_data.get("is_online", False),
+                    "last_message": await conn.fetchval("""
+                        SELECT text FROM messages 
+                        WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)
+                        ORDER BY created_at DESC LIMIT 1
+                    """, user_id, row["other_user_id"]),
+                    "last_time": row["last_time"]
+                })
         return result
 
-# ---------- Жалобы ----------
+# ==================== ФУНКЦИИ БД ДЛЯ УВЕДОМЛЕНИЙ ====================
+
+async def get_notifications(user_id: int, unread_only: bool = False):
+    async with pool.acquire() as conn:
+        query = "SELECT * FROM notifications WHERE user_id = $1"
+        params = [user_id]
+        if unread_only:
+            query += " AND is_read = FALSE"
+        query += " ORDER BY created_at DESC LIMIT 50"
+        rows = await conn.fetch(query, *params)
+        return [dict(r) for r in rows]
+
+async def mark_notification_read(notification_id: int):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE notifications SET is_read = TRUE WHERE id = $1",
+            notification_id
+        )
+
+async def mark_all_notifications_read(user_id: int):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE notifications SET is_read = TRUE WHERE user_id = $1",
+            user_id
+        )
+
+async def get_unread_count(user_id: int):
+    async with pool.acquire() as conn:
+        return await conn.fetchval(
+            "SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = FALSE",
+            user_id
+        ) or 0
+
+# ==================== ФУНКЦИИ БД ДЛЯ ЖАЛОБ ====================
+
 async def create_report(reporter_id: int, reported_id: int, reason: str):
     async with pool.acquire() as conn:
         await conn.execute(
@@ -1044,6 +903,34 @@ async def create_report(reporter_id: int, reported_id: int, reason: str):
                 admin_id, 'report', f'🚨 Новая жалоба на пользователя', f'/profile/{reported_id}'
             )
         return True
+
+# ==================== БОТ ====================
+bot = Bot(token=BOT_TOKEN)
+storage = MemoryStorage()
+dp = Dispatcher(storage=storage)
+
+# ---------- FSM ----------
+class ReviewState(StatesGroup):
+    waiting_review = State()
+    waiting_rating = State()
+
+class AddMovie(StatesGroup):
+    code = State()
+    title = State()
+    year = State()
+    poster = State()
+    description = State()
+    rating = State()
+    banner = State()
+
+class EditMovie(StatesGroup):
+    waiting_value = State()
+
+class BanUser(StatesGroup):
+    waiting_id = State()
+
+class AddAdmin(StatesGroup):
+    waiting_id = State()
 
 # ---------- Клавиатуры ----------
 def subscribe_kb():
@@ -1061,7 +948,7 @@ def admin_main_kb(user_id: int):
         [InlineKeyboardButton(text="➕ Добавить фильм", callback_data="admin_add")],
         [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats")],
     ]
-    if is_super_admin(user_id):
+    if is_super_admin_user(user_id):
         buttons.append([InlineKeyboardButton(text="👥 Управление админами", callback_data="admin_admins")])
         buttons.append([InlineKeyboardButton(text="🚫 Баны", callback_data="admin_bans")])
     buttons.append([InlineKeyboardButton(text="❌ Закрыть", callback_data="admin_close")])
@@ -1086,11 +973,10 @@ def review_only_back_kb(code: str):
         [InlineKeyboardButton(text="◀️ Назад", callback_data=f"movie_back:{code}")]
     ])
 
-# ==================== ХЭНДЛЕРЫ БОТА ====================
+# ---------- ХЭНДЛЕРЫ БОТА ----------
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
-    await update_user_online(message.from_user.id)
     
     # Проверяем, есть ли токен в команде
     args = message.text.split()
@@ -1103,90 +989,40 @@ async def cmd_start(message: Message, state: FSMContext):
             auth_sessions[token]["status"] = "authenticated"
             auth_sessions[token]["user_id"] = message.from_user.id
             
-            # Добавляем пользователя в БД если его нет
-            if not await is_user_exists(message.from_user.id):
-                user_data = await get_telegram_user(message.from_user.id)
-                if user_data:
-                    try:
-                        await save_user_data(
-                            message.from_user.id,
-                            user_data.get("username"),
-                            user_data.get("first_name"),
-                            user_data.get("last_name"),
-                            None,
-                            user_data.get("photo_url"),
-                            None
-                        )
-                    except ValueError:
-                        await save_user_data(
-                            message.from_user.id,
-                            str(message.from_user.id),
-                            user_data.get("first_name"),
-                            user_data.get("last_name"),
-                            None,
-                            user_data.get("photo_url"),
-                            None
-                        )
-            
-            # Проверяем, является ли пользователь админом
-            if await is_admin(message.from_user.id):
-                await message.answer(
-                    "✅ <b>Авторизация успешна!</b>\n\n"
-                    "Вы вошли как администратор.\n"
-                    "Вы можете закрыть это окно и вернуться на сайт.",
-                    parse_mode="HTML",
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text="🌐 Перейти на сайт", url="https://ваш-сайт.com/dashboard")]
-                    ])
-                )
-            else:
-                await message.answer(
-                    "✅ <b>Авторизация успешна!</b>\n\n"
-                    "Вы можете закрыть это окно и вернуться на сайт.",
-                    parse_mode="HTML",
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text="🌐 Перейти на сайт", url="https://ваш-сайт.com/dashboard")]
-                    ])
-                )
+            await message.answer(
+                "✅ <b>Авторизация успешна!</b>\n\n"
+                "Вы можете закрыть это окно и вернуться на сайт.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🌐 Перейти на сайт", url=f"{SITE_URL}/dashboard")]
+                ])
+            )
             return
     
     # Обычный /start без токена
-    if await is_banned(message.from_user.id):
-        return await message.answer("🚫 Вы заблокированы в боте.")
-    
-    is_user_admin = await is_admin(message.from_user.id)
-    
-    if await check_sub(message.from_user.id):
-        text = "Привет! 👋\nВведи код фильма:"
-        if is_user_admin:
-            await message.answer(text, reply_markup=admin_reply_kb())
-        else:
-            await message.answer(text, reply_markup=ReplyKeyboardRemove())
-    else:
-        await message.answer("Подпишись на канал, чтобы пользоваться ботом:", reply_markup=subscribe_kb())
+    text = (
+        "🎬 <b>Movie Admin Bot</b>\n\n"
+        "Этот бот используется для поиска фильмов.\n"
+        "Введи код фильма, чтобы получить информацию.\n\n"
+        "🔐 Для входа в админ-панель используйте веб-сайт."
+    )
+    await message.answer(text, parse_mode="HTML")
 
 @dp.callback_query(F.data == "check_sub")
 async def cb_check_sub(callback: CallbackQuery):
-    await update_user_online(callback.from_user.id)
-    if await check_sub(callback.from_user.id):
-        is_user_admin = await is_admin(callback.from_user.id)
-        text = "✅ Подписка подтверждена!\nВведи код фильма:"
-        if is_user_admin:
-            await callback.message.answer(text, reply_markup=admin_reply_kb())
-        else:
-            await callback.message.answer(text)
-        await callback.message.delete()
-    else:
-        await callback.answer("Ты ещё не подписан!", show_alert=True)
+    await callback.answer("Подписка проверена!", show_alert=True)
 
 @dp.message(F.text == "🔧 Админ-панель")
 @dp.message(Command("admin"))
 async def cmd_admin(message: Message, state: FSMContext):
     await state.clear()
-    await update_user_online(message.from_user.id)
-    if not await is_admin(message.from_user.id):
+    # Для упрощения, используем ID из Telegram
+    user_id = message.from_user.id
+    # Проверяем, есть ли пользователь в БД
+    user = await get_user_by_movie_id(user_id)
+    if not user or not user.get("is_admin"):
         return await message.answer("⛔ Нет доступа")
-    await message.answer("🔧 <b>Админ-панель</b>", parse_mode="HTML", reply_markup=admin_main_kb(message.from_user.id))
+    await message.answer("🔧 <b>Админ-панель</b>", parse_mode="HTML", reply_markup=admin_main_kb(user_id))
 
 @dp.callback_query(F.data == "admin_close")
 async def cb_close(callback: CallbackQuery):
@@ -1194,11 +1030,14 @@ async def cb_close(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "admin_back")
 async def cb_back(callback: CallbackQuery):
-    await callback.message.edit_text("🔧 <b>Админ-панель</b>", parse_mode="HTML", reply_markup=admin_main_kb(callback.from_user.id))
+    user_id = callback.from_user.id
+    await callback.message.edit_text("🔧 <b>Админ-панель</b>", parse_mode="HTML", reply_markup=admin_main_kb(user_id))
 
 @dp.callback_query(F.data == "admin_stats")
 async def cb_stats(callback: CallbackQuery):
-    if not await is_admin(callback.from_user.id):
+    user_id = callback.from_user.id
+    user = await get_user_by_movie_id(user_id)
+    if not user or not user.get("is_admin"):
         return
     movies_count = await get_movies_count()
     requests_count = await get_total_requests()
@@ -1209,7 +1048,9 @@ async def cb_stats(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "admin_list")
 async def cb_list(callback: CallbackQuery):
-    if not await is_admin(callback.from_user.id):
+    user_id = callback.from_user.id
+    user = await get_user_by_movie_id(user_id)
+    if not user or not user.get("is_admin"):
         return
     movies = await get_all_movies()
     if not movies:
@@ -1263,9 +1104,9 @@ async def cb_reviews(callback: CallbackQuery):
         return
     
     for review in reviews[:3]:
-        user_name_data = await get_user_name(review["user_id"])
-        display_name = user_name_data["display_name"]
-        is_super = user_name_data.get("is_super", False)
+        user_data = await get_user_profile_data(review["user_id"])
+        display_name = user_data.get("display_name") if user_data else f"User {review['user_id']}"
+        is_super = user_data.get("is_super_admin", False) if user_data else False
         name_html = f'<span style="color:#f5a623;font-weight:bold;">{display_name}</span>' if is_super else display_name
         review_text = (
             f"⭐ <b>{review['rating']}/10</b>\n"
@@ -1360,7 +1201,9 @@ async def cb_movie_back(callback: CallbackQuery, state: FSMContext):
 
 @dp.callback_query(F.data == "admin_add")
 async def cb_add(callback: CallbackQuery, state: FSMContext):
-    if not await is_admin(callback.from_user.id):
+    user_id = callback.from_user.id
+    user = await get_user_by_movie_id(user_id)
+    if not user or not user.get("is_admin"):
         return
     await state.clear()
     await callback.message.edit_text("Введи <b>код</b> фильма:", parse_mode="HTML")
@@ -1436,7 +1279,9 @@ async def add_rating(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data.startswith("edit_"))
 async def cb_edit_start(callback: CallbackQuery, state: FSMContext):
-    if not await is_admin(callback.from_user.id):
+    user_id = callback.from_user.id
+    user = await get_user_by_movie_id(user_id)
+    if not user or not user.get("is_admin"):
         return
     parts = callback.data.split(":", 1)
     field = parts[0].replace("edit_", "")
@@ -1475,7 +1320,8 @@ async def process_edit(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data.startswith("delete_movie:"))
 async def cb_delete_movie(callback: CallbackQuery):
-    if not await is_super_admin(callback.from_user.id):
+    user_id = callback.from_user.id
+    if not await is_super_admin_user(user_id):
         return await callback.answer("Недостаточно прав", show_alert=True)
     code = callback.data.split(":", 1)[1]
     await delete_movie(code)
@@ -1484,18 +1330,20 @@ async def cb_delete_movie(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "admin_admins")
 async def cb_admins(callback: CallbackQuery):
-    if not await is_super_admin(callback.from_user.id):
+    user_id = callback.from_user.id
+    if not await is_super_admin_user(user_id):
         return await callback.answer("Недостаточно прав", show_alert=True)
-    admins = await get_admins_with_stats()
-    text = "👥 <b>Обычные админы:</b>\n\n"
-    if not admins:
-        text += "Пока нет."
-    else:
-        for a in admins:
-            name_data = await get_user_name(a["user_id"])
-            display_name = name_data["display_name"]
-            text += f"👤 {display_name} (<code>{a['user_id']}</code>)"
-            text += f" — 🎬 {a['movies_count']} | ⚠️ {a['warns']}/3\n"
+    # Получаем всех админов
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM users WHERE is_admin = TRUE OR is_super_admin = TRUE")
+        text = "👥 <b>Администраторы:</b>\n\n"
+        if not rows:
+            text += "Пока нет."
+        else:
+            for row in rows:
+                display_name = row["display_name"] or f"User {row['movie_id']}"
+                role = "⭐ Создатель" if row["is_super_admin"] else "👑 Админ"
+                text += f"👤 {display_name} (<code>{row['movie_id']}</code>) — {role}\n"
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="➕ Назначить админа", callback_data="add_admin")],
         [InlineKeyboardButton(text="➖ Снять админа", callback_data="remove_admin")],
@@ -1505,15 +1353,21 @@ async def cb_admins(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "add_admin")
 async def cb_add_admin(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if not await is_super_admin_user(user_id):
+        return
     await state.clear()
-    await callback.message.edit_text("Введи Telegram ID нового админа:")
+    await callback.message.edit_text("Введи Movie ID нового админа:")
     await state.set_state(AddAdmin.waiting_id)
     await state.update_data(action="add")
 
 @dp.callback_query(F.data == "remove_admin")
 async def cb_remove_admin(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if not await is_super_admin_user(user_id):
+        return
     await state.clear()
-    await callback.message.edit_text("Введи Telegram ID админа для снятия:")
+    await callback.message.edit_text("Введи Movie ID админа для снятия:")
     await state.set_state(AddAdmin.waiting_id)
     await state.update_data(action="remove")
 
@@ -1524,16 +1378,19 @@ async def process_admin(message: Message, state: FSMContext):
     uid = int(message.text.strip())
     data = await state.get_data()
     await state.clear()
-    if data.get("action") == "add":
-        await add_admin(uid)
-        await message.answer(f"✅ <code>{uid}</code> теперь админ", parse_mode="HTML")
-    else:
-        await remove_admin(uid)
-        await message.answer(f"✅ <code>{uid}</code> снят с админки", parse_mode="HTML")
+    
+    async with pool.acquire() as conn:
+        if data.get("action") == "add":
+            await conn.execute("UPDATE users SET is_admin = TRUE WHERE movie_id = $1", uid)
+            await message.answer(f"✅ <code>{uid}</code> теперь админ", parse_mode="HTML")
+        else:
+            await conn.execute("UPDATE users SET is_admin = FALSE, is_super_admin = FALSE WHERE movie_id = $1", uid)
+            await message.answer(f"✅ <code>{uid}</code> снят с админки", parse_mode="HTML")
 
 @dp.callback_query(F.data == "admin_bans")
 async def cb_bans(callback: CallbackQuery):
-    if not await is_super_admin(callback.from_user.id):
+    user_id = callback.from_user.id
+    if not await is_super_admin_user(user_id):
         return await callback.answer("Недостаточно прав", show_alert=True)
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🚫 Забанить", callback_data="ban_user")],
@@ -1545,37 +1402,44 @@ async def cb_bans(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "list_bans")
 async def cb_list_bans(callback: CallbackQuery):
-    if not await is_super_admin(callback.from_user.id):
+    user_id = callback.from_user.id
+    if not await is_super_admin_user(user_id):
         return
-    banned = await get_banned_users()
-    if not banned:
-        text = "Список банов пуст."
-    else:
-        text = "🚫 <b>Забаненные:</b>\n\n"
-        for b in banned:
-            name_data = await get_user_name(b["user_id"])
-            display_name = name_data["display_name"]
-            text += f"👤 {display_name} (<code>{b['user_id']}</code>)"
-            if b["reason"]:
-                text += f" — {b['reason']}"
-            if b["expires_at"]:
-                text += f" ⏳ до {b['expires_at']}"
-            text += "\n"
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM users WHERE is_banned = TRUE")
+        if not rows:
+            text = "Список банов пуст."
+        else:
+            text = "🚫 <b>Забаненные:</b>\n\n"
+            for row in rows:
+                display_name = row["display_name"] or f"User {row['movie_id']}"
+                text += f"👤 {display_name} (<code>{row['movie_id']}</code>)"
+                if row["ban_reason"]:
+                    text += f" — {row['ban_reason']}"
+                if row["ban_expires_at"]:
+                    text += f" ⏳ до {row['ban_expires_at']}"
+                text += "\n"
     await callback.message.edit_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_bans")]
     ]))
 
 @dp.callback_query(F.data == "ban_user")
 async def cb_ban(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if not await is_super_admin_user(user_id):
+        return
     await state.clear()
-    await callback.message.edit_text("Введи Telegram ID для бана:")
+    await callback.message.edit_text("Введи Movie ID для бана:")
     await state.set_state(BanUser.waiting_id)
     await state.update_data(action="ban")
 
 @dp.callback_query(F.data == "unban_user")
 async def cb_unban(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if not await is_super_admin_user(user_id):
+        return
     await state.clear()
-    await callback.message.edit_text("Введи Telegram ID для разбана:")
+    await callback.message.edit_text("Введи Movie ID для разбана:")
     await state.set_state(BanUser.waiting_id)
     await state.update_data(action="unban")
 
@@ -1586,20 +1450,30 @@ async def process_ban(message: Message, state: FSMContext):
     uid = int(message.text.strip())
     data = await state.get_data()
     await state.clear()
-    if data.get("action") == "ban":
-        await ban_user(uid)
-        await message.answer(f"🚫 <code>{uid}</code> забанен", parse_mode="HTML")
-    else:
-        await unban_user(uid)
-        await message.answer(f"✅ <code>{uid}</code> разбанен", parse_mode="HTML")
+    
+    async with pool.acquire() as conn:
+        if data.get("action") == "ban":
+            await conn.execute("UPDATE users SET is_banned = TRUE, ban_reason = 'Забанен администратором' WHERE movie_id = $1", uid)
+            await message.answer(f"🚫 <code>{uid}</code> забанен", parse_mode="HTML")
+        else:
+            await conn.execute("UPDATE users SET is_banned = FALSE, ban_reason = NULL, ban_expires_at = NULL WHERE movie_id = $1", uid)
+            await message.answer(f"✅ <code>{uid}</code> разбанен", parse_mode="HTML")
 
 @dp.message(StateFilter(None), F.text)
 async def handle_code(message: Message):
-    await update_user_online(message.from_user.id)
-    if await is_banned(message.from_user.id):
+    # Проверяем, есть ли пользователь в БД
+    user = await get_user_by_movie_id(message.from_user.id)
+    if not user:
+        await message.answer(
+            "🔐 Для использования бота необходимо зарегистрироваться на сайте.\n"
+            f"Перейдите по ссылке: {SITE_URL}/register",
+            parse_mode="HTML"
+        )
+        return
+    
+    if user.get("is_banned"):
         return await message.answer("🚫 Вы заблокированы в боте.")
-    if not await check_sub(message.from_user.id):
-        return await message.answer("Сначала подпишись на канал!", reply_markup=subscribe_kb())
+    
     code = message.text.strip()
     movie = await get_movie(code)
     if not movie:
@@ -1635,100 +1509,182 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # ---------- Вспомогательные функции ----------
-def get_user_id_from_cookie(request: Request) -> Optional[int]:
-    user_id_str = request.cookies.get("user_id")
-    if user_id_str and user_id_str.isdigit():
-        return int(user_id_str)
+def get_movie_id_from_cookie(request: Request) -> Optional[int]:
+    movie_id_str = request.cookies.get("movie_id")
+    if movie_id_str and movie_id_str.isdigit():
+        return int(movie_id_str)
     return None
 
 async def check_auth(request: Request):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id:
+    movie_id = get_movie_id_from_cookie(request)
+    if not movie_id:
         raise HTTPException(status_code=401, detail="Не авторизован")
-    await update_user_online(user_id)
-    return user_id
+    user = await get_user_profile_data(movie_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="Пользователь не найден")
+    if user.get("is_banned"):
+        raise HTTPException(status_code=403, detail="Пользователь заблокирован")
+    await update_user_online_by_id(movie_id)
+    return movie_id
 
 async def check_admin(request: Request):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id or not await is_admin(user_id):
-        raise HTTPException(status_code=401, detail="Не авторизован")
-    await update_user_online(user_id)
-    return user_id
+    movie_id = await check_auth(request)
+    if not await is_admin_user(movie_id):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    return movie_id
 
 async def check_super_admin(request: Request):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id or not await is_super_admin(user_id):
+    movie_id = await check_auth(request)
+    if not await is_super_admin_user(movie_id):
         raise HTTPException(status_code=403, detail="Только суперадмин")
-    await update_user_online(user_id)
-    return user_id
+    return movie_id
 
-def get_user_or_none(request: Request) -> Optional[int]:
-    return get_user_id_from_cookie(request)
+# ==================== АВТОРИЗАЦИЯ ====================
 
-# ==================== АВТОРИЗАЦИЯ ЧЕРЕЗ БОТА ====================
+@app.get("/", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "GOOGLE_CLIENT_ID": GOOGLE_CLIENT_ID
+    })
 
-@app.post("/api/auth/init")
-async def auth_init(request: Request, data: dict):
-    """Инициализация авторизации через бота"""
-    token = data.get("token")
-    if not token:
-        raise HTTPException(status_code=400, detail="Token required")
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    return templates.TemplateResponse("register.html", {
+        "request": request
+    })
+
+@app.get("/verify-email", response_class=HTMLResponse)
+async def verify_email_page(request: Request):
+    return templates.TemplateResponse("verify_email.html", {
+        "request": request
+    })
+
+@app.get("/setup-profile", response_class=HTMLResponse)
+async def setup_profile_page(request: Request):
+    return templates.TemplateResponse("setup_profile.html", {
+        "request": request
+    })
+
+# ---------- API регистрации ----------
+@app.post("/api/auth/send-code")
+async def send_verification_code(request: Request, data: dict):
+    email = data.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email обязателен")
     
-    # Сохраняем токен со статусом 'waiting'
-    auth_sessions[token] = {
-        "status": "waiting",
-        "created_at": datetime.now(),
-        "user_id": None
+    # Проверяем, не занят ли email
+    existing = await get_user_by_email(email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Этот email уже зарегистрирован")
+    
+    # Генерируем код
+    code = str(random.randint(100000, 999999))
+    expires_at = datetime.now() + timedelta(minutes=10)
+    
+    # Сохраняем код
+    email_verification_codes[email] = {
+        "code": code,
+        "expires_at": expires_at
     }
     
-    # Автоматически очищаем старые сессии (старше 10 минут)
-    expired_tokens = []
-    for t, session in auth_sessions.items():
-        if datetime.now() - session["created_at"] > timedelta(minutes=10):
-            expired_tokens.append(t)
-    for t in expired_tokens:
-        del auth_sessions[t]
-    
-    logger.info(f"Auth session initialized: {token}")
-    return {"success": True}
-
-@app.post("/api/auth/status")
-async def auth_status(request: Request, data: dict):
-    """Проверка статуса авторизации"""
-    token = data.get("token")
-    if not token:
-        return {"status": "error", "error": "Token required"}
-    
-    session = auth_sessions.get(token)
-    if not session:
-        return {"status": "error", "error": "Session not found"}
-    
-    # Проверяем срок действия (5 минут)
-    if datetime.now() - session["created_at"] > timedelta(minutes=5):
-        auth_sessions[token]["status"] = "expired"
-        return {"status": "expired"}
-    
-    if session["status"] == "authenticated":
-        return {
-            "authenticated": True,
-            "user_id": session.get("user_id")
-        }
-    elif session["status"] == "expired":
-        return {"status": "expired"}
+    # Отправляем email
+    if send_verification_email(email, code):
+        return {"success": True, "message": "Код отправлен на email"}
     else:
-        return {"status": "waiting"}
+        raise HTTPException(status_code=500, detail="Ошибка отправки email")
 
-@app.post("/api/auth/complete")
-async def auth_complete(request: Request, data: dict):
-    """Завершение авторизации (установка cookie)"""
-    user_id = data.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="User ID required")
+@app.post("/api/auth/verify-code")
+async def verify_email_code(request: Request, data: dict):
+    email = data.get("email")
+    code = data.get("code")
+    password = data.get("password")
     
-    response = JSONResponse({"success": True})
+    if not email or not code or not password:
+        raise HTTPException(status_code=400, detail="Все поля обязательны")
+    
+    # Проверяем код
+    stored = email_verification_codes.get(email)
+    if not stored:
+        raise HTTPException(status_code=400, detail="Код не запрошен или истек")
+    
+    if datetime.now() > stored["expires_at"]:
+        del email_verification_codes[email]
+        raise HTTPException(status_code=400, detail="Код истек. Запросите новый")
+    
+    if stored["code"] != code:
+        raise HTTPException(status_code=400, detail="Неверный код")
+    
+    # Удаляем использованный код
+    del email_verification_codes[email]
+    
+    # Хешируем пароль
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    
+    # Создаем пользователя (временно без имени)
+    movie_id = await create_user(
+        email=email,
+        password_hash=password_hash,
+        username=None,
+        display_name=None
+    )
+    
+    # Сохраняем movie_id в сессии для завершения регистрации
+    auth_sessions[f"setup_{email}"] = {
+        "movie_id": movie_id,
+        "email": email,
+        "created_at": datetime.now()
+    }
+    
+    return {"success": True, "movie_id": movie_id}
+
+@app.post("/api/auth/setup-profile")
+async def setup_profile(request: Request, data: dict):
+    movie_id = data.get("movie_id")
+    username = data.get("username")
+    display_name = data.get("display_name")
+    first_name = data.get("first_name")
+    last_name = data.get("last_name")
+    photo_url = data.get("photo_url")
+    banner_url = data.get("banner_url")
+    
+    if not movie_id:
+        raise HTTPException(status_code=400, detail="Movie ID обязателен")
+    
+    # Проверяем, существует ли пользователь
+    user = await get_user_profile_data(movie_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    
+    # Проверяем уникальность username
+    if username:
+        existing = await get_user_by_username(username)
+        if existing and existing["movie_id"] != movie_id:
+            raise HTTPException(status_code=400, detail="Этот юзернейм уже занят")
+    
+    # Обновляем профиль
+    update_data = {}
+    if username:
+        update_data["username"] = username
+    if display_name:
+        update_data["display_name"] = display_name
+    if first_name:
+        update_data["first_name"] = first_name
+    if last_name:
+        update_data["last_name"] = last_name
+    if photo_url:
+        update_data["photo_url"] = photo_url
+    if banner_url:
+        update_data["banner_url"] = banner_url
+    
+    if update_data:
+        await update_user_profile(movie_id, update_data)
+    
+    # Устанавливаем cookie
+    response = JSONResponse({"success": True, "movie_id": movie_id})
     response.set_cookie(
-        key="user_id",
-        value=str(user_id),
+        key="movie_id",
+        value=str(movie_id),
         httponly=True,
         max_age=60*60*24*7,
         secure=False,
@@ -1736,29 +1692,101 @@ async def auth_complete(request: Request, data: dict):
     )
     return response
 
-# ---------- Роуты входа ----------
-@app.get("/", response_class=HTMLResponse)
-async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {
-        "request": request,
-        "BOT_TOKEN": BOT_TOKEN,
-        "BOT_ID": BOT_ID,
-        "BOT_USERNAME": BOT_USERNAME,
-        "GOOGLE_CLIENT_ID": GOOGLE_CLIENT_ID
-    })
+# ---------- API входа ----------
+@app.post("/api/auth/login")
+async def login(request: Request, data: dict):
+    email_or_username = data.get("email_or_username")
+    password = data.get("password")
+    
+    if not email_or_username or not password:
+        raise HTTPException(status_code=400, detail="Все поля обязательны")
+    
+    # Ищем пользователя по email или username
+    user = await get_user_by_email(email_or_username)
+    if not user:
+        user = await get_user_by_username(email_or_username)
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Пользователь не найден")
+    
+    # Проверяем пароль
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    
+    if user["password_hash"] != password_hash:
+        raise HTTPException(status_code=400, detail="Неверный пароль")
+    
+    # Проверяем бан
+    if user.get("is_banned"):
+        ban_reason = user.get("ban_reason", "Без причины")
+        ban_expires = user.get("ban_expires_at")
+        if ban_expires and ban_expires > datetime.now():
+            raise HTTPException(status_code=403, detail=f"Пользователь заблокирован до {ban_expires.strftime('%d.%m.%Y %H:%M')}. Причина: {ban_reason}")
+        elif ban_expires and ban_expires <= datetime.now():
+            async with pool.acquire() as conn:
+                await conn.execute("UPDATE users SET is_banned = FALSE, ban_reason = NULL, ban_expires_at = NULL WHERE movie_id = $1", user["movie_id"])
+        else:
+            raise HTTPException(status_code=403, detail=f"Пользователь заблокирован. Причина: {ban_reason}")
+    
+    # Обновляем онлайн
+    await update_user_online_by_id(user["movie_id"])
+    
+    # Устанавливаем cookie
+    response = JSONResponse({"success": True, "movie_id": user["movie_id"]})
+    response.set_cookie(
+        key="movie_id",
+        value=str(user["movie_id"]),
+        httponly=True,
+        max_age=60*60*24*7,
+        secure=False,
+        samesite="lax"
+    )
+    return response
 
-@app.post("/auth/request-code")
-async def request_code(request: Request, user_id: int = Form(...)):
-    # Устаревший метод, оставлен для совместимости
-    if not await is_user_exists(user_id):
-        await add_user(user_id)
-    return JSONResponse(status_code=400, content={"error": "Используйте вход через бота"})
+@app.post("/api/auth/check-username")
+async def check_username(request: Request, data: dict):
+    username = data.get("username")
+    if not username:
+        return {"available": False, "message": "Username обязателен"}
+    
+    existing = await get_user_by_username(username)
+    return {"available": not bool(existing)}
 
-@app.post("/auth/verify-code")
-async def verify_code(request: Request, user_id: int = Form(...), code: str = Form(...)):
-    # Устаревший метод, оставлен для совместимости
-    return JSONResponse(status_code=400, content={"error": "Используйте вход через бота"})
+@app.get("/api/auth/me")
+async def get_current_user(request: Request):
+    movie_id = get_movie_id_from_cookie(request)
+    if not movie_id:
+        return {"authenticated": False}
+    
+    user = await get_user_profile_data(movie_id)
+    if not user:
+        return {"authenticated": False}
+    
+    if user.get("is_banned"):
+        return {"authenticated": False, "banned": True}
+    
+    await update_user_online_by_id(movie_id)
+    
+    return {
+        "authenticated": True,
+        "movie_id": user["movie_id"],
+        "email": user["email"],
+        "username": user["username"],
+        "display_name": user["display_name"],
+        "first_name": user["first_name"],
+        "last_name": user["last_name"],
+        "photo_url": user["photo_url"],
+        "banner_url": user["banner_url"],
+        "is_admin": user.get("is_admin", False),
+        "is_super_admin": user.get("is_super_admin", False)
+    }
 
+@app.post("/api/auth/logout")
+async def logout():
+    response = JSONResponse({"success": True})
+    response.delete_cookie("movie_id")
+    return response
+
+# ---------- API Google Auth ----------
 @app.post("/auth/google")
 async def google_auth(request: Request, data: dict):
     try:
@@ -1769,89 +1797,83 @@ async def google_auth(request: Request, data: dict):
         if not email:
             raise HTTPException(status_code=400, detail="Email не указан")
         
-        user_id = await get_or_create_user_from_google(email, name, picture)
+        # Ищем пользователя
+        user = await get_user_by_email(email)
         
-        if user_id in SUPER_ADMIN_IDS:
-            await add_admin(user_id)
+        if not user:
+            # Создаем нового пользователя
+            random_password = secrets.token_urlsafe(16)
+            password_hash = hashlib.sha256(random_password.encode()).hexdigest()
+            
+            username = email.split('@')[0]
+            # Проверяем уникальность username
+            existing = await get_user_by_username(username)
+            if existing:
+                username = f"{username}_{random.randint(100, 999)}"
+            
+            movie_id = await create_user(
+                email=email,
+                password_hash=password_hash,
+                username=username,
+                display_name=name or username
+            )
+            
+            user = await get_user_profile_data(movie_id)
         
-        await update_user_online(user_id)
-        response = JSONResponse({"success": True, "user_id": user_id})
-        response.set_cookie(key="user_id", value=str(user_id), httponly=True, max_age=60*60*24*7)
+        if user.get("is_banned"):
+            raise HTTPException(status_code=403, detail="Пользователь заблокирован")
+        
+        await update_user_online_by_id(user["movie_id"])
+        
+        response = JSONResponse({"success": True, "movie_id": user["movie_id"]})
+        response.set_cookie(
+            key="movie_id",
+            value=str(user["movie_id"]),
+            httponly=True,
+            max_age=60*60*24*7,
+            secure=False,
+            samesite="lax"
+        )
         return response
     except Exception as e:
         logger.error(f"Google auth error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/check-auth")
-async def check_auth_api(request: Request):
-    user_id = get_user_id_from_cookie(request)
-    if user_id:
-        await update_user_online(user_id)
-        is_admin_user = await is_admin(user_id)
-        is_super_user = await is_super_admin(user_id)
-        unread_count = await get_unread_count(user_id)
-        return {"authenticated": True, "user_id": user_id, "is_admin": is_admin_user, "is_super": is_super_user, "unread_count": unread_count}
-    return {"authenticated": False}
-
-@app.get("/logout")
-async def logout():
-    response = RedirectResponse(url="/", status_code=302)
-    response.delete_cookie("user_id")
-    return response
+# ==================== API ДАШБОРДА ====================
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id:
+    movie_id = get_movie_id_from_cookie(request)
+    if not movie_id:
         return RedirectResponse(url="/", status_code=302)
     
-    await update_user_online(user_id)
+    user = await get_user_profile_data(movie_id)
+    if not user:
+        return RedirectResponse(url="/", status_code=302)
     
-    if not await is_user_exists(user_id):
-        await add_user(user_id)
-        user_data = await get_telegram_user(user_id)
-        if user_data:
-            try:
-                await save_user_data(
-                    user_id,
-                    user_data.get("username"),
-                    user_data.get("first_name"),
-                    user_data.get("last_name"),
-                    None,
-                    user_data.get("photo_url"),
-                    None
-                )
-            except ValueError:
-                await save_user_data(
-                    user_id,
-                    str(user_id),
-                    user_data.get("first_name"),
-                    user_data.get("last_name"),
-                    None,
-                    user_data.get("photo_url"),
-                    None
-                )
+    if user.get("is_banned"):
+        return RedirectResponse(url="/", status_code=302)
     
-    is_admin_user = await is_admin(user_id)
-    is_super_user = await is_super_admin(user_id)
-    unread_count = await get_unread_count(user_id)
+    await update_user_online_by_id(movie_id)
+    
+    is_admin_user = await is_admin_user(movie_id)
+    is_super_user = await is_super_admin_user(movie_id)
+    unread_count = await get_unread_count(movie_id)
     
     async with pool.acquire() as conn:
         movies_count = await conn.fetchval("SELECT COUNT(*) FROM movies") or 0
         requests_count = await conn.fetchval("SELECT value FROM stats WHERE key = 'total_requests'") or 0
-        admins_count = await conn.fetchval("SELECT COUNT(*) FROM admins") or 0
-        bans_count = await conn.fetchval("SELECT COUNT(*) FROM bans") or 0
+        admins_count = await conn.fetchval("SELECT COUNT(*) FROM users WHERE is_admin = TRUE OR is_super_admin = TRUE") or 0
+        bans_count = await conn.fetchval("SELECT COUNT(*) FROM users WHERE is_banned = TRUE") or 0
         users_count = await conn.fetchval("SELECT COUNT(*) FROM users") or 0
-    
-    user_name_data = await get_user_name(user_id)
     
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
-        "user_id": user_id,
-        "display_name": user_name_data["display_name"],
-        "username": user_name_data["username"],
-        "photo_url": user_name_data["photo_url"],
-        "banner_url": user_name_data["banner_url"],
+        "user_id": movie_id,
+        "display_name": user["display_name"] or f"User {movie_id}",
+        "username": user["username"],
+        "photo_url": user["photo_url"],
+        "banner_url": user["banner_url"],
         "is_admin": is_admin_user,
         "is_super": is_super_user,
         "unread_count": unread_count,
@@ -1864,9 +1886,8 @@ async def dashboard(request: Request):
         }
     })
 
-# ==================== API ====================
+# ==================== API ФИЛЬМОВ ====================
 
-# ---------- Модели ----------
 class MovieCreate(BaseModel):
     code: str
     title: str
@@ -1900,61 +1921,12 @@ class MovieUpdate(BaseModel):
     cast_list: Optional[str] = None
     country: Optional[str] = None
 
-class AdminAdd(BaseModel):
-    user_id: int
-
-class BanAdd(BaseModel):
-    user_id: int
-    reason: str = ""
-    duration_hours: int = 0
-
-class PunishData(BaseModel):
-    user_id: int
-    type: str
-    reason: str = ""
-    duration_hours: int = 0
-
-class ReviewData(BaseModel):
-    rating: int
-    text: str
-
-class CommentData(BaseModel):
-    text: str
-
-class ProfileUpdate(BaseModel):
-    display_name: Optional[str] = None
-    username: Optional[str] = None
-    photo_url: Optional[str] = None
-    banner_url: Optional[str] = None
-
-class SupportMessage(BaseModel):
-    subject: str
-    message: str
-
-class RoleUpdate(BaseModel):
-    user_id: int
-    role: str
-
-class FriendRequest(BaseModel):
-    user_id: int
-
-class MessageData(BaseModel):
-    text: str
-
-class ReportData(BaseModel):
-    reason: str
-
-class NewsData(BaseModel):
-    title: str
-    content: str
-
-# ---------- Фильмы ----------
 @app.get("/api/movies")
 async def api_movies(request: Request):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id:
+    movie_id = get_movie_id_from_cookie(request)
+    if not movie_id:
         raise HTTPException(status_code=401, detail="Не авторизован")
-    await update_user_online(user_id)
+    await update_user_online_by_id(movie_id)
     
     async with pool.acquire() as conn:
         rows = await conn.fetch("SELECT code, title, year, poster, rating, banner FROM movies ORDER BY code")
@@ -1975,34 +1947,33 @@ async def api_movies(request: Request):
 
 @app.get("/api/movies/{code}")
 async def api_movie(request: Request, code: str):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id:
+    movie_id = get_movie_id_from_cookie(request)
+    if not movie_id:
         raise HTTPException(status_code=401, detail="Не авторизован")
-    await update_user_online(user_id)
+    await update_user_online_by_id(movie_id)
     
-    async with pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT * FROM movies WHERE code = $1", code)
-        if row:
-            tpz, votes = await get_movie_tpz(code)
-            result = dict(row)
-            result["tpz"] = tpz
-            result["votes"] = votes
-            return result
-        raise HTTPException(status_code=404, detail="Фильм не найден")
+    row = await get_movie(code)
+    if row:
+        tpz, votes = await get_movie_tpz(code)
+        result = row
+        result["tpz"] = tpz
+        result["votes"] = votes
+        return result
+    raise HTTPException(status_code=404, detail="Фильм не найден")
 
 @app.post("/api/movies")
 async def api_add_movie(request: Request, data: MovieCreate):
-    user_id = await check_admin(request)
+    movie_id = await check_admin(request)
     async with pool.acquire() as conn:
         try:
             await conn.execute(
                 """INSERT INTO movies (code, title, year, poster, description, rating, banner, added_by, 
                    director, writers, genres, budget, box_office_us, box_office_world, cast_list, country) 
                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)""",
-                data.code, data.title, data.year, data.poster, data.description, data.rating, data.banner, user_id,
+                data.code, data.title, data.year, data.poster, data.description, data.rating, data.banner, movie_id,
                 data.director, data.writers, data.genres, data.budget, data.box_office_us, data.box_office_world, data.cast_list, data.country
             )
-            await update_user_online(user_id)
+            await update_user_online_by_id(movie_id)
             return {"success": True, "code": data.code}
         except asyncpg.UniqueViolationError:
             raise HTTPException(status_code=400, detail="Фильм с таким кодом уже существует")
@@ -2025,180 +1996,167 @@ async def api_delete_movie(request: Request, code: str):
     await delete_movie(code)
     return {"success": True}
 
-# ---------- Отзывы ----------
+# ==================== API ОТЗЫВОВ ====================
+
+class ReviewData(BaseModel):
+    rating: int
+    text: str
+
 @app.post("/api/movies/{code}/reviews")
 async def api_add_review(request: Request, code: str, data: ReviewData):
-    user_id = await check_auth(request)
-    existing = await get_user_review(code, user_id)
+    movie_id = await check_auth(request)
+    existing = await get_user_review(code, movie_id)
     if existing:
         raise HTTPException(status_code=400, detail="Вы уже оставляли отзыв на этот фильм")
-    await add_review(code, user_id, data.rating, data.text)
+    await add_review(code, movie_id, data.rating, data.text)
     return {"success": True}
 
 @app.get("/api/movies/{code}/reviews")
 async def api_get_reviews(request: Request, code: str):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id:
+    movie_id = get_movie_id_from_cookie(request)
+    if not movie_id:
         raise HTTPException(status_code=401, detail="Не авторизован")
-    await update_user_online(user_id)
+    await update_user_online_by_id(movie_id)
     return await get_reviews(code)
 
 @app.delete("/api/reviews/{review_id}")
 async def api_delete_review(request: Request, review_id: int):
-    user_id = await check_auth(request)
-    is_super = await is_super_admin(user_id)
+    movie_id = await check_auth(request)
+    is_super = await is_super_admin_user(movie_id)
     if not is_super:
         async with pool.acquire() as conn:
             owner = await conn.fetchval("SELECT user_id FROM movie_reviews WHERE id = $1", review_id)
-            if owner != user_id:
+            if owner != movie_id:
                 raise HTTPException(status_code=403, detail="Нельзя удалить чужой отзыв")
-    success = await delete_review(review_id, user_id)
+    success = await delete_review(review_id, movie_id)
     if not success:
         raise HTTPException(status_code=404, detail="Отзыв не найден")
     return {"success": True}
 
-# ---------- Комментарии ----------
-@app.delete("/api/profile/comments/{comment_id}")
-async def api_delete_profile_comment(request: Request, comment_id: int):
-    user_id = await check_auth(request)
-    success = await delete_profile_comment(comment_id, user_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Комментарий не найден")
-    return {"success": True}
+# ==================== API ПРОФИЛЯ ====================
 
-# ---------- Админы ----------
-@app.get("/api/admins")
-async def api_admins(request: Request):
-    await check_admin(request)
-    admins = await get_admins_with_stats()
-    result = []
-    for a in admins:
-        name_data = await get_user_name(a["user_id"])
-        is_online = await is_user_online(a["user_id"])
-        result.append({
-            "user_id": a["user_id"],
-            "display_name": name_data["display_name"],
-            "username": name_data["username"],
-            "photo_url": name_data["photo_url"],
-            "is_online": is_online,
-            "is_super": name_data.get("is_super", False),
-            "movies_count": a["movies_count"],
-            "warns": a["warns"]
-        })
-    return result
+class ProfileUpdate(BaseModel):
+    display_name: Optional[str] = None
+    username: Optional[str] = None
+    photo_url: Optional[str] = None
+    banner_url: Optional[str] = None
 
-@app.post("/api/admins")
-async def api_add_admin(request: Request, data: AdminAdd):
-    await check_super_admin(request)
-    await add_admin(data.user_id)
-    return {"success": True}
-
-@app.delete("/api/admins/{user_id}")
-async def api_remove_admin(request: Request, user_id: int):
-    await check_super_admin(request)
-    await remove_admin(user_id)
-    return {"success": True}
-
-# ---------- Баны ----------
-@app.get("/api/bans")
-async def api_bans(request: Request):
-    await check_super_admin(request)
-    banned = await get_banned_users()
-    result = []
-    for b in banned:
-        name_data = await get_user_name(b["user_id"])
-        is_online = await is_user_online(b["user_id"])
-        result.append({
-            "user_id": b["user_id"],
-            "display_name": name_data["display_name"],
-            "photo_url": name_data["photo_url"],
-            "is_online": is_online,
-            "reason": b["reason"],
-            "expires_at": b["expires_at"]
-        })
-    return result
-
-@app.post("/api/bans")
-async def api_add_ban(request: Request, data: BanAdd):
-    await check_super_admin(request)
-    await ban_user(data.user_id, data.reason, data.duration_hours)
-    return {"success": True}
-
-@app.delete("/api/bans/{user_id}")
-async def api_remove_ban(request: Request, user_id: int):
-    await check_super_admin(request)
-    await unban_user(user_id)
-    return {"success": True}
-
-# ---------- Профили ----------
 @app.get("/api/profile/{user_id}")
 async def api_profile(request: Request, user_id: int):
-    current_user = get_user_id_from_cookie(request)
+    current_user = get_movie_id_from_cookie(request)
     if not current_user:
         raise HTTPException(status_code=401, detail="Не авторизован")
-    await update_user_online(current_user)
+    await update_user_online_by_id(current_user)
     
-    profile = await get_user_profile(user_id)
-    if not profile:
+    user = await get_user_profile_data(user_id)
+    if not user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     
-    return profile
+    return {
+        "movie_id": user["movie_id"],
+        "display_name": user["display_name"] or f"User {user['movie_id']}",
+        "username": user["username"],
+        "photo_url": user["photo_url"],
+        "banner_url": user["banner_url"],
+        "is_admin": user.get("is_admin", False),
+        "is_super_admin": user.get("is_super_admin", False),
+        "is_banned": user.get("is_banned", False),
+        "is_online": user.get("is_online", False),
+        "first_name": user.get("first_name"),
+        "last_name": user.get("last_name"),
+        "created_at": user["created_at"]
+    }
 
 @app.put("/api/profile/{user_id}")
 async def api_update_profile(request: Request, user_id: int, data: ProfileUpdate):
     current_user = await check_auth(request)
     if current_user != user_id:
         raise HTTPException(status_code=403, detail="Нельзя редактировать чужой профиль")
-    async with pool.acquire() as conn:
-        if data.display_name is not None:
-            await conn.execute("UPDATE user_names SET display_name = $1 WHERE user_id = $2", data.display_name, user_id)
-        if data.username is not None:
-            try:
-                await conn.execute("UPDATE user_names SET username = $1 WHERE user_id = $2", data.username, user_id)
-                await conn.execute("UPDATE users SET username = $1 WHERE user_id = $2", data.username, user_id)
-            except asyncpg.UniqueViolationError:
-                raise HTTPException(status_code=400, detail="Этот юзернейм уже занят")
-        if data.photo_url is not None:
-            await conn.execute("UPDATE user_names SET photo_url = $1 WHERE user_id = $2", data.photo_url, user_id)
-            await conn.execute("UPDATE users SET photo_url = $1 WHERE user_id = $2", data.photo_url, user_id)
-        if data.banner_url is not None:
-            await conn.execute("UPDATE user_names SET banner_url = $1 WHERE user_id = $2", data.banner_url, user_id)
-        await conn.execute("UPDATE user_names SET updated_at = NOW() WHERE user_id = $1", user_id)
-    await update_user_online(user_id)
+    
+    update_data = {}
+    if data.display_name is not None:
+        update_data["display_name"] = data.display_name
+    if data.username is not None:
+        existing = await get_user_by_username(data.username)
+        if existing and existing["movie_id"] != user_id:
+            raise HTTPException(status_code=400, detail="Этот юзернейм уже занят")
+        update_data["username"] = data.username
+    if data.photo_url is not None:
+        update_data["photo_url"] = data.photo_url
+    if data.banner_url is not None:
+        update_data["banner_url"] = data.banner_url
+    
+    if update_data:
+        await update_user_profile(user_id, update_data)
+    
+    await update_user_online_by_id(user_id)
     return {"success": True}
 
-# ---------- Наказания ----------
-@app.post("/api/punish")
-async def api_punish(request: Request, data: PunishData):
-    issued_by = await check_super_admin(request)
-    if await is_super_admin(data.user_id):
-        raise HTTPException(status_code=403, detail="Нельзя наказывать суперадмина")
-    await add_punishment(data.user_id, data.type, data.reason, issued_by, data.duration_hours)
-    return {"success": True}
-
-@app.post("/api/punish/{punishment_id}/resolve")
-async def api_resolve_punishment(request: Request, punishment_id: int):
-    resolved_by = await check_super_admin(request)
-    success = await resolve_punishment(punishment_id, resolved_by)
-    if not success:
-        raise HTTPException(status_code=404, detail="Наказание не найдено")
-    return {"success": True}
-
-# ---------- Комментарии к профилям ----------
-@app.get("/api/profile/{user_id}/comments")
-async def api_get_profile_comments(request: Request, user_id: int):
-    current_user = get_user_id_from_cookie(request)
+@app.get("/api/user/{user_id}/name")
+async def api_user_name(request: Request, user_id: int):
+    current_user = get_movie_id_from_cookie(request)
     if not current_user:
         raise HTTPException(status_code=401, detail="Не авторизован")
-    await update_user_online(current_user)
+    await update_user_online_by_id(current_user)
+    
+    user = await get_user_profile_data(user_id)
+    if not user:
+        return {
+            "display_name": f"User {user_id}",
+            "username": str(user_id),
+            "photo_url": None,
+            "banner_url": None,
+            "is_super": False,
+            "is_admin": False,
+            "is_online": False
+        }
+    
+    return {
+        "display_name": user["display_name"] or f"User {user_id}",
+        "username": user["username"] or str(user_id),
+        "photo_url": user["photo_url"],
+        "banner_url": user["banner_url"],
+        "is_super": user.get("is_super_admin", False),
+        "is_admin": user.get("is_admin", False),
+        "is_online": user.get("is_online", False)
+    }
+
+# ==================== API СТАТИСТИКИ ====================
+
+@app.get("/api/stats")
+async def api_stats(request: Request):
+    movie_id = get_movie_id_from_cookie(request)
+    if not movie_id:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    await update_user_online_by_id(movie_id)
+    
+    async with pool.acquire() as conn:
+        movies = await conn.fetchval("SELECT COUNT(*) FROM movies") or 0
+        requests = await conn.fetchval("SELECT value FROM stats WHERE key = 'total_requests'") or 0
+        admins = await conn.fetchval("SELECT COUNT(*) FROM users WHERE is_admin = TRUE OR is_super_admin = TRUE") or 0
+        bans = await conn.fetchval("SELECT COUNT(*) FROM users WHERE is_banned = TRUE") or 0
+        users = await conn.fetchval("SELECT COUNT(*) FROM users") or 0
+    return {"movies": movies, "requests": requests, "admins": admins, "bans": bans, "users": users}
+
+# ==================== API КОММЕНТАРИЕВ ====================
+
+class CommentData(BaseModel):
+    text: str
+
+@app.get("/api/profile/{user_id}/comments")
+async def api_get_profile_comments(request: Request, user_id: int):
+    current_user = get_movie_id_from_cookie(request)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    await update_user_online_by_id(current_user)
     comments = await get_profile_comments(user_id)
     result = []
     for c in comments:
-        user_data = await get_user_name(c["author_id"])
-        c["author_display_name"] = user_data["display_name"]
-        c["author_photo_url"] = user_data["photo_url"]
-        c["author_is_super"] = user_data.get("is_super", False)
-        c["author_is_admin"] = user_data.get("is_admin", False)
+        user_data = await get_user_profile_data(c["author_id"])
+        c["author_display_name"] = user_data["display_name"] if user_data else f"User {c['author_id']}"
+        c["author_photo_url"] = user_data["photo_url"] if user_data else None
+        c["author_is_super"] = user_data.get("is_super_admin", False) if user_data else False
+        c["author_is_admin"] = user_data.get("is_admin", False) if user_data else False
         result.append(c)
     return result
 
@@ -2210,242 +2168,230 @@ async def api_add_profile_comment(request: Request, user_id: int, data: CommentD
     await add_profile_comment(user_id, author_id, data.text.strip())
     return {"success": True}
 
-# ---------- Имена ----------
-@app.get("/api/user/{user_id}/name")
-async def api_user_name(request: Request, user_id: int):
-    current_user = get_user_id_from_cookie(request)
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Не авторизован")
-    await update_user_online(current_user)
-    name_data = await get_user_name(user_id)
-    return {
-        "display_name": name_data["display_name"],
-        "username": name_data["username"],
-        "photo_url": name_data["photo_url"],
-        "banner_url": name_data["banner_url"],
-        "is_super": name_data.get("is_super", False),
-        "is_admin": name_data.get("is_admin", False),
-        "is_online": name_data.get("is_online", False)
-    }
+@app.delete("/api/profile/comments/{comment_id}")
+async def api_delete_profile_comment(request: Request, comment_id: int):
+    movie_id = await check_auth(request)
+    success = await delete_profile_comment(comment_id, movie_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Комментарий не найден")
+    return {"success": True}
 
-# ---------- Пользователи ----------
-@app.get("/api/users")
-async def api_users(request: Request):
+# ==================== API АДМИНОВ ====================
+
+@app.get("/api/admins")
+async def api_admins(request: Request):
     await check_admin(request)
     async with pool.acquire() as conn:
-        rows = await conn.fetch("""
-            SELECT u.user_id, u.username, u.first_name, u.last_name, u.photo_url, u.created_at, u.is_online,
-                   CASE WHEN a.user_id IS NOT NULL THEN true ELSE false END as is_admin,
-                   CASE WHEN sa.user_id IS NOT NULL THEN true ELSE false END as is_super
-            FROM users u
-            LEFT JOIN admins a ON u.user_id = a.user_id
-            LEFT JOIN super_admins sa ON u.user_id = sa.user_id
-            ORDER BY u.created_at DESC
-        """)
+        rows = await conn.fetch("SELECT * FROM users WHERE is_admin = TRUE OR is_super_admin = TRUE")
         result = []
         for row in rows:
-            name_data = await get_user_name(row["user_id"])
+            is_online = await is_user_online_by_id(row["movie_id"])
             result.append({
-                "user_id": row["user_id"],
-                "display_name": name_data["display_name"],
-                "username": name_data["username"],
-                "photo_url": name_data["photo_url"],
-                "is_admin": row["is_admin"],
-                "is_super": row["is_super"],
-                "is_online": row["is_online"] or False,
-                "created_at": row["created_at"]
+                "user_id": row["movie_id"],
+                "display_name": row["display_name"] or f"User {row['movie_id']}",
+                "username": row["username"],
+                "photo_url": row["photo_url"],
+                "is_online": is_online,
+                "is_super": row.get("is_super_admin", False),
+                "movies_count": await conn.fetchval("SELECT movies_added FROM admin_stats WHERE user_id = $1", row["movie_id"]) or 0,
+                "warns": 0
             })
         return result
 
-# ---------- Роли ----------
-@app.post("/api/roles")
-async def api_update_role(request: Request, data: RoleUpdate):
+@app.post("/api/admins")
+async def api_add_admin(request: Request, data: dict):
     await check_super_admin(request)
-    async with pool.acquire() as conn:
-        if data.role == 'super_admin':
-            await conn.execute("INSERT INTO admins (user_id) VALUES ($1) ON CONFLICT DO NOTHING", data.user_id)
-            await conn.execute("INSERT INTO super_admins (user_id) VALUES ($1) ON CONFLICT DO NOTHING", data.user_id)
-        elif data.role == 'admin':
-            await conn.execute("INSERT INTO admins (user_id) VALUES ($1) ON CONFLICT DO NOTHING", data.user_id)
-            await conn.execute("DELETE FROM super_admins WHERE user_id = $1", data.user_id)
-        else:
-            await conn.execute("DELETE FROM admins WHERE user_id = $1", data.user_id)
-            await conn.execute("DELETE FROM super_admins WHERE user_id = $1", data.user_id)
-    return {"success": True}
-
-@app.get("/api/roles")
-async def api_get_roles(request: Request):
-    await check_super_admin(request)
-    async with pool.acquire() as conn:
-        rows = await conn.fetch("""
-            SELECT u.user_id, u.username, u.first_name, u.photo_url,
-                   CASE WHEN sa.user_id IS NOT NULL THEN 'super_admin'
-                        WHEN a.user_id IS NOT NULL THEN 'admin'
-                        ELSE 'user' END as role
-            FROM users u
-            LEFT JOIN admins a ON u.user_id = a.user_id
-            LEFT JOIN super_admins sa ON u.user_id = sa.user_id
-            ORDER BY u.created_at DESC
-        """)
-        return [dict(row) for row in rows]
-
-# ---------- Поддержка ----------
-@app.post("/api/support")
-async def api_support(request: Request, data: SupportMessage):
-    user_id = await check_auth(request)
-    name_data = await get_user_name(user_id)
-    display_name = name_data["display_name"]
-    for admin_id in SUPER_ADMIN_IDS:
-        try:
-            await bot.send_message(
-                admin_id,
-                f"🆘 <b>Новое сообщение в поддержку!</b>\n\n"
-                f"👤 <b>От:</b> {display_name} (<code>{user_id}</code>)\n"
-                f"📋 <b>Тема:</b> {data.subject}\n"
-                f"💬 <b>Сообщение:</b>\n{data.message}",
-                parse_mode="HTML"
-            )
-        except:
-            pass
-    return {"success": True}
-
-# ---------- Статистика ----------
-@app.get("/api/stats")
-async def api_stats(request: Request):
-    user_id = get_user_id_from_cookie(request)
+    user_id = data.get("user_id")
     if not user_id:
-        raise HTTPException(status_code=401, detail="Не авторизован")
-    await update_user_online(user_id)
-    
+        raise HTTPException(status_code=400, detail="User ID required")
     async with pool.acquire() as conn:
-        movies = await conn.fetchval("SELECT COUNT(*) FROM movies") or 0
-        requests = await conn.fetchval("SELECT value FROM stats WHERE key = 'total_requests'") or 0
-        admins = await conn.fetchval("SELECT COUNT(*) FROM admins") or 0
-        bans = await conn.fetchval("SELECT COUNT(*) FROM bans") or 0
-        users = await conn.fetchval("SELECT COUNT(*) FROM users") or 0
-    return {"movies": movies, "requests": requests, "admins": admins, "bans": bans, "users": users}
+        await conn.execute("UPDATE users SET is_admin = TRUE WHERE movie_id = $1", user_id)
+    return {"success": True}
 
-# ---------- Друзья ----------
+@app.delete("/api/admins/{user_id}")
+async def api_remove_admin(request: Request, user_id: int):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        await conn.execute("UPDATE users SET is_admin = FALSE, is_super_admin = FALSE WHERE movie_id = $1", user_id)
+    return {"success": True}
+
+# ==================== API БАНОВ ====================
+
+@app.get("/api/bans")
+async def api_bans(request: Request):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM users WHERE is_banned = TRUE")
+        result = []
+        for row in rows:
+            is_online = await is_user_online_by_id(row["movie_id"])
+            result.append({
+                "user_id": row["movie_id"],
+                "display_name": row["display_name"] or f"User {row['movie_id']}",
+                "photo_url": row["photo_url"],
+                "is_online": is_online,
+                "reason": row["ban_reason"] or "",
+                "expires_at": row["ban_expires_at"]
+            })
+        return result
+
+@app.post("/api/bans")
+async def api_add_ban(request: Request, data: dict):
+    await check_super_admin(request)
+    user_id = data.get("user_id")
+    reason = data.get("reason", "Забанен администратором")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+    async with pool.acquire() as conn:
+        await conn.execute("UPDATE users SET is_banned = TRUE, ban_reason = $1 WHERE movie_id = $2", reason, user_id)
+    return {"success": True}
+
+@app.delete("/api/bans/{user_id}")
+async def api_remove_ban(request: Request, user_id: int):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        await conn.execute("UPDATE users SET is_banned = FALSE, ban_reason = NULL, ban_expires_at = NULL WHERE movie_id = $1", user_id)
+    return {"success": True}
+
+# ==================== API ДРУЗЕЙ ====================
+
+class FriendRequestData(BaseModel):
+    user_id: int
+
 @app.post("/api/friends/request")
-async def api_send_friend_request(request: Request, data: FriendRequest):
-    user_id = await check_auth(request)
-    if user_id == data.user_id:
+async def api_send_friend_request(request: Request, data: FriendRequestData):
+    movie_id = await check_auth(request)
+    if movie_id == data.user_id:
         raise HTTPException(status_code=400, detail="Нельзя добавить себя в друзья")
-    success, message = await send_friend_request(user_id, data.user_id)
+    success, message = await send_friend_request(movie_id, data.user_id)
     if not success:
         raise HTTPException(status_code=400, detail=message)
     return {"success": True, "message": message}
 
 @app.post("/api/friends/accept/{friend_id}")
 async def api_accept_friend_request(request: Request, friend_id: int):
-    user_id = await check_auth(request)
-    success = await accept_friend_request(user_id, friend_id)
+    movie_id = await check_auth(request)
+    success = await accept_friend_request(movie_id, friend_id)
     if not success:
         raise HTTPException(status_code=400, detail="Не удалось принять запрос")
     return {"success": True}
 
 @app.post("/api/friends/decline/{friend_id}")
 async def api_decline_friend_request(request: Request, friend_id: int):
-    user_id = await check_auth(request)
-    success = await decline_friend_request(user_id, friend_id)
+    movie_id = await check_auth(request)
+    success = await decline_friend_request(movie_id, friend_id)
     if not success:
         raise HTTPException(status_code=400, detail="Не удалось отклонить запрос")
     return {"success": True}
 
 @app.get("/api/friends")
 async def api_get_friends(request: Request):
-    user_id = await check_auth(request)
-    return await get_friends(user_id)
+    movie_id = await check_auth(request)
+    return await get_friends(movie_id)
 
 @app.get("/api/friends/requests")
 async def api_get_friend_requests(request: Request):
-    user_id = await check_auth(request)
-    return await get_friend_requests(user_id)
+    movie_id = await check_auth(request)
+    return await get_friend_requests(movie_id)
 
 @app.get("/api/friends/sent")
 async def api_get_sent_friend_requests(request: Request):
-    user_id = await check_auth(request)
-    return await get_sent_friend_requests(user_id)
+    movie_id = await check_auth(request)
+    return await get_sent_friend_requests(movie_id)
 
 @app.get("/api/search")
 async def api_search_users(request: Request, q: str):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id:
+    movie_id = get_movie_id_from_cookie(request)
+    if not movie_id:
         raise HTTPException(status_code=401, detail="Не авторизован")
     if not q or len(q) < 2:
         return []
-    return await search_users(q, user_id)
+    return await search_users(q, movie_id)
 
-# ---------- Уведомления ----------
+# ==================== API УВЕДОМЛЕНИЙ ====================
+
 @app.get("/api/notifications")
 async def api_get_notifications(request: Request, unread_only: bool = False):
-    user_id = await check_auth(request)
-    return await get_notifications(user_id, unread_only)
+    movie_id = await check_auth(request)
+    return await get_notifications(movie_id, unread_only)
 
 @app.post("/api/notifications/read/{notification_id}")
 async def api_mark_notification_read(request: Request, notification_id: int):
-    user_id = await check_auth(request)
+    movie_id = await check_auth(request)
     await mark_notification_read(notification_id)
     return {"success": True}
 
 @app.post("/api/notifications/read-all")
 async def api_mark_all_notifications_read(request: Request):
-    user_id = await check_auth(request)
-    await mark_all_notifications_read(user_id)
+    movie_id = await check_auth(request)
+    await mark_all_notifications_read(movie_id)
     return {"success": True}
 
 @app.get("/api/notifications/unread")
 async def api_get_unread_count(request: Request):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id:
+    movie_id = get_movie_id_from_cookie(request)
+    if not movie_id:
         return {"count": 0}
-    return {"count": await get_unread_count(user_id)}
+    return {"count": await get_unread_count(movie_id)}
 
-# ---------- Новости ----------
+# ==================== API НОВОСТЕЙ ====================
+
+class NewsData(BaseModel):
+    title: str
+    content: str
+
 @app.get("/api/news")
 async def api_get_news(request: Request):
-    user_id = get_user_id_from_cookie(request)
-    if not user_id:
+    movie_id = get_movie_id_from_cookie(request)
+    if not movie_id:
         raise HTTPException(status_code=401, detail="Не авторизован")
-    await update_user_online(user_id)
+    await update_user_online_by_id(movie_id)
     return await get_news()
 
 @app.post("/api/news")
 async def api_create_news(request: Request, data: NewsData):
-    user_id = await check_super_admin(request)
-    await create_news(data.title, data.content, user_id)
+    movie_id = await check_super_admin(request)
+    await create_news(data.title, data.content, movie_id)
     return {"success": True}
 
 @app.delete("/api/news/{news_id}")
 async def api_delete_news(request: Request, news_id: int):
-    user_id = await check_super_admin(request)
-    success = await delete_news(news_id, user_id)
+    movie_id = await check_super_admin(request)
+    success = await delete_news(news_id, movie_id)
     if not success:
         raise HTTPException(status_code=404, detail="Новость не найдена или нет прав")
     return {"success": True}
 
-# ---------- Сообщения ----------
+# ==================== API СООБЩЕНИЙ ====================
+
+class MessageData(BaseModel):
+    text: str
+
 @app.post("/api/messages/{receiver_id}")
 async def api_send_message(request: Request, receiver_id: int, data: MessageData):
-    user_id = await check_auth(request)
-    if user_id == receiver_id:
+    movie_id = await check_auth(request)
+    if movie_id == receiver_id:
         raise HTTPException(status_code=400, detail="Нельзя отправить сообщение себе")
     if not data.text or not data.text.strip():
         raise HTTPException(status_code=400, detail="Сообщение не может быть пустым")
-    await send_message(user_id, receiver_id, data.text.strip())
+    await send_message(movie_id, receiver_id, data.text.strip())
     return {"success": True}
 
 @app.get("/api/messages/{other_user_id}")
 async def api_get_messages(request: Request, other_user_id: int):
-    user_id = await check_auth(request)
-    return await get_messages(user_id, other_user_id)
+    movie_id = await check_auth(request)
+    return await get_messages(movie_id, other_user_id)
 
 @app.get("/api/chats")
 async def api_get_chats(request: Request):
-    user_id = await check_auth(request)
-    return await get_chat_users(user_id)
+    movie_id = await check_auth(request)
+    return await get_chat_users(movie_id)
 
-# ---------- Жалобы ----------
+# ==================== API ЖАЛОБ ====================
+
+class ReportData(BaseModel):
+    reason: str
+
 @app.post("/api/report/{user_id}")
 async def api_report_user(request: Request, user_id: int, data: ReportData):
     reporter_id = await check_auth(request)
@@ -2456,6 +2402,100 @@ async def api_report_user(request: Request, user_id: int, data: ReportData):
     await create_report(reporter_id, user_id, data.reason.strip())
     return {"success": True}
 
+# ==================== API ПОДДЕРЖКИ ====================
+
+class SupportMessage(BaseModel):
+    subject: str
+    message: str
+
+@app.post("/api/support")
+async def api_support(request: Request, data: SupportMessage):
+    movie_id = await check_auth(request)
+    user = await get_user_profile_data(movie_id)
+    display_name = user["display_name"] if user else f"User {movie_id}"
+    for admin_id in SUPER_ADMIN_IDS:
+        try:
+            await bot.send_message(
+                admin_id,
+                f"🆘 <b>Новое сообщение в поддержку!</b>\n\n"
+                f"👤 <b>От:</b> {display_name} (<code>{movie_id}</code>)\n"
+                f"📋 <b>Тема:</b> {data.subject}\n"
+                f"💬 <b>Сообщение:</b>\n{data.message}",
+                parse_mode="HTML"
+            )
+        except:
+            pass
+    return {"success": True}
+
+# ==================== API ПОЛЬЗОВАТЕЛЕЙ ====================
+
+@app.get("/api/users")
+async def api_users(request: Request):
+    await check_admin(request)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM users ORDER BY created_at DESC")
+        result = []
+        for row in rows:
+            is_online = await is_user_online_by_id(row["movie_id"])
+            result.append({
+                "user_id": row["movie_id"],
+                "display_name": row["display_name"] or f"User {row['movie_id']}",
+                "username": row["username"],
+                "photo_url": row["photo_url"],
+                "is_admin": row.get("is_admin", False),
+                "is_super": row.get("is_super_admin", False),
+                "is_online": is_online,
+                "created_at": row["created_at"]
+            })
+        return result
+
+# ==================== API РОЛЕЙ ====================
+
+class RoleUpdate(BaseModel):
+    user_id: int
+    role: str
+
+@app.post("/api/roles")
+async def api_update_role(request: Request, data: RoleUpdate):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        if data.role == 'super_admin':
+            await conn.execute("UPDATE users SET is_admin = TRUE, is_super_admin = TRUE WHERE movie_id = $1", data.user_id)
+        elif data.role == 'admin':
+            await conn.execute("UPDATE users SET is_admin = TRUE, is_super_admin = FALSE WHERE movie_id = $1", data.user_id)
+        else:
+            await conn.execute("UPDATE users SET is_admin = FALSE, is_super_admin = FALSE WHERE movie_id = $1", data.user_id)
+    return {"success": True}
+
+@app.get("/api/roles")
+async def api_get_roles(request: Request):
+    await check_super_admin(request)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT movie_id, username, display_name, photo_url,
+                   CASE WHEN is_super_admin THEN 'super_admin'
+                        WHEN is_admin THEN 'admin'
+                        ELSE 'user' END as role
+            FROM users
+            ORDER BY created_at DESC
+        """)
+        return [dict(row) for row in rows]
+
+# ==================== API НАКАЗАНИЙ ====================
+
+class PunishData(BaseModel):
+    user_id: int
+    type: str
+    reason: str = ""
+    duration_hours: int = 0
+
+@app.post("/api/punish")
+async def api_punish(request: Request, data: PunishData):
+    issued_by = await check_super_admin(request)
+    if await is_super_admin_user(data.user_id):
+        raise HTTPException(status_code=403, detail="Нельзя наказывать суперадмина")
+    await add_punishment_by_id(data.user_id, data.type, data.reason, issued_by, data.duration_hours)
+    return {"success": True}
 
 # ==================== ЗАПУСК ====================
 if __name__ == "__main__":
