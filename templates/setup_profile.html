@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройка профиля — Movie Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        .setup-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 40px 35px;
+            max-width: 460px;
+            width: 100%;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .setup-card h1 {
+            color: #fff;
+            font-weight: 700;
+            font-size: 28px;
+            margin-bottom: 4px;
+        }
+        .setup-card .subtitle {
+            color: rgba(255,255,255,0.4);
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+        .setup-card .icon {
+            font-size: 56px;
+            color: #0088cc;
+            margin-bottom: 12px;
+        }
+        .form-control {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            border-radius: 12px;
+            padding: 12px 16px;
+            width: 100%;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #0088cc;
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+        }
+        .form-control::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+        .btn-primary {
+            background: #0088cc;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 40px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background: #006699;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,136,204,0.3);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error-msg {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 12px;
+            display: none;
+            background: rgba(220,53,69,0.1);
+            border: 1px solid rgba(220,53,69,0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
+        }
+        .success-msg {
+            color: #88dd88;
+            font-size: 14px;
+            margin-top: 12px;
+            display: none;
+            background: rgba(40,167,69,0.1);
+            border: 1px solid rgba(40,167,69,0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
+        }
+        .divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin: 20px 0;
+        }
+        .footer-text {
+            color: rgba(255,255,255,0.2);
+            font-size: 12px;
+            margin-top: 16px;
+        }
+        .loading {
+            display: none;
+        }
+        .loading.show {
+            display: inline-block;
+        }
+        .avatar-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #0088cc;
+            margin: 0 auto 12px;
+            display: block;
+            background: #1a1a1a;
+        }
+        .banner-preview {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid #2a2a2a;
+            margin-bottom: 12px;
+            background: #1a1a1a;
+        }
+        .file-upload-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+        }
+        .file-upload-wrapper .file-upload-btn {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 10px 16px;
+            color: rgba(255,255,255,0.7);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+            width: 100%;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .file-upload-wrapper .file-upload-btn:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        .file-upload-wrapper .file-upload-btn i {
+            font-size: 18px;
+        }
+        .help-text {
+            color: rgba(255,255,255,0.3);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        @media (max-width: 480px) {
+            .setup-card {
+                padding: 30px 20px;
+            }
+            .setup-card h1 {
+                font-size: 24px;
+            }
+            .setup-card .icon {
+                font-size: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-card">
+        <div class="icon">
+            <i class="fas fa-user-cog"></i>
+        </div>
+        <h1>Настройка профиля</h1>
+        <p class="subtitle">Заполните информацию о себе</p>
+
+        <div id="errorMsg" class="error-msg">
+            <i class="fas fa-exclamation-circle"></i> <span id="errorText">Ошибка</span>
+        </div>
+
+        <div id="successMsg" class="success-msg">
+            <i class="fas fa-check-circle"></i> <span id="successText">Успешно!</span>
+        </div>
+
+        <form id="setupForm" onsubmit="return saveProfile(event)">
+            <!-- Avatar -->
+            <div class="mb-3">
+                <img id="avatarPreview" class="avatar-preview" src="https://ui-avatars.com/api/?name=User&background=2a2a2a&color=cccccc&size=80&rounded=true" alt="Avatar">
+                <div class="file-upload-wrapper">
+                    <div class="file-upload-btn">
+                        <i class="fas fa-upload"></i> Загрузить аватар
+                        <input type="file" accept="image/*" id="avatarFile" onchange="previewImage(this, 'avatarPreview', 'photoUrlInput')">
+                    </div>
+                </div>
+                <input type="hidden" id="photoUrlInput" value="">
+                <div class="help-text">Или вставьте ссылку на изображение</div>
+            </div>
+
+            <!-- Banner -->
+            <div class="mb-3">
+                <img id="bannerPreview" class="banner-preview" src="" alt="Баннер" style="display:none;">
+                <div class="file-upload-wrapper">
+                    <div class="file-upload-btn">
+                        <i class="fas fa-upload"></i> Загрузить баннер
+                        <input type="file" accept="image/*" id="bannerFile" onchange="previewImage(this, 'bannerPreview', 'bannerUrlInput')">
+                    </div>
+                </div>
+                <input type="hidden" id="bannerUrlInput" value="">
+                <div class="help-text">Широкое изображение для фона профиля</div>
+            </div>
+
+            <div class="mb-3">
+                <input type="text" class="form-control" id="usernameInput" placeholder="Юзернейм (уникальный)" required>
+            </div>
+
+            <div class="mb-3">
+                <input type="text" class="form-control" id="displayNameInput" placeholder="Отображаемое имя">
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <input type="text" class="form-control" id="firstNameInput" placeholder="Имя">
+                </div>
+                <div class="col-6">
+                    <input type="text" class="form-control" id="lastNameInput" placeholder="Фамилия">
+                </div>
+            </div>
+
+            <!-- Movie ID -->
+            <div class="mb-3" style="background: rgba(0,136,204,0.1); border-radius: 12px; padding: 12px; border: 1px solid rgba(0,136,204,0.2);">
+                <span style="color: rgba(255,255,255,0.4); font-size: 12px;">Ваш Movie ID</span>
+                <div style="color: #0088cc; font-size: 20px; font-weight: 700;" id="movieIdDisplay">—</div>
+            </div>
+
+            <button type="submit" class="btn-primary" id="saveBtn">
+                <span class="loading" id="saveLoading"><i class="fas fa-spinner fa-spin"></i></span>
+                <span id="saveText"><i class="fas fa-check"></i> Завершить регистрацию</span>
+            </button>
+        </form>
+
+        <hr class="divider">
+
+        <div class="footer-text">
+            <i class="fas fa-shield-alt"></i> Ваши данные в безопасности
+        </div>
+    </div>
+
+    <script>
+        let movieId = null;
+
+        function showError(msg) {
+            document.getElementById('errorMsg').style.display = 'block';
+            document.getElementById('errorText').textContent = msg;
+            document.getElementById('successMsg').style.display = 'none';
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('successMsg').style.display = 'block';
+            document.getElementById('successText').textContent = msg;
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        function setLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            const loadingEl = btn.querySelector('.loading');
+            const textEl = btn.querySelector('span:not(.loading)');
+            if (loading) {
+                loadingEl.classList.add('show');
+                if (textEl) textEl.style.display = 'none';
+                btn.disabled = true;
+            } else {
+                loadingEl.classList.remove('show');
+                if (textEl) textEl.style.display = 'inline';
+                btn.disabled = false;
+            }
+        }
+
+        function previewImage(input, previewId, urlInputId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById(previewId);
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    document.getElementById(urlInputId).value = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Проверка username
+        let usernameCheckTimeout = null;
+
+        document.getElementById('usernameInput')?.addEventListener('input', function() {
+            const username = this.value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.style.display = 'none';
+
+            if (username.length < 3) {
+                return;
+            }
+
+            clearTimeout(usernameCheckTimeout);
+            usernameCheckTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch('/api/auth/check-username', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username })
+                    });
+                    const data = await res.json();
+                    if (!data.available) {
+                        showError('Этот юзернейм уже занят');
+                    } else {
+                        document.getElementById('errorMsg').style.display = 'none';
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }, 500);
+        });
+
+        async function saveProfile(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('usernameInput').value.trim();
+            const display_name = document.getElementById('displayNameInput').value.trim();
+            const first_name = document.getElementById('firstNameInput').value.trim();
+            const last_name = document.getElementById('lastNameInput').value.trim();
+            const photo_url = document.getElementById('photoUrlInput').value.trim();
+            const banner_url = document.getElementById('bannerUrlInput').value.trim();
+
+            if (!username || username.length < 3) {
+                showError('Юзернейм должен быть минимум 3 символа');
+                return;
+            }
+
+            // Получаем movie_id из URL
+            const urlParams = new URLSearchParams(window.location.search);
+            movieId = urlParams.get('movie_id');
+
+            if (!movieId) {
+                showError('Ошибка: Movie ID не найден');
+                return;
+            }
+
+            setLoading('saveBtn', true);
+            document.getElementById('errorMsg').style.display = 'none';
+
+            try {
+                const res = await fetch('/api/auth/setup-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        movie_id: parseInt(movieId),
+                        username,
+                        display_name: display_name || username,
+                        first_name,
+                        last_name,
+                        photo_url,
+                        banner_url
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    showSuccess('✅ Профиль сохранен! Перенаправление...');
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1500);
+                } else {
+                    showError(data.detail || 'Ошибка сохранения профиля');
+                }
+            } catch (err) {
+                showError('Ошибка соединения с сервером');
+                console.error(err);
+            } finally {
+                setLoading('saveBtn', false);
+            }
+        }
+
+        // Показываем Movie ID
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            movieId = urlParams.get('movie_id');
+            if (movieId) {
+                document.getElementById('movieIdDisplay').textContent = movieId;
+            } else {
+                document.getElementById('movieIdDisplay').textContent = 'Ошибка';
+            }
+        });
+    </script>
+</body>
+</html>
