@@ -2,53 +2,63 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Вход — Movie Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
+        /* ====== ОСНОВНЫЕ СТИЛИ (как на основном сайте) ====== */
+        * { font-family: 'Segoe UI', system-ui, sans-serif; }
         body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            background: #0d0d0d;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
+            margin: 0;
         }
-        .login-card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 24px;
+        
+        /* ====== КАРТОЧКА ВХОДА ====== */
+        .auth-card {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
             padding: 40px 35px;
-            max-width: 420px;
+            max-width: 480px;
             width: 100%;
             box-shadow: 0 25px 50px rgba(0,0,0,0.5);
             text-align: center;
+            transition: all 0.3s ease;
         }
-        .login-card h1 {
-            color: #fff;
-            font-weight: 700;
+        .auth-card:hover {
+            border-color: #3a3a3a;
+        }
+        .auth-card .icon {
+            font-size: 48px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .auth-card h1 {
+            color: #e8e8e8;
+            font-weight: 300;
             font-size: 28px;
             margin-bottom: 4px;
+            letter-spacing: 1px;
         }
-        .login-card .subtitle {
-            color: rgba(255,255,255,0.4);
+        .auth-card .subtitle {
+            color: #666;
             font-size: 14px;
             margin-bottom: 28px;
         }
-        .login-card .icon {
-            font-size: 56px;
-            color: #0088cc;
-            margin-bottom: 12px;
-        }
+        
+        /* ====== ПОЛЯ ВВОДА ====== */
         .form-control {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
-            border-radius: 12px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            color: #ccc;
+            border-radius: 10px;
             padding: 12px 16px;
             width: 100%;
             font-size: 15px;
@@ -56,79 +66,158 @@
         }
         .form-control:focus {
             outline: none;
-            border-color: #0088cc;
-            background: rgba(255,255,255,0.12);
+            border-color: #555;
+            background: #222;
             color: #fff;
+            box-shadow: none;
         }
         .form-control::placeholder {
-            color: rgba(255,255,255,0.3);
+            color: #555;
         }
+        .form-control.is-invalid {
+            border-color: #cc5555;
+        }
+        .form-label {
+            color: #888;
+            font-size: 12px;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            display: block;
+            text-align: left;
+        }
+        
+        /* ====== КНОПКИ ====== */
         .btn-primary {
-            background: #0088cc;
-            border: none;
-            border-radius: 50px;
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 10px;
             padding: 12px 40px;
-            color: #fff;
+            color: #ddd;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 400;
             cursor: pointer;
             transition: all 0.3s;
             width: 100%;
         }
         .btn-primary:hover {
-            background: #006699;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0,136,204,0.3);
+            background: #3a3a3a;
+            border-color: #555;
+            color: #fff;
+            transform: translateY(-1px);
         }
         .btn-primary:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
             transform: none;
         }
-        .btn-secondary {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 50px;
-            padding: 10px 30px;
-            color: rgba(255,255,255,0.7);
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 10px 20px;
+            color: #888;
+            font-size: 14px;
             cursor: pointer;
             transition: all 0.3s;
             width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.15);
+        .btn-outline:hover {
+            background: #1a1a1a;
+            border-color: #3a3a3a;
+            color: #ccc;
+        }
+        .btn-outline.active {
+            border-color: #0088cc;
+            color: #0088cc;
+            background: rgba(0,136,204,0.05);
+        }
+        
+        .btn-google {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 10px 20px;
+            color: #ccc;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-google:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: #3a3a3a;
             color: #fff;
         }
-        .error-msg {
-            color: #ff6b6b;
-            font-size: 14px;
-            margin-top: 12px;
-            display: none;
-            background: rgba(220,53,69,0.1);
-            border: 1px solid rgba(220,53,69,0.2);
+        
+        .btn-telegram {
+            background: rgba(0,136,204,0.1);
+            border: 1px solid rgba(0,136,204,0.2);
             border-radius: 10px;
-            padding: 12px 16px;
-        }
-        .success-msg {
-            color: #88dd88;
+            padding: 10px 20px;
+            color: #0088cc;
             font-size: 14px;
-            margin-top: 12px;
-            display: none;
-            background: rgba(40,167,69,0.1);
-            border: 1px solid rgba(40,167,69,0.2);
-            border-radius: 10px;
-            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
+        .btn-telegram:hover {
+            background: rgba(0,136,204,0.15);
+            border-color: rgba(0,136,204,0.3);
+        }
+        
+        .btn-danger-outline {
+            background: transparent;
+            border: 1px solid #4a2222;
+            border-radius: 10px;
+            padding: 10px 20px;
+            color: #cc8888;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-danger-outline:hover {
+            background: #2a1a1a;
+            border-color: #5a2a2a;
+            color: #ff8888;
+        }
+        
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 13px;
+            width: auto;
+        }
+        
+        /* ====== РАЗДЕЛИТЕЛИ ====== */
         .divider {
             border: none;
-            border-top: 1px solid rgba(255,255,255,0.08);
+            border-top: 1px solid #2a2a2a;
             margin: 20px 0;
         }
         .or-divider {
             display: flex;
             align-items: center;
             gap: 15px;
-            color: rgba(255,255,255,0.2);
+            color: #444;
             font-size: 12px;
             margin: 16px 0;
         }
@@ -137,150 +226,574 @@
             content: "";
             flex: 1;
             height: 1px;
-            background: rgba(255,255,255,0.08);
+            background: #2a2a2a;
         }
-        .footer-text {
-            color: rgba(255,255,255,0.2);
-            font-size: 12px;
-            margin-top: 16px;
+        
+        /* ====== ВКЛАДКИ ====== */
+        .auth-tabs {
+            display: flex;
+            gap: 4px;
+            background: #111;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 24px;
         }
-        .link-text {
-            color: #0088cc;
+        .auth-tabs .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #666;
+            padding: 10px 16px;
+            border-radius: 10px;
             cursor: pointer;
-            text-decoration: none;
+            font-size: 14px;
+            font-weight: 400;
+            transition: all 0.3s;
+        }
+        .auth-tabs .tab-btn:hover {
+            color: #aaa;
+        }
+        .auth-tabs .tab-btn.active {
+            background: #1a1a1a;
+            color: #e8e8e8;
+        }
+        .auth-tabs .tab-btn i {
+            margin-right: 6px;
+        }
+        
+        /* ====== ПАНЕЛИ ====== */
+        .tab-panel {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+        
+        /* ====== СООБЩЕНИЯ ====== */
+        .error-msg {
+            color: #cc5555;
+            font-size: 14px;
+            margin-top: 12px;
+            display: none;
+            background: rgba(220,53,69,0.08);
+            border: 1px solid rgba(220,53,69,0.15);
+            border-radius: 10px;
+            padding: 12px 16px;
+            text-align: left;
+        }
+        .error-msg i {
+            margin-right: 8px;
+        }
+        .success-msg {
+            color: #55cc55;
+            font-size: 14px;
+            margin-top: 12px;
+            display: none;
+            background: rgba(40,167,69,0.08);
+            border: 1px solid rgba(40,167,69,0.15);
+            border-radius: 10px;
+            padding: 12px 16px;
+            text-align: left;
+        }
+        .success-msg i {
+            margin-right: 8px;
+        }
+        
+        .info-text {
+            color: #555;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .info-text i {
+            color: #666;
+        }
+        
+        /* ====== ССЫЛКИ ====== */
+        .link-text {
+            color: #888;
+            cursor: pointer;
             transition: 0.3s;
+            text-decoration: none;
+            background: none;
+            border: none;
+            font-size: 14px;
         }
         .link-text:hover {
-            color: #33aadd;
+            color: #ccc;
             text-decoration: underline;
         }
-        .google-btn-wrapper {
-            margin: 8px 0;
+        .link-highlight {
+            color: #0088cc;
         }
-        .google-btn-wrapper .gsi-material-button {
-            width: 100% !important;
-            max-width: 100% !important;
-            justify-content: center !important;
-            background: rgba(255,255,255,0.08) !important;
-            border: 1px solid rgba(255,255,255,0.15) !important;
-            border-radius: 50px !important;
-            padding: 10px !important;
+        .link-highlight:hover {
+            color: #33aadd;
         }
-        .google-btn-wrapper .gsi-material-button:hover {
-            background: rgba(255,255,255,0.15) !important;
+        
+        /* ====== СТАТУС БОТА ====== */
+        .telegram-status {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-top: 12px;
+            display: none;
+            text-align: left;
         }
+        .telegram-status.show {
+            display: block;
+        }
+        .telegram-status .status-icon {
+            font-size: 24px;
+            margin-right: 12px;
+        }
+        .telegram-status .status-text {
+            color: #ccc;
+            font-size: 14px;
+        }
+        .telegram-status .status-detail {
+            color: #666;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .telegram-status .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #2a2a2a;
+            border-top-color: #0088cc;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        /* ====== LOADING ====== */
         .loading {
             display: none;
         }
         .loading.show {
             display: inline-block;
         }
-        .movie-id-hint {
-            color: rgba(255,255,255,0.2);
-            font-size: 12px;
-            margin-top: 4px;
+        .spinner-border-sm {
+            width: 16px;
+            height: 16px;
+            border-width: 2px;
         }
+        
+        /* ====== КОД ПОДТВЕРЖДЕНИЯ ====== */
+        .code-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .code-input-group input {
+            flex: 1;
+        }
+        .code-input-group .btn-sm {
+            padding: 12px 16px;
+            font-size: 14px;
+            width: auto;
+            white-space: nowrap;
+        }
+        .code-display {
+            background: #0d0d0d;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: 700;
+            color: #0088cc;
+            letter-spacing: 8px;
+            font-family: monospace;
+            margin: 12px 0;
+            border: 1px solid #2a2a2a;
+        }
+        .code-label {
+            color: #555;
+            font-size: 12px;
+        }
+        
+        /* ====== MOVIE ID ДИСПЛЕЙ ====== */
+        .movie-id-display {
+            background: rgba(0,136,204,0.05);
+            border: 1px solid rgba(0,136,204,0.1);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+        }
+        .movie-id-display .label {
+            color: #555;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .movie-id-display .value {
+            color: #0088cc;
+            font-size: 20px;
+            font-weight: 700;
+            font-family: monospace;
+        }
+        
+        /* ====== АНИМАЦИИ ====== */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* ====== МЕДИА-ЗАПРОСЫ ====== */
         @media (max-width: 480px) {
-            .login-card {
-                padding: 30px 20px;
+            .auth-card {
+                padding: 24px 18px;
             }
-            .login-card h1 {
+            .auth-card h1 {
+                font-size: 22px;
+            }
+            .auth-card .icon {
+                font-size: 36px;
+            }
+            .auth-tabs .tab-btn {
+                font-size: 12px;
+                padding: 8px 10px;
+            }
+            .auth-tabs .tab-btn i {
+                margin-right: 4px;
+            }
+            .code-display {
                 font-size: 24px;
+                letter-spacing: 4px;
             }
-            .login-card .icon {
-                font-size: 44px;
+            .code-input-group {
+                flex-direction: column;
+            }
+            .code-input-group .btn-sm {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <div class="login-card">
+    <div class="auth-card">
+        <!-- Иконка -->
         <div class="icon">
             <i class="fas fa-film"></i>
         </div>
         <h1>Movie Admin</h1>
-        <p class="subtitle">Войдите в свой аккаунт</p>
+        <p class="subtitle" id="mainSubtitle">Войдите в свой аккаунт</p>
 
+        <!-- Сообщения -->
         <div id="errorMsg" class="error-msg">
             <i class="fas fa-exclamation-circle"></i> <span id="errorText">Ошибка</span>
         </div>
-
         <div id="successMsg" class="success-msg">
             <i class="fas fa-check-circle"></i> <span id="successText">Успешно!</span>
         </div>
 
-        <!-- Форма входа -->
-        <form id="loginForm" onsubmit="return login(event)">
-            <div class="mb-3">
-                <input type="text" class="form-control" id="loginInput" placeholder="Email или юзернейм" required>
-            </div>
-            <div class="mb-3">
-                <input type="password" class="form-control" id="passwordInput" placeholder="Пароль" required>
-            </div>
-            <button type="submit" class="btn-primary" id="loginBtn">
-                <span class="loading" id="loginLoading"><i class="fas fa-spinner fa-spin"></i></span>
-                <span id="loginText"><i class="fas fa-sign-in-alt"></i> Войти</span>
+        <!-- Вкладки -->
+        <div class="auth-tabs">
+            <button class="tab-btn active" data-tab="tab-login" onclick="switchTab('tab-login')">
+                <i class="fas fa-sign-in-alt"></i> Вход
             </button>
-        </form>
-
-        <div class="mt-3" style="color: rgba(255,255,255,0.3); font-size: 13px;">
-            <a href="#" onclick="showRegister()" class="link-text">Создать аккаунт</a>
+            <button class="tab-btn" data-tab="tab-register" onclick="switchTab('tab-register')">
+                <i class="fas fa-user-plus"></i> Регистрация
+            </button>
         </div>
 
-        <div class="or-divider">или</div>
+        <!-- ============================================================ -->
+        <!-- ПАНЕЛЬ ВХОДА -->
+        <!-- ============================================================ -->
+        <div class="tab-panel active" id="tab-login">
+            <!-- Способ входа -->
+            <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+                <button class="btn-outline active" style="flex:1;" id="loginMethodEmail" onclick="setLoginMethod('email')">
+                    <i class="fas fa-envelope"></i> Email
+                </button>
+                <button class="btn-outline" style="flex:1;" id="loginMethodMovieId" onclick="setLoginMethod('movieid')">
+                    <i class="fas fa-id-card"></i> Movie ID
+                </button>
+            </div>
 
-        <!-- Google Login -->
-        <div class="google-btn-wrapper" id="googleButtonContainer"></div>
+            <!-- Форма входа по Email -->
+            <div id="loginEmailForm">
+                <div class="mb-3">
+                    <label class="form-label">Email или юзернейм</label>
+                    <input type="text" class="form-control" id="loginEmailInput" placeholder="example@mail.com или username">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Пароль</label>
+                    <input type="password" class="form-control" id="loginPasswordInput" placeholder="••••••••">
+                </div>
+                <button class="btn-primary" onclick="loginWithEmail()" id="loginEmailBtn">
+                    <span class="loading" id="loginEmailLoading"><i class="fas fa-spinner fa-spin"></i></span>
+                    <span id="loginEmailText"><i class="fas fa-sign-in-alt"></i> Войти</span>
+                </button>
+                <div class="info-text mt-2">
+                    <i class="fas fa-info-circle"></i> Введите email или юзернейм
+                </div>
+            </div>
 
-        <hr class="divider">
+            <!-- Форма входа по Movie ID -->
+            <div id="loginMovieIdForm" style="display:none;">
+                <div class="mb-3">
+                    <label class="form-label">Movie ID</label>
+                    <input type="number" class="form-control" id="loginMovieIdInput" placeholder="10000001">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Пароль</label>
+                    <input type="password" class="form-control" id="loginMovieIdPassword" placeholder="••••••••">
+                </div>
+                <button class="btn-primary" onclick="loginWithMovieId()" id="loginMovieIdBtn">
+                    <span class="loading" id="loginMovieIdLoading"><i class="fas fa-spinner fa-spin"></i></span>
+                    <span id="loginMovieIdText"><i class="fas fa-sign-in-alt"></i> Войти</span>
+                </button>
+                <div class="info-text mt-2">
+                    <i class="fas fa-info-circle"></i> Введите ваш Movie ID (число)
+                </div>
+            </div>
 
-        <div class="footer-text">
-            <i class="fas fa-shield-alt"></i> Безопасный вход
+            <div class="or-divider">или</div>
+
+            <!-- Google вход -->
+            <div class="google-btn-wrapper" id="googleButtonContainer"></div>
+            <div class="mt-2">
+                <button class="btn-telegram" onclick="loginWithTelegram()">
+                    <i class="fab fa-telegram"></i> Войти через Telegram
+                </button>
+            </div>
+
+            <!-- Статус Telegram -->
+            <div class="telegram-status" id="telegramStatus">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span class="status-icon">⏳</span>
+                    <div>
+                        <div class="status-text" id="telegramStatusText">Ожидание авторизации...</div>
+                        <div class="status-detail" id="telegramStatusDetail">Откройте бота и нажмите /start</div>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <span class="status-badge waiting" id="telegramBadge" style="display:inline-block; padding:2px 12px; border-radius:30px; font-size:11px; background:#2a2a2a; color:#888;">Ожидание</span>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                <span style="color:#555; font-size:13px;">Нет аккаунта? <a href="#" class="link-text link-highlight" onclick="switchTab('tab-register')">Создать</a></span>
+                <a href="#" class="link-text" onclick="showForgotPassword()" style="font-size:13px;">Забыли пароль?</a>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ПАНЕЛЬ РЕГИСТРАЦИИ -->
+        <!-- ============================================================ -->
+        <div class="tab-panel" id="tab-register">
+            <div id="registerStep1">
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="registerEmailInput" placeholder="example@mail.com">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Пароль (минимум 6 символов)</label>
+                    <input type="password" class="form-control" id="registerPasswordInput" placeholder="••••••••" minlength="6">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Подтвердите пароль</label>
+                    <input type="password" class="form-control" id="registerPasswordConfirmInput" placeholder="••••••••">
+                </div>
+                <button class="btn-primary" onclick="sendRegisterCode()" id="registerSendBtn">
+                    <span class="loading" id="registerSendLoading"><i class="fas fa-spinner fa-spin"></i></span>
+                    <span id="registerSendText"><i class="fas fa-envelope"></i> Получить код</span>
+                </button>
+            </div>
+
+            <div id="registerStep2" style="display:none;">
+                <p style="color:#888; font-size:14px;">
+                    Код отправлен на <span style="color:#0088cc;" id="registerEmailDisplay">email</span>
+                </p>
+                
+                <div class="code-display" id="registerCodeDisplay">—</div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Введите код подтверждения</label>
+                    <input type="text" class="form-control" id="registerCodeInput" placeholder="6-значный код" maxlength="6">
+                </div>
+                <button class="btn-primary" onclick="verifyRegisterCode()" id="registerVerifyBtn">
+                    <span class="loading" id="registerVerifyLoading"><i class="fas fa-spinner fa-spin"></i></span>
+                    <span id="registerVerifyText"><i class="fas fa-check"></i> Подтвердить</span>
+                </button>
+                <div class="info-text mt-2" id="registerTimerText">⏳ Код действителен 10 минут</div>
+                <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+                    <button class="btn-outline btn-sm" onclick="resendRegisterCode()" id="registerResendBtn" style="flex:1;">
+                        <i class="fas fa-redo"></i> Отправить повторно
+                    </button>
+                    <button class="btn-outline btn-sm" onclick="backToRegisterStep1()" style="flex:1; border-color:#2a2a2a;">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </button>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+            <div style="color:#555; font-size:13px;">
+                Уже есть аккаунт? <a href="#" class="link-text link-highlight" onclick="switchTab('tab-login')">Войти</a>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ВОССТАНОВЛЕНИЕ ПАРОЛЯ (модальное окно) -->
+        <!-- ============================================================ -->
+        <div id="forgotPasswordModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:#141414; border:1px solid #2a2a2a; border-radius:16px; padding:30px; max-width:420px; width:100%; margin:20px;">
+                <h3 style="color:#e8e8e8; font-weight:300; margin-bottom:16px;">Восстановление пароля</h3>
+                <p style="color:#666; font-size:14px; margin-bottom:16px;">Введите email, и мы отправим инструкции по восстановлению.</p>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="forgotEmailInput" placeholder="example@mail.com">
+                </div>
+                <button class="btn-primary" onclick="sendResetPassword()" id="resetBtn">
+                    <span class="loading" id="resetLoading"><i class="fas fa-spinner fa-spin"></i></span>
+                    <span id="resetText">Отправить</span>
+                </button>
+                <button class="btn-outline mt-2" onclick="closeForgotPassword()">
+                    <i class="fas fa-times"></i> Закрыть
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- СТРАНИЦА НАСТРОЙКИ ПРОФИЛЯ (встроенная) -->
+        <!-- ============================================================ -->
+        <div id="setupProfile" style="display:none;">
+            <h3 style="color:#e8e8e8; font-weight:300; margin-bottom:16px;">Настройка профиля</h3>
+            <p style="color:#666; font-size:14px; margin-bottom:16px;">Заполните информацию о себе</p>
+            
+            <!-- Avatar -->
+            <div class="mb-3">
+                <img id="setupAvatarPreview" class="avatar-preview" src="https://ui-avatars.com/api/?name=User&background=2a2a2a&color=cccccc&size=80&rounded=true" alt="Avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #333;margin:0 auto 12px;display:block;">
+                <div class="file-upload-wrapper" style="position:relative;display:inline-block;width:100%;">
+                    <div class="file-upload-btn" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:10px 16px;color:#ccc;display:flex;align-items:center;gap:10px;transition:0.2s;width:100%;justify-content:center;cursor:pointer;">
+                        <i class="fas fa-upload"></i> Загрузить аватар
+                        <input type="file" accept="image/*" id="setupAvatarFile" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;top:0;left:0;" onchange="previewSetupImage(this, 'setupAvatarPreview', 'setupPhotoUrl')">
+                    </div>
+                </div>
+                <input type="hidden" id="setupPhotoUrl" value="">
+                <div class="help-text" style="color:#555;font-size:12px;margin-top:4px;">Или вставьте ссылку на изображение</div>
+                <input type="text" class="form-control mt-1" id="setupPhotoUrlInput" placeholder="Ссылка на аватар" oninput="document.getElementById('setupAvatarPreview').src=this.value">
+            </div>
+
+            <!-- Banner -->
+            <div class="mb-3">
+                <img id="setupBannerPreview" class="banner-preview" src="" alt="Баннер" style="display:none;width:100%;height:120px;object-fit:cover;border-radius:12px;border:1px solid #2a2a2a;margin-bottom:12px;background:#1a1a1a;">
+                <div class="file-upload-wrapper" style="position:relative;display:inline-block;width:100%;">
+                    <div class="file-upload-btn" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:10px 16px;color:#ccc;display:flex;align-items:center;gap:10px;transition:0.2s;width:100%;justify-content:center;cursor:pointer;">
+                        <i class="fas fa-upload"></i> Загрузить баннер
+                        <input type="file" accept="image/*" id="setupBannerFile" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;top:0;left:0;" onchange="previewSetupImage(this, 'setupBannerPreview', 'setupBannerUrl')">
+                    </div>
+                </div>
+                <input type="hidden" id="setupBannerUrl" value="">
+                <div class="help-text" style="color:#555;font-size:12px;margin-top:4px;">Широкое изображение для фона профиля</div>
+                <input type="text" class="form-control mt-1" id="setupBannerUrlInput" placeholder="Ссылка на баннер" oninput="document.getElementById('setupBannerPreview').src=this.value;document.getElementById('setupBannerPreview').style.display=this.value?'block':'none'">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Юзернейм (уникальный)</label>
+                <input type="text" class="form-control" id="setupUsernameInput" placeholder="username" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Отображаемое имя</label>
+                <input type="text" class="form-control" id="setupDisplayNameInput" placeholder="Ваше имя">
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="form-label">Имя</label>
+                    <input type="text" class="form-control" id="setupFirstNameInput" placeholder="Имя">
+                </div>
+                <div class="col-6">
+                    <label class="form-label">Фамилия</label>
+                    <input type="text" class="form-control" id="setupLastNameInput" placeholder="Фамилия">
+                </div>
+            </div>
+
+            <div class="movie-id-display">
+                <div class="label"><i class="fas fa-id-card"></i> Ваш Movie ID</div>
+                <div class="value" id="setupMovieIdDisplay">—</div>
+            </div>
+
+            <button class="btn-primary" onclick="completeRegistration()" id="setupCompleteBtn">
+                <span class="loading" id="setupCompleteLoading"><i class="fas fa-spinner fa-spin"></i></span>
+                <span id="setupCompleteText"><i class="fas fa-check"></i> Завершить регистрацию</span>
+            </button>
+            <button class="btn-outline mt-2" onclick="cancelSetup()">
+                <i class="fas fa-times"></i> Отмена
+            </button>
         </div>
     </div>
 
     <script>
+        // ============================================================
+        // КОНФИГУРАЦИЯ
+        // ============================================================
         const GOOGLE_CLIENT_ID = "{{ GOOGLE_CLIENT_ID }}";
+        const BOT_USERNAME = "{{ BOT_USERNAME or 'topzfilmz_bot' }}";
 
-        function showError(msg) {
-            document.getElementById('errorMsg').style.display = 'block';
-            document.getElementById('errorText').textContent = msg;
-            document.getElementById('successMsg').style.display = 'none';
-        }
+        let registeredEmail = '';
+        let registeredMovieId = null;
+        let registerTimer = null;
+        let telegramPollInterval = null;
+        let telegramToken = null;
+        let currentLoginMethod = 'email';
+        let setupMovieId = null;
 
-        function showSuccess(msg) {
-            document.getElementById('successMsg').style.display = 'block';
-            document.getElementById('successText').textContent = msg;
+        // ============================================================
+        // ВКЛАДКИ
+        // ============================================================
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.auth-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.auth-tabs .tab-btn[data-tab="${tabId}"]`).classList.add('active');
+            
             document.getElementById('errorMsg').style.display = 'none';
-        }
-
-        function setLoading(btnId, loading) {
-            const btn = document.getElementById(btnId);
-            const loadingEl = btn.querySelector('.loading');
-            const textEl = btn.querySelector('span:not(.loading)');
-            if (loading) {
-                loadingEl.classList.add('show');
-                if (textEl) textEl.style.display = 'none';
-                btn.disabled = true;
+            document.getElementById('successMsg').style.display = 'none';
+            
+            if (tabId === 'tab-login') {
+                document.getElementById('mainSubtitle').textContent = 'Войдите в свой аккаунт';
             } else {
-                loadingEl.classList.remove('show');
-                if (textEl) textEl.style.display = 'inline';
-                btn.disabled = false;
+                document.getElementById('mainSubtitle').textContent = 'Создайте новый аккаунт';
             }
         }
 
-        async function login(e) {
-            e.preventDefault();
-            const email_or_username = document.getElementById('loginInput').value.trim();
-            const password = document.getElementById('passwordInput').value;
+        // ============================================================
+        // МЕТОДЫ ВХОДА
+        // ============================================================
+        function setLoginMethod(method) {
+            currentLoginMethod = method;
+            document.querySelectorAll('#tab-login .btn-outline').forEach(b => b.classList.remove('active'));
+            
+            if (method === 'email') {
+                document.getElementById('loginMethodEmail').classList.add('active');
+                document.getElementById('loginEmailForm').style.display = 'block';
+                document.getElementById('loginMovieIdForm').style.display = 'none';
+            } else {
+                document.getElementById('loginMethodMovieId').classList.add('active');
+                document.getElementById('loginEmailForm').style.display = 'none';
+                document.getElementById('loginMovieIdForm').style.display = 'block';
+            }
+        }
+
+        // ============================================================
+        // ВХОД ПО EMAIL
+        // ============================================================
+        async function loginWithEmail() {
+            const email_or_username = document.getElementById('loginEmailInput').value.trim();
+            const password = document.getElementById('loginPasswordInput').value;
 
             if (!email_or_username || !password) {
                 showError('Заполните все поля');
                 return;
             }
 
-            setLoading('loginBtn', true);
-            document.getElementById('errorMsg').style.display = 'none';
+            setLoading('loginEmailBtn', true);
+            hideMessages();
 
             try {
                 const res = await fetch('/api/auth/login', {
@@ -293,9 +806,7 @@
 
                 if (res.ok && data.success) {
                     showSuccess('✅ Вход выполнен! Перенаправление...');
-                    setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 1500);
+                    setTimeout(() => window.location.href = '/dashboard', 1500);
                 } else {
                     showError(data.detail || 'Ошибка входа');
                 }
@@ -303,15 +814,165 @@
                 showError('Ошибка соединения с сервером');
                 console.error(err);
             } finally {
-                setLoading('loginBtn', false);
+                setLoading('loginEmailBtn', false);
             }
         }
 
-        function showRegister() {
-            window.location.href = '/register';
+        // ============================================================
+        // ВХОД ПО MOVIE ID
+        // ============================================================
+        async function loginWithMovieId() {
+            const movie_id = document.getElementById('loginMovieIdInput').value.trim();
+            const password = document.getElementById('loginMovieIdPassword').value;
+
+            if (!movie_id || !password) {
+                showError('Заполните все поля');
+                return;
+            }
+
+            setLoading('loginMovieIdBtn', true);
+            hideMessages();
+
+            try {
+                const res = await fetch('/api/auth/login-movieid', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ movie_id: parseInt(movie_id), password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    showSuccess('✅ Вход выполнен! Перенаправление...');
+                    setTimeout(() => window.location.href = '/dashboard', 1500);
+                } else {
+                    showError(data.detail || 'Ошибка входа');
+                }
+            } catch (err) {
+                showError('Ошибка соединения с сервером');
+                console.error(err);
+            } finally {
+                setLoading('loginMovieIdBtn', false);
+            }
         }
 
-        // Google Login
+        // ============================================================
+        // ВХОД ЧЕРЕЗ TELEGRAM
+        // ============================================================
+        async function loginWithTelegram() {
+            const statusEl = document.getElementById('telegramStatus');
+            statusEl.classList.add('show');
+            document.getElementById('telegramStatusText').textContent = 'Инициализация...';
+            document.getElementById('telegramStatusDetail').textContent = 'Подключение к боту';
+            document.getElementById('telegramBadge').textContent = 'Подключение';
+            document.getElementById('telegramBadge').style.background = '#2a3a2a';
+            document.getElementById('telegramBadge').style.color = '#88cc88';
+
+            try {
+                const token = 'auth_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                telegramToken = token;
+
+                const res = await fetch('/api/auth/telegram-init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok || !data.success) {
+                    showError(data.error || 'Ошибка инициализации');
+                    statusEl.classList.remove('show');
+                    return;
+                }
+
+                // Открываем бота
+                const botUrl = `https://t.me/${BOT_USERNAME}?start=${token}`;
+                window.open(botUrl, '_blank');
+
+                document.getElementById('telegramStatusText').textContent = 'Ожидание авторизации...';
+                document.getElementById('telegramStatusDetail').textContent = 'Откройте бота и нажмите /start';
+                document.getElementById('telegramBadge').textContent = 'Ожидание';
+                document.getElementById('telegramBadge').style.background = '#2a2a2a';
+                document.getElementById('telegramBadge').style.color = '#888';
+
+                // Начинаем polling
+                startTelegramPolling(token);
+
+            } catch (err) {
+                showError('Ошибка соединения с сервером');
+                console.error(err);
+                statusEl.classList.remove('show');
+            }
+        }
+
+        function startTelegramPolling(token) {
+            let attempts = 0;
+            const maxAttempts = 60; // 2 минуты
+
+            if (telegramPollInterval) {
+                clearInterval(telegramPollInterval);
+            }
+
+            // Первая проверка через 1.5 секунды
+            setTimeout(() => checkTelegramStatus(token), 1500);
+
+            telegramPollInterval = setInterval(async () => {
+                attempts++;
+                if (attempts > maxAttempts) {
+                    clearInterval(telegramPollInterval);
+                    document.getElementById('telegramStatusText').textContent = '❌ Время истекло';
+                    document.getElementById('telegramStatusDetail').textContent = 'Попробуйте снова';
+                    document.getElementById('telegramBadge').textContent = 'Истекло';
+                    document.getElementById('telegramBadge').style.background = '#3a1a1a';
+                    document.getElementById('telegramBadge').style.color = '#cc8888';
+                    return;
+                }
+                await checkTelegramStatus(token);
+            }, 2000);
+        }
+
+        async function checkTelegramStatus(token) {
+            try {
+                const res = await fetch('/api/auth/telegram-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                const data = await res.json();
+
+                if (data.authenticated) {
+                    clearInterval(telegramPollInterval);
+                    document.getElementById('telegramStatusText').textContent = '✅ Авторизация успешна!';
+                    document.getElementById('telegramStatusDetail').textContent = 'Перенаправление...';
+                    document.getElementById('telegramBadge').textContent = 'Успешно';
+                    document.getElementById('telegramBadge').style.background = '#1a3a1a';
+                    document.getElementById('telegramBadge').style.color = '#88cc88';
+                    
+                    showSuccess('✅ Вход выполнен! Перенаправление...');
+                    setTimeout(() => window.location.href = '/dashboard', 1500);
+                    return true;
+                } else if (data.status === 'expired') {
+                    clearInterval(telegramPollInterval);
+                    document.getElementById('telegramStatusText').textContent = '❌ Сессия истекла';
+                    document.getElementById('telegramStatusDetail').textContent = 'Попробуйте снова';
+                    document.getElementById('telegramBadge').textContent = 'Истекло';
+                    document.getElementById('telegramBadge').style.background = '#3a1a1a';
+                    document.getElementById('telegramBadge').style.color = '#cc8888';
+                    showError('Время сессии истекло');
+                    return false;
+                }
+                return false;
+            } catch (err) {
+                console.error('Polling error:', err);
+                return false;
+            }
+        }
+
+        // ============================================================
+        // GOOGLE LOGIN
+        // ============================================================
         function initGoogleLogin() {
             if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "" || GOOGLE_CLIENT_ID === "{{ GOOGLE_CLIENT_ID }}") {
                 console.warn("Google Client ID не задан");
@@ -366,9 +1027,7 @@
 
                 if (res.ok && data.success) {
                     showSuccess('✅ Вход через Google выполнен! Перенаправление...');
-                    setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 1500);
+                    setTimeout(() => window.location.href = '/dashboard', 1500);
                 } else {
                     showError(data.detail || 'Ошибка входа через Google');
                 }
@@ -395,16 +1054,429 @@
             }
         }
 
-        // Enter для входа
-        document.getElementById('passwordInput')?.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') login(e);
-        });
-        document.getElementById('loginInput')?.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') document.getElementById('passwordInput').focus();
+        // ============================================================
+        // РЕГИСТРАЦИЯ
+        // ============================================================
+        async function sendRegisterCode() {
+            const email = document.getElementById('registerEmailInput').value.trim();
+            const password = document.getElementById('registerPasswordInput').value;
+            const passwordConfirm = document.getElementById('registerPasswordConfirmInput').value;
+
+            if (!email || !password || !passwordConfirm) {
+                showError('Заполните все поля');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Пароль должен быть минимум 6 символов');
+                return;
+            }
+
+            if (password !== passwordConfirm) {
+                showError('Пароли не совпадают');
+                return;
+            }
+
+            setLoading('registerSendBtn', true);
+            hideMessages();
+
+            try {
+                const res = await fetch('/api/auth/send-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    registeredEmail = email;
+                    document.getElementById('registerEmailDisplay').textContent = email;
+                    
+                    if (data.debug_code) {
+                        document.getElementById('registerCodeDisplay').textContent = data.debug_code;
+                        document.getElementById('registerCodeDisplay').style.display = 'block';
+                    } else {
+                        document.getElementById('registerCodeDisplay').style.display = 'none';
+                    }
+                    
+                    document.getElementById('registerStep1').style.display = 'none';
+                    document.getElementById('registerStep2').style.display = 'block';
+                    document.getElementById('registerCodeInput').value = '';
+                    document.getElementById('registerCodeInput').focus();
+                    startRegisterTimer();
+                    
+                    showSuccess('✅ Код отправлен' + (data.debug_code ? ' (см. код выше)' : ' на email'));
+                } else {
+                    showError(data.detail || 'Ошибка отправки кода');
+                }
+            } catch (err) {
+                showError('Ошибка соединения с сервером');
+                console.error(err);
+            } finally {
+                setLoading('registerSendBtn', false);
+            }
+        }
+
+        async function verifyRegisterCode() {
+            const code = document.getElementById('registerCodeInput').value.trim();
+            const email = registeredEmail;
+            const password = document.getElementById('registerPasswordInput').value;
+
+            if (!code || code.length < 6) {
+                showError('Введите 6-значный код');
+                return;
+            }
+
+            setLoading('registerVerifyBtn', true);
+            hideMessages();
+
+            try {
+                const res = await fetch('/api/auth/verify-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, code, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    registeredMovieId = data.movie_id;
+                    showSuccess('✅ Email подтвержден!');
+                    
+                    // Переключаемся на настройку профиля
+                    showSetupProfile(data.movie_id);
+                } else {
+                    showError(data.detail || 'Неверный код');
+                    document.getElementById('registerCodeInput').value = '';
+                    document.getElementById('registerCodeInput').focus();
+                }
+            } catch (err) {
+                showError('Ошибка соединения с сервером');
+                console.error(err);
+            } finally {
+                setLoading('registerVerifyBtn', false);
+            }
+        }
+
+        async function resendRegisterCode() {
+            const email = registeredEmail;
+            if (!email) {
+                showError('Email не найден');
+                backToRegisterStep1();
+                return;
+            }
+
+            setLoading('registerResendBtn', true);
+            hideMessages();
+
+            try {
+                const res = await fetch('/api/auth/send-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    if (data.debug_code) {
+                        document.getElementById('registerCodeDisplay').textContent = data.debug_code;
+                        document.getElementById('registerCodeDisplay').style.display = 'block';
+                        showSuccess('✅ Новый код: ' + data.debug_code);
+                    } else {
+                        document.getElementById('registerCodeDisplay').style.display = 'none';
+                        showSuccess('✅ Код отправлен повторно');
+                    }
+                    document.getElementById('registerCodeInput').value = '';
+                    document.getElementById('registerCodeInput').focus();
+                    startRegisterTimer();
+                } else {
+                    showError(data.detail || 'Ошибка отправки кода');
+                }
+            } catch (err) {
+                showError('Ошибка соединения с сервером');
+                console.error(err);
+            } finally {
+                setLoading('registerResendBtn', false);
+            }
+        }
+
+        function startRegisterTimer() {
+            if (registerTimer) clearInterval(registerTimer);
+            let seconds = 600;
+            const timerEl = document.getElementById('registerTimerText');
+            registerTimer = setInterval(() => {
+                seconds--;
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                timerEl.textContent = `⏳ Код действителен ${mins}:${secs.toString().padStart(2, '0')}`;
+                if (seconds <= 0) {
+                    clearInterval(registerTimer);
+                    timerEl.textContent = '⏳ Код истек. Запросите новый.';
+                    document.getElementById('registerVerifyBtn').disabled = true;
+                }
+            }, 1000);
+        }
+
+        function backToRegisterStep1() {
+            document.getElementById('registerStep1').style.display = 'block';
+            document.getElementById('registerStep2').style.display = 'none';
+            if (registerTimer) {
+                clearInterval(registerTimer);
+                registerTimer = null;
+            }
+            document.getElementById('registerVerifyBtn').disabled = false;
+            hideMessages();
+        }
+
+        // ============================================================
+        // НАСТРОЙКА ПРОФИЛЯ
+        // ============================================================
+        function showSetupProfile(movieId) {
+            setupMovieId = movieId;
+            document.getElementById('setupMovieIdDisplay').textContent = movieId;
+            
+            // Скрываем все панели
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.auth-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            
+            // Показываем настройку профиля
+            document.getElementById('setupProfile').style.display = 'block';
+            document.getElementById('mainSubtitle').textContent = 'Завершите настройку профиля';
+            
+            // Заполняем username из email
+            const email = registeredEmail;
+            if (email) {
+                const suggestedUsername = email.split('@')[0];
+                document.getElementById('setupUsernameInput').value = suggestedUsername;
+            }
+            
+            hideMessages();
+        }
+
+        function previewSetupImage(input, previewId, urlInputId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById(previewId);
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    document.getElementById(urlInputId).value = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function cancelSetup() {
+            document.getElementById('setupProfile').style.display = 'none';
+            document.getElementById('mainSubtitle').textContent = 'Войдите в свой аккаунт';
+            switchTab('tab-login');
+        }
+
+        async function completeRegistration() {
+            const username = document.getElementById('setupUsernameInput').value.trim();
+            const display_name = document.getElementById('setupDisplayNameInput').value.trim();
+            const first_name = document.getElementById('setupFirstNameInput').value.trim();
+            const last_name = document.getElementById('setupLastNameInput').value.trim();
+            const photo_url = document.getElementById('setupPhotoUrl').value.trim() || document.getElementById('setupPhotoUrlInput').value.trim();
+            const banner_url = document.getElementById('setupBannerUrl').value.trim() || document.getElementById('setupBannerUrlInput').value.trim();
+
+            if (!username || username.length < 3) {
+                showError('Юзернейм должен быть минимум 3 символа');
+                return;
+            }
+
+            if (!setupMovieId) {
+                showError('Ошибка: Movie ID не найден');
+                return;
+            }
+
+            setLoading('setupCompleteBtn', true);
+            hideMessages();
+
+            try {
+                const res = await fetch('/api/auth/setup-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        movie_id: setupMovieId,
+                        username,
+                        display_name: display_name || username,
+                        first_name,
+                        last_name,
+                        photo_url,
+                        banner_url
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    showSuccess('✅ Профиль сохранен! Перенаправление...');
+                    setTimeout(() => window.location.href = '/dashboard', 1500);
+                } else {
+                    showError(data.detail || 'Ошибка сохранения профиля');
+                }
+            } catch (err) {
+                showError('Ошибка соединения с сервером');
+                console.error(err);
+            } finally {
+                setLoading('setupCompleteBtn', false);
+            }
+        }
+
+        // Проверка username в реальном времени
+        let usernameCheckTimeout = null;
+        document.getElementById('setupUsernameInput')?.addEventListener('input', function() {
+            const username = this.value.trim();
+            if (username.length < 3) return;
+            
+            clearTimeout(usernameCheckTimeout);
+            usernameCheckTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch('/api/auth/check-username', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username })
+                    });
+                    const data = await res.json();
+                    if (!data.available) {
+                        showError('Этот юзернейм уже занят');
+                    } else {
+                        document.getElementById('errorMsg').style.display = 'none';
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }, 500);
         });
 
+        // ============================================================
+        // ВОССТАНОВЛЕНИЕ ПАРОЛЯ
+        // ============================================================
+        function showForgotPassword() {
+            document.getElementById('forgotPasswordModal').style.display = 'flex';
+            document.getElementById('forgotEmailInput').value = '';
+            hideMessages();
+        }
+
+        function closeForgotPassword() {
+            document.getElementById('forgotPasswordModal').style.display = 'none';
+        }
+
+        async function sendResetPassword() {
+            const email = document.getElementById('forgotEmailInput').value.trim();
+            if (!email) {
+                showError('Введите email');
+                return;
+            }
+
+            setLoading('resetBtn', true);
+            hideMessages();
+
+            try {
+                const res = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    showSuccess('✅ Инструкции отправлены на email');
+                    setTimeout(closeForgotPassword, 2000);
+                } else {
+                    showError(data.detail || 'Ошибка отправки');
+                }
+            } catch (err) {
+                showError('Ошибка соединения с сервером');
+                console.error(err);
+            } finally {
+                setLoading('resetBtn', false);
+            }
+        }
+
+        // ============================================================
+        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ============================================================
+        function showError(msg) {
+            document.getElementById('errorMsg').style.display = 'block';
+            document.getElementById('errorText').textContent = msg;
+            document.getElementById('successMsg').style.display = 'none';
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('successMsg').style.display = 'block';
+            document.getElementById('successText').textContent = msg;
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
+        }
+
+        function setLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            const loadingEl = btn.querySelector('.loading');
+            const textEl = btn.querySelector('span:not(.loading)');
+            if (loading) {
+                if (loadingEl) loadingEl.classList.add('show');
+                if (textEl) textEl.style.display = 'none';
+                btn.disabled = true;
+            } else {
+                if (loadingEl) loadingEl.classList.remove('show');
+                if (textEl) textEl.style.display = 'inline';
+                btn.disabled = false;
+            }
+        }
+
+        // Enter для быстрого ввода
+        document.getElementById('loginPasswordInput')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') loginWithEmail();
+        });
+        document.getElementById('loginEmailInput')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('loginPasswordInput').focus();
+        });
+        document.getElementById('loginMovieIdPassword')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') loginWithMovieId();
+        });
+        document.getElementById('registerCodeInput')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') verifyRegisterCode();
+        });
+        document.getElementById('setupUsernameInput')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') completeRegistration();
+        });
+
+        // ============================================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
+            // Проверяем, есть ли токен в URL (возврат с бота)
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            const statusFromUrl = urlParams.get('status');
+
+            if (tokenFromUrl && statusFromUrl === 'success') {
+                telegramToken = tokenFromUrl;
+                document.getElementById('telegramStatus').classList.add('show');
+                startTelegramPolling(tokenFromUrl);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            // Инициализация Google
             setTimeout(initGoogleLogin, 500);
+
+            // Автофокус на поле email
+            document.getElementById('loginEmailInput').focus();
+        });
+
+        // Закрытие модалки по клику вне
+        document.getElementById('forgotPasswordModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeForgotPassword();
         });
     </script>
 </body>
