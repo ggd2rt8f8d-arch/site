@@ -69,12 +69,13 @@ movie_id_counter = 10000001
 
 # ==================== EMAIL ====================
 def send_verification_email(email: str, code: str):
-    """Отправка кода подтверждения на email с таймаутом"""
+    """Отправка кода подтверждения на email"""
     try:
+        # Проверяем настройки SMTP
         if not SMTP_USER or not SMTP_PASSWORD:
-            logger.warning("SMTP не настроен! Код сохранен в лог.")
-            logger.info(f"📧 Код для {email}: {code}")
-            return True  # Возвращаем True для отладки
+            logger.warning("SMTP не настроен! Проверьте переменные окружения.")
+            logger.info(f"Код для {email}: {code}")
+            return False
             
         logger.info(f"Отправка email на {email} с кодом {code}")
         
@@ -84,6 +85,7 @@ def send_verification_email(email: str, code: str):
         msg['To'] = email
         msg['Subject'] = 'Код подтверждения — Movie Admin'
         
+        # Текстовая версия
         text = f"""
         Код подтверждения регистрации: {code}
         
@@ -92,6 +94,7 @@ def send_verification_email(email: str, code: str):
         Если вы не регистрировались, проигнорируйте это письмо.
         """
         
+        # HTML версия
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -111,7 +114,7 @@ def send_verification_email(email: str, code: str):
                                 </td>
                             </tr>
                             <tr>
-                                <td style="background: #0d0d0d; border-radius: 12px; padding: 24px; text-align: center;">
+                                <td style="background: #0d0d0d; border-radius: 12px; padding: 24px; text-align: center; margin: 16px 0;">
                                     <span style="font-size: 40px; font-weight: 700; color: #0088cc; letter-spacing: 10px; font-family: monospace;">{code}</span>
                                 </td>
                             </tr>
@@ -131,43 +134,31 @@ def send_verification_email(email: str, code: str):
         </html>
         """
         
+        # Прикрепляем обе версии
         part1 = MIMEText(text, 'plain')
         part2 = MIMEText(html, 'html')
         msg.attach(part1)
         msg.attach(part2)
         
-        # Устанавливаем таймауты
+        # Отправляем
         logger.info(f"Подключение к SMTP серверу {SMTP_HOST}:{SMTP_PORT}")
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+        server.set_debuglevel(1)  # Включаем отладку
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
         
-        # Пробуем разные способы подключения
-        try:
-            # Способ 1: с таймаутом
-            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30)
-            server.set_debuglevel(0)  # Отключаем отладку для скорости
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.send_message(msg)
-            server.quit()
-            
-            logger.info(f"✅ Email успешно отправлен на {email}")
-            return True
-            
-        except socket.timeout:
-            logger.error("❌ Таймаут подключения к SMTP серверу")
-            return False
-        except ssl.SSLError as e:
-            logger.error(f"❌ SSL ошибка: {e}")
-            return False
-        except smtplib.SMTPAuthenticationError as e:
-            logger.error(f"❌ Ошибка аутентификации: {e}")
-            logger.error("Проверьте SMTP_USER и SMTP_PASSWORD")
-            return False
-        except smtplib.SMTPException as e:
-            logger.error(f"❌ SMTP ошибка: {e}")
-            return False
-            
+        logger.info(f"✅ Email успешно отправлен на {email}")
+        return True
+        
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"❌ Ошибка аутентификации SMTP: {e}")
+        logger.error("Проверьте SMTP_USER и SMTP_PASSWORD")
+        return False
+    except smtplib.SMTPException as e:
+        logger.error(f"❌ SMTP ошибка: {e}")
+        return False
     except Exception as e:
         logger.error(f"❌ Ошибка отправки email: {e}")
         import traceback
@@ -1654,24 +1645,28 @@ async def send_verification_code(request: Request, data: dict):
         "expires_at": expires_at
     }
     
-    # Отправляем email в фоновом режиме
-    try:
-        # Запускаем отправку в отдельном потоке, чтобы не блокировать ответ
-        import threading
-        thread = threading.Thread(target=send_verification_email, args=(email, code))
-        thread.daemon = True
-        thread.start()
-        
-        # Возвращаем успех сразу, не дожидаясь отправки
+    # Проверяем настройки SMTP
+    if not SMTP_USER or not SMTP_PASSWORD:
+        logger.warning("⚠️ SMTP не настроен! Код сохранен в лог.")
+        logger.info(f"📧 Код для {email}: {code}")
+        return {
+            "success": True, 
+            "message": "Код сохранен в лог (SMTP не настроен)",
+            "debug_code": code  # Только для отладки!
+        }
+    
+    # Отправляем email
+    success = send_verification_email(email, code)
+    
+    if success:
         return {"success": True, "message": "Код отправлен на email"}
-        
-    except Exception as e:
-        logger.error(f"Ошибка при отправке email: {e}")
-        # В случае ошибки возвращаем код для отладки
+    else:
+        # Если отправка не удалась, возвращаем код для отладки
+        logger.warning(f"⚠️ Отправка email не удалась, код для {email}: {code}")
         return {
             "success": True, 
             "message": "Код отправлен на email (проверьте логи)",
-            "debug_code": code
+            "debug_code": code  # Только для отладки!
         }
         
 @app.post("/api/auth/verify-code")
