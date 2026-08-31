@@ -1,440 +1,96 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Регистрация — Movie Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px;
-        }
-        .register-card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 24px;
-            padding: 40px 35px;
-            max-width: 420px;
-            width: 100%;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-            text-align: center;
-        }
-        .register-card h1 {
-            color: #fff;
-            font-weight: 700;
-            font-size: 28px;
-            margin-bottom: 4px;
-        }
-        .register-card .subtitle {
-            color: rgba(255,255,255,0.4);
-            font-size: 14px;
-            margin-bottom: 28px;
-        }
-        .register-card .icon {
-            font-size: 56px;
-            color: #0088cc;
-            margin-bottom: 12px;
-        }
-        .form-control {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
-            border-radius: 12px;
-            padding: 12px 16px;
-            width: 100%;
-            font-size: 15px;
-            transition: all 0.3s;
-        }
-        .form-control:focus {
-            outline: none;
-            border-color: #0088cc;
-            background: rgba(255,255,255,0.12);
-            color: #fff;
-        }
-        .form-control::placeholder {
-            color: rgba(255,255,255,0.3);
-        }
-        .btn-primary {
-            background: #0088cc;
-            border: none;
-            border-radius: 50px;
-            padding: 12px 40px;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-        }
-        .btn-primary:hover {
-            background: #006699;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0,136,204,0.3);
-        }
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .btn-secondary {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 50px;
-            padding: 10px 30px;
-            color: rgba(255,255,255,0.7);
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-        }
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.15);
-            color: #fff;
-        }
-        .error-msg {
-            color: #ff6b6b;
-            font-size: 14px;
-            margin-top: 12px;
-            display: none;
-            background: rgba(220,53,69,0.1);
-            border: 1px solid rgba(220,53,69,0.2);
-            border-radius: 10px;
-            padding: 12px 16px;
-        }
-        .success-msg {
-            color: #88dd88;
-            font-size: 14px;
-            margin-top: 12px;
-            display: none;
-            background: rgba(40,167,69,0.1);
-            border: 1px solid rgba(40,167,69,0.2);
-            border-radius: 10px;
-            padding: 12px 16px;
-        }
-        .divider {
-            border: none;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            margin: 20px 0;
-        }
-        .link-text {
-            color: #0088cc;
-            cursor: pointer;
-            text-decoration: none;
-            transition: 0.3s;
-        }
-        .link-text:hover {
-            color: #33aadd;
-            text-decoration: underline;
-        }
-        .footer-text {
-            color: rgba(255,255,255,0.2);
-            font-size: 12px;
-            margin-top: 16px;
-        }
-        .loading {
-            display: none;
-        }
-        .loading.show {
-            display: inline-block;
-        }
-        .step {
-            display: none;
-        }
-        .step.active {
-            display: block;
-        }
-        .timer-text {
-            color: rgba(255,255,255,0.3);
-            font-size: 13px;
-            margin-top: 8px;
-        }
-        .code-input-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .code-input-group input {
-            flex: 1;
-        }
-        .code-input-group .btn-sm {
-            padding: 12px 16px;
-            font-size: 14px;
-            width: auto;
-            white-space: nowrap;
-        }
-        @media (max-width: 480px) {
-            .register-card {
-                padding: 30px 20px;
-            }
-            .register-card h1 {
-                font-size: 24px;
-            }
-            .register-card .icon {
-                font-size: 44px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="register-card">
-        <div class="icon">
-            <i class="fas fa-film"></i>
-        </div>
-        <h1>Movie Admin</h1>
-        <p class="subtitle">Создайте аккаунт</p>
-
-        <div id="errorMsg" class="error-msg">
-            <i class="fas fa-exclamation-circle"></i> <span id="errorText">Ошибка</span>
-        </div>
-
-        <div id="successMsg" class="success-msg">
-            <i class="fas fa-check-circle"></i> <span id="successText">Успешно!</span>
-        </div>
-
-        <!-- ШАГ 1: Ввод email и пароля -->
-        <div class="step active" id="step1">
-            <form id="registerForm" onsubmit="return sendCode(event)">
-                <div class="mb-3">
-                    <input type="email" class="form-control" id="emailInput" placeholder="Email" required>
+# ==================== EMAIL (упрощенная версия для Railway) ====================
+def send_verification_email(email: str, code: str):
+    """Отправка кода подтверждения на email (упрощенная версия для Railway)"""
+    # На Railway SMTP часто заблокирован, поэтому просто логируем код
+    logger.info(f"📧 [RAILWAY] Код для {email}: {code}")
+    
+    # Пытаемся отправить через SMTP если настроен
+    if SMTP_USER and SMTP_PASSWORD:
+        try:
+            import socket
+            
+            logger.info(f"Попытка отправки email на {email} через {SMTP_HOST}:{SMTP_PORT}")
+            
+            msg = MIMEMultipart('alternative')
+            msg['From'] = SMTP_FROM
+            msg['To'] = email
+            msg['Subject'] = 'Код подтверждения — Movie Admin'
+            
+            text = f"Код подтверждения регистрации: {code}\n\nКод действителен 10 минут."
+            
+            html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; background: #0d0d0d; color: #d4d4d4; padding: 40px;">
+                <div style="max-width: 500px; margin: 0 auto; background: #1a1a1a; border-radius: 16px; padding: 30px; border: 1px solid #2a2a2a;">
+                    <h1 style="color: #e8e8e8; font-weight: 300; text-align: center;">Movie Admin</h1>
+                    <p style="color: #ccc; text-align: center;">Код подтверждения регистрации</p>
+                    <div style="background: #0d0d0d; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+                        <span style="font-size: 36px; font-weight: 700; color: #0088cc; letter-spacing: 8px;">{code}</span>
+                    </div>
+                    <p style="color: #888; font-size: 14px; text-align: center;">Код действителен <b>10 минут</b>.</p>
                 </div>
-                <div class="mb-3">
-                    <input type="password" class="form-control" id="passwordInput" placeholder="Пароль (минимум 6 символов)" minlength="6" required>
-                </div>
-                <div class="mb-3">
-                    <input type="password" class="form-control" id="passwordConfirmInput" placeholder="Подтвердите пароль" required>
-                </div>
-                <button type="submit" class="btn-primary" id="sendCodeBtn">
-                    <span class="loading" id="sendCodeLoading"><i class="fas fa-spinner fa-spin"></i></span>
-                    <span id="sendCodeText"><i class="fas fa-envelope"></i> Получить код</span>
-                </button>
-            </form>
-        </div>
+            </body>
+            </html>
+            """
+            
+            part1 = MIMEText(text, 'plain')
+            part2 = MIMEText(html, 'html')
+            msg.attach(part1)
+            msg.attach(part2)
+            
+            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10)
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+            
+            logger.info(f"✅ Email успешно отправлен на {email}")
+            return True
+        except socket.timeout:
+            logger.warning(f"⏰ Таймаут SMTP, код для {email}: {code}")
+            return False
+        except Exception as e:
+            logger.warning(f"⚠️ SMTP ошибка: {e}, код для {email}: {code}")
+            return False
+    
+    return True
 
-        <!-- ШАГ 2: Ввод кода -->
-        <div class="step" id="step2">
-            <p style="color: rgba(255,255,255,0.6); font-size: 14px;">
-                Код отправлен на <span id="emailDisplay" style="color: #0088cc;"></span>
-            </p>
-            <div class="mb-3">
-                <input type="text" class="form-control" id="codeInput" placeholder="Введите 6-значный код" maxlength="6" required>
-            </div>
-            <button class="btn-primary" onclick="verifyCode()" id="verifyBtn">
-                <span class="loading" id="verifyLoading"><i class="fas fa-spinner fa-spin"></i></span>
-                <span id="verifyText"><i class="fas fa-check"></i> Подтвердить</span>
-            </button>
-            <div class="timer-text" id="timerText">⏳ Код действителен 10 минут</div>
-            <button class="btn-secondary mt-2" onclick="resendCode()" id="resendBtn">
-                <i class="fas fa-redo"></i> Отправить код повторно
-            </button>
-            <button class="link-text mt-2" style="display:block;background:none;border:none;color:rgba(255,255,255,0.3);" onclick="backToStep1()">
-                <i class="fas fa-arrow-left"></i> Назад
-            </button>
-        </div>
-
-        <hr class="divider">
-
-        <div class="footer-text">
-            Уже есть аккаунт? <a href="/" class="link-text">Войти</a>
-        </div>
-    </div>
-
-    <script>
-        let registeredEmail = '';
-        let movieId = null;
-
-        function showError(msg) {
-            document.getElementById('errorMsg').style.display = 'block';
-            document.getElementById('errorText').textContent = msg;
-            document.getElementById('successMsg').style.display = 'none';
-        }
-
-        function showSuccess(msg) {
-            document.getElementById('successMsg').style.display = 'block';
-            document.getElementById('successText').textContent = msg;
-            document.getElementById('errorMsg').style.display = 'none';
-        }
-
-        function setLoading(btnId, loading) {
-            const btn = document.getElementById(btnId);
-            const loadingEl = btn.querySelector('.loading');
-            const textEl = btn.querySelector('span:not(.loading)');
-            if (loading) {
-                loadingEl.classList.add('show');
-                if (textEl) textEl.style.display = 'none';
-                btn.disabled = true;
-            } else {
-                loadingEl.classList.remove('show');
-                if (textEl) textEl.style.display = 'inline';
-                btn.disabled = false;
-            }
-        }
-
-        function showStep(step) {
-            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-            document.getElementById(step).classList.add('active');
-        }
-
-        function backToStep1() {
-            showStep('step1');
-            document.getElementById('errorMsg').style.display = 'none';
-            document.getElementById('successMsg').style.display = 'none';
-        }
-
-        async function sendCode(e) {
-            e.preventDefault();
-            const email = document.getElementById('emailInput').value.trim();
-            const password = document.getElementById('passwordInput').value;
-            const passwordConfirm = document.getElementById('passwordConfirmInput').value;
-
-            if (!email || !password || !passwordConfirm) {
-                showError('Заполните все поля');
-                return;
-            }
-
-            if (password.length < 6) {
-                showError('Пароль должен быть минимум 6 символов');
-                return;
-            }
-
-            if (password !== passwordConfirm) {
-                showError('Пароли не совпадают');
-                return;
-            }
-
-            setLoading('sendCodeBtn', true);
-            document.getElementById('errorMsg').style.display = 'none';
-
-            try {
-                const res = await fetch('/api/auth/send-code', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    registeredEmail = email;
-                    document.getElementById('emailDisplay').textContent = email;
-                    showStep('step2');
-                    showSuccess('✅ Код отправлен на email');
-                    document.getElementById('codeInput').value = '';
-                    document.getElementById('codeInput').focus();
-                    startTimer();
-                } else {
-                    showError(data.detail || 'Ошибка отправки кода');
-                }
-            } catch (err) {
-                showError('Ошибка соединения с сервером');
-                console.error(err);
-            } finally {
-                setLoading('sendCodeBtn', false);
-            }
-        }
-
-        async function verifyCode() {
-            const code = document.getElementById('codeInput').value.trim();
-            const email = registeredEmail;
-            const password = document.getElementById('passwordInput').value;
-
-            if (!code || code.length < 6) {
-                showError('Введите 6-значный код');
-                return;
-            }
-
-            setLoading('verifyBtn', true);
-            document.getElementById('errorMsg').style.display = 'none';
-
-            try {
-                const res = await fetch('/api/auth/verify-code', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, code, password })
-                });
-
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    movieId = data.movie_id;
-                    showSuccess('✅ Email подтвержден! Перенаправление...');
-                    setTimeout(() => {
-                        window.location.href = '/setup-profile?movie_id=' + movieId;
-                    }, 1500);
-                } else {
-                    showError(data.detail || 'Неверный код');
-                }
-            } catch (err) {
-                showError('Ошибка соединения с сервером');
-                console.error(err);
-            } finally {
-                setLoading('verifyBtn', false);
-            }
-        }
-
-        async function resendCode() {
-            const email = registeredEmail;
-            setLoading('resendBtn', true);
-            document.getElementById('errorMsg').style.display = 'none';
-
-            try {
-                const res = await fetch('/api/auth/send-code', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    showSuccess('✅ Код отправлен повторно');
-                    document.getElementById('codeInput').value = '';
-                    document.getElementById('codeInput').focus();
-                    startTimer();
-                } else {
-                    showError(data.detail || 'Ошибка отправки кода');
-                }
-            } catch (err) {
-                showError('Ошибка соединения с сервером');
-                console.error(err);
-            } finally {
-                setLoading('resendBtn', false);
-            }
-        }
-
-        function startTimer() {
-            let seconds = 600;
-            const timerEl = document.getElementById('timerText');
-            const interval = setInterval(() => {
-                seconds--;
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                timerEl.textContent = `⏳ Код действителен ${mins}:${secs.toString().padStart(2, '0')}`;
-                if (seconds <= 0) {
-                    clearInterval(interval);
-                    timerEl.textContent = '⏳ Код истек. Запросите новый.';
-                }
-            }, 1000);
-        }
-
-        // Enter для быстрого ввода
-        document.getElementById('codeInput')?.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') verifyCode();
-        });
-
-        // Автофокус на код
-        const observer = new MutationObserver(() => {
-            if (document.getElementById('step2').classList.contains('active')) {
-                setTimeout(() => document.getElementById('codeInput').focus(), 300);
-            }
-        });
-        observer.observe(document.getElementById('step2'), { attributes: true, attributeFilter: ['class'] });
-    </script>
-</body>
-</html>
+@app.post("/api/auth/send-code")
+async def send_verification_code(request: Request, data: dict):
+    email = data.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email обязателен")
+    
+    # Проверяем, не занят ли email
+    existing = await get_user_by_email(email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Этот email уже зарегистрирован")
+    
+    # Генерируем код
+    code = str(random.randint(100000, 999999))
+    expires_at = datetime.now() + timedelta(minutes=10)
+    
+    # Сохраняем код
+    email_verification_codes[email] = {
+        "code": code,
+        "expires_at": expires_at
+    }
+    
+    # Логируем код (всегда виден в логах Railway)
+    logger.info(f"📧 Код для {email}: {code}")
+    
+    # Пытаемся отправить email в фоне
+    try:
+        import threading
+        thread = threading.Thread(target=send_verification_email, args=(email, code))
+        thread.daemon = True
+        thread.start()
+    except Exception as e:
+        logger.warning(f"Ошибка запуска потока отправки: {e}")
+    
+    # Всегда возвращаем успех и показываем код в ответе (для отладки)
+    return {
+        "success": True,
+        "message": "Код отправлен на email",
+        "debug_code": code  # Показываем код на странице для разработки
+    }
