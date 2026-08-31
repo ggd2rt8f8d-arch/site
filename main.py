@@ -70,14 +70,11 @@ movie_id_counter = 10000001
 # ==================== EMAIL ====================
 def send_verification_email(email: str, code: str):
     """Отправка кода подтверждения на email (упрощенная версия для Railway)"""
-    # На Railway SMTP часто заблокирован, поэтому просто логируем код
     logger.info(f"📧 [RAILWAY] Код для {email}: {code}")
     
-    # Пытаемся отправить через SMTP если настроен
     if SMTP_USER and SMTP_PASSWORD:
         try:
             import socket
-            import ssl
             
             logger.info(f"Попытка отправки email на {email} через {SMTP_HOST}:{SMTP_PORT}")
             
@@ -88,7 +85,7 @@ def send_verification_email(email: str, code: str):
             
             text = f"Код подтверждения регистрации: {code}\n\nКод действителен 10 минут."
             
-            html = f"""
+            html = f'''
             <html>
             <body style="font-family: Arial, sans-serif; background: #0d0d0d; color: #d4d4d4; padding: 40px;">
                 <div style="max-width: 500px; margin: 0 auto; background: #1a1a1a; border-radius: 16px; padding: 30px; border: 1px solid #2a2a2a;">
@@ -101,14 +98,13 @@ def send_verification_email(email: str, code: str):
                 </div>
             </body>
             </html>
-            """
+            '''
             
             part1 = MIMEText(text, 'plain')
             part2 = MIMEText(html, 'html')
             msg.attach(part1)
             msg.attach(part2)
             
-            # Пробуем подключиться с таймаутом
             server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10)
             server.starttls()
             server.login(SMTP_USER, SMTP_PASSWORD)
@@ -124,7 +120,7 @@ def send_verification_email(email: str, code: str):
             logger.warning(f"⚠️ SMTP ошибка: {e}, код для {email}: {code}")
             return False
     
-    return True  # Возвращаем True, так как код сохранен в лог
+    return True
 
 # ==================== БАЗА ДАННЫХ — ИНИЦИАЛИЗАЦИЯ ====================
 async def init_db():
@@ -1609,7 +1605,7 @@ async def send_verification_code(request: Request, data: dict):
     # Логируем код (всегда виден в логах Railway)
     logger.info(f"📧 Код для {email}: {code}")
     
-    # Пытаемся отправить email, но не ждем результата
+    # Пытаемся отправить email в фоне
     try:
         import threading
         thread = threading.Thread(target=send_verification_email, args=(email, code))
@@ -1621,7 +1617,7 @@ async def send_verification_code(request: Request, data: dict):
     # Всегда возвращаем успех и показываем код в ответе (для отладки)
     return {
         "success": True,
-        "message": "Код отправлен на email (проверьте логи Railway)",
+        "message": "Код отправлен на email",
         "debug_code": code  # Показываем код на странице для разработки
     }
         
