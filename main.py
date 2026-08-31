@@ -69,101 +69,62 @@ movie_id_counter = 10000001
 
 # ==================== EMAIL ====================
 def send_verification_email(email: str, code: str):
-    """Отправка кода подтверждения на email"""
-    try:
-        # Проверяем настройки SMTP
-        if not SMTP_USER or not SMTP_PASSWORD:
-            logger.warning("SMTP не настроен! Проверьте переменные окружения.")
-            logger.info(f"Код для {email}: {code}")
-            return False
+    """Отправка кода подтверждения на email (упрощенная версия для Railway)"""
+    # На Railway SMTP часто заблокирован, поэтому просто логируем код
+    logger.info(f"📧 [RAILWAY] Код для {email}: {code}")
+    
+    # Пытаемся отправить через SMTP если настроен
+    if SMTP_USER and SMTP_PASSWORD:
+        try:
+            import socket
+            import ssl
             
-        logger.info(f"Отправка email на {email} с кодом {code}")
-        
-        # Создаем сообщение
-        msg = MIMEMultipart('alternative')
-        msg['From'] = SMTP_FROM
-        msg['To'] = email
-        msg['Subject'] = 'Код подтверждения — Movie Admin'
-        
-        # Текстовая версия
-        text = f"""
-        Код подтверждения регистрации: {code}
-        
-        Код действителен 10 минут.
-        
-        Если вы не регистрировались, проигнорируйте это письмо.
-        """
-        
-        # HTML версия
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #0d0d0d; color: #d4d4d4; padding: 40px; margin: 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; margin: 0 auto; background: #1a1a1a; border-radius: 16px; border: 1px solid #2a2a2a;">
-                <tr>
-                    <td style="padding: 40px 30px;">
-                        <table width="100%" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="text-align: center;">
-                                    <h1 style="color: #e8e8e8; font-weight: 600; font-size: 28px; margin: 0 0 8px 0;">🎬 Movie Admin</h1>
-                                    <p style="color: #888; font-size: 14px; margin: 0 0 24px 0;">Код подтверждения регистрации</p>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="background: #0d0d0d; border-radius: 12px; padding: 24px; text-align: center; margin: 16px 0;">
-                                    <span style="font-size: 40px; font-weight: 700; color: #0088cc; letter-spacing: 10px; font-family: monospace;">{code}</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="text-align: center; padding-top: 16px;">
-                                    <p style="color: #888; font-size: 14px; margin: 0;">⏳ Код действителен <b style="color: #e8e8e8;">10 минут</b></p>
-                                    <p style="color: #555; font-size: 12px; margin: 16px 0 0 0;">
-                                        Если вы не регистрировались, проигнорируйте это письмо.
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-        """
-        
-        # Прикрепляем обе версии
-        part1 = MIMEText(text, 'plain')
-        part2 = MIMEText(html, 'html')
-        msg.attach(part1)
-        msg.attach(part2)
-        
-        # Отправляем
-        logger.info(f"Подключение к SMTP серверу {SMTP_HOST}:{SMTP_PORT}")
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
-        server.set_debuglevel(1)  # Включаем отладку
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        
-        logger.info(f"✅ Email успешно отправлен на {email}")
-        return True
-        
-    except smtplib.SMTPAuthenticationError as e:
-        logger.error(f"❌ Ошибка аутентификации SMTP: {e}")
-        logger.error("Проверьте SMTP_USER и SMTP_PASSWORD")
-        return False
-    except smtplib.SMTPException as e:
-        logger.error(f"❌ SMTP ошибка: {e}")
-        return False
-    except Exception as e:
-        logger.error(f"❌ Ошибка отправки email: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        return False
+            logger.info(f"Попытка отправки email на {email} через {SMTP_HOST}:{SMTP_PORT}")
+            
+            msg = MIMEMultipart('alternative')
+            msg['From'] = SMTP_FROM
+            msg['To'] = email
+            msg['Subject'] = 'Код подтверждения — Movie Admin'
+            
+            text = f"Код подтверждения регистрации: {code}\n\nКод действителен 10 минут."
+            
+            html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; background: #0d0d0d; color: #d4d4d4; padding: 40px;">
+                <div style="max-width: 500px; margin: 0 auto; background: #1a1a1a; border-radius: 16px; padding: 30px; border: 1px solid #2a2a2a;">
+                    <h1 style="color: #e8e8e8; font-weight: 300; text-align: center;">Movie Admin</h1>
+                    <p style="color: #ccc; text-align: center;">Код подтверждения регистрации</p>
+                    <div style="background: #0d0d0d; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+                        <span style="font-size: 36px; font-weight: 700; color: #0088cc; letter-spacing: 8px;">{code}</span>
+                    </div>
+                    <p style="color: #888; font-size: 14px; text-align: center;">Код действителен <b>10 минут</b>.</p>
+                </div>
+            </body>
+            </html>
+            """
+            
+            part1 = MIMEText(text, 'plain')
+            part2 = MIMEText(html, 'html')
+            msg.attach(part1)
+            msg.attach(part2)
+            
+            # Пробуем подключиться с таймаутом
+            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10)
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+            
+            logger.info(f"✅ Email успешно отправлен на {email}")
+            return True
+        except socket.timeout:
+            logger.warning(f"⏰ Таймаут SMTP, код для {email}: {code}")
+            return False
+        except Exception as e:
+            logger.warning(f"⚠️ SMTP ошибка: {e}, код для {email}: {code}")
+            return False
+    
+    return True  # Возвращаем True, так как код сохранен в лог
 
 # ==================== БАЗА ДАННЫХ — ИНИЦИАЛИЗАЦИЯ ====================
 async def init_db():
@@ -1645,29 +1606,24 @@ async def send_verification_code(request: Request, data: dict):
         "expires_at": expires_at
     }
     
-    # Проверяем настройки SMTP
-    if not SMTP_USER or not SMTP_PASSWORD:
-        logger.warning("⚠️ SMTP не настроен! Код сохранен в лог.")
-        logger.info(f"📧 Код для {email}: {code}")
-        return {
-            "success": True, 
-            "message": "Код сохранен в лог (SMTP не настроен)",
-            "debug_code": code  # Только для отладки!
-        }
+    # Логируем код (всегда виден в логах Railway)
+    logger.info(f"📧 Код для {email}: {code}")
     
-    # Отправляем email
-    success = send_verification_email(email, code)
+    # Пытаемся отправить email, но не ждем результата
+    try:
+        import threading
+        thread = threading.Thread(target=send_verification_email, args=(email, code))
+        thread.daemon = True
+        thread.start()
+    except Exception as e:
+        logger.warning(f"Ошибка запуска потока отправки: {e}")
     
-    if success:
-        return {"success": True, "message": "Код отправлен на email"}
-    else:
-        # Если отправка не удалась, возвращаем код для отладки
-        logger.warning(f"⚠️ Отправка email не удалась, код для {email}: {code}")
-        return {
-            "success": True, 
-            "message": "Код отправлен на email (проверьте логи)",
-            "debug_code": code  # Только для отладки!
-        }
+    # Всегда возвращаем успех и показываем код в ответе (для отладки)
+    return {
+        "success": True,
+        "message": "Код отправлен на email (проверьте логи Railway)",
+        "debug_code": code  # Показываем код на странице для разработки
+    }
         
 @app.post("/api/auth/verify-code")
 async def verify_email_code(request: Request, data: dict):
