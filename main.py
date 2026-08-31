@@ -65,6 +65,7 @@ pool: asyncpg.Pool = None
 # ==================== ХРАНИЛИЩА ====================
 auth_sessions = {}
 email_verification_codes = {}
+telegram_auth_sessions = {}
 movie_id_counter = 10000001
 
 # ==================== EMAIL ====================
@@ -1028,11 +1029,11 @@ async def cmd_start(message: Message, state: FSMContext):
     if len(args) > 1:
         token = args[1]
         
-        # Проверяем, существует ли сессия
-        if token in auth_sessions:
+        # Проверяем, существует ли сессия Telegram авторизации
+        if token in telegram_auth_sessions:
             # Обновляем статус сессии
-            auth_sessions[token]["status"] = "authenticated"
-            auth_sessions[token]["user_id"] = message.from_user.id
+            telegram_auth_sessions[token]["status"] = "authenticated"
+            telegram_auth_sessions[token]["user_id"] = message.from_user.id
             
             await message.answer(
                 "✅ <b>Авторизация успешна!</b>\n\n"
@@ -1590,7 +1591,8 @@ async def check_super_admin(request: Request):
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {
         "request": request,
-        "GOOGLE_CLIENT_ID": GOOGLE_CLIENT_ID
+        "GOOGLE_CLIENT_ID": GOOGLE_CLIENT_ID,
+        "BOT_USERNAME": BOT_USERNAME
     })
 
 @app.get("/register", response_class=HTMLResponse)
@@ -1800,6 +1802,40 @@ async def login(request: Request, data: dict):
     )
     return response
 
+@app.post("/api/auth/login-movieid")
+async def login_by_movie_id(request: Request, data: dict):
+    movie_id = data.get("movie_id")
+    password = data.get("password")
+    
+    if not movie_id or not password:
+        raise HTTPException(status_code=400, detail="Все поля обязательны")
+    
+    user = await get_user_by_movie_id(movie_id)
+    if not user:
+        raise HTTPException(status_code=400, detail="Пользователь не найден")
+    
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    
+    if user["password_hash"] != password_hash:
+        raise HTTPException(status_code=400, detail="Неверный пароль")
+    
+    if user.get("is_banned"):
+        ban_reason = user.get("ban_reason", "Без причины")
+        raise HTTPException(status_code=403, detail=f"Пользователь заблокирован. Причина: {ban_reason}")
+    
+    await update_user_online_by_id(user["movie_id"])
+    
+    response = JSONResponse({"success": True, "movie_id": user["movie_id"]})
+    response.set_cookie(
+        key="movie_id",
+        value=str(user["movie_id"]),
+        httponly=True,
+        max_age=60*60*24*7,
+        secure=False,
+        samesite="lax"
+    )
+    return response
+
 @app.post("/api/auth/check-username")
 async def check_username(request: Request, data: dict):
     username = data.get("username")
@@ -1844,6 +1880,72 @@ async def logout():
     response.delete_cookie("movie_id")
     return response
 
+# ---------- API Telegram авторизация ----------
+@app.post("/api/auth/telegram-init")
+async def telegram_auth_init(request: Request, data: dict):
+    token = data.get("token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Token required")
+    
+    if token in telegram_auth_sessions:
+        return {"success": False, "error": "Token already used"}
+    
+    telegram_auth_sessions[token] = {
+        "status": "waiting",
+        "created_at": datetime.now(),
+        "user_id": None
+    }
+    
+    expired = [t for t, s in telegram_auth_sessions.items() if datetime.now() - s["created_at"] > timedelta(minutes=5)]
+    for t in expired:
+        del telegram_auth_sessions[t]
+    
+    logger.info(f"Telegram auth session initialized: {token}")
+    return {"success": True}
+
+@app.post("/api/auth/telegram-status")
+async def telegram_auth_status(request: Request, data: dict):
+    token = data.get("token")
+    if not token:
+        return {"status": "error", "error": "Token required"}
+    
+    session = telegram_auth_sessions.get(token)
+    if not session:
+        return {"status": "error", "error": "Session not found"}
+    
+    if datetime.now() - session["created_at"] > timedelta(minutes=5):
+        telegram_auth_sessions[token]["status"] = "expired"
+        return {"status": "expired"}
+    
+    if session["status"] == "authenticated":
+        user_id = session.get("user_id")
+        user = await get_user_by_movie_id(user_id)
+        if not user:
+            try:
+                chat = await bot.get_chat(user_id)
+                username = chat.username or str(user_id)
+                password_hash = hashlib.sha256(secrets.token_urlsafe(16).encode()).hexdigest()
+                movie_id = await create_user(
+                    email=f"{user_id}@telegram.user",
+                    password_hash=password_hash,
+                    username=username,
+                    display_name=chat.first_name or f"User {user_id}"
+                )
+                user = await get_user_by_movie_id(movie_id)
+                session["user_id"] = movie_id
+            except Exception as e:
+                logger.error(f"Error creating user from Telegram: {e}")
+                return {"status": "error", "error": "Failed to create user"}
+        
+        return {
+            "authenticated": True,
+            "user_id": session.get("user_id")
+        }
+    elif session["status"] == "expired":
+        return {"status": "expired"}
+    else:
+        return {"status": "waiting"}
+
 # ---------- API Google Auth ----------
 @app.post("/auth/google")
 async def google_auth(request: Request, data: dict):
@@ -1855,16 +1957,13 @@ async def google_auth(request: Request, data: dict):
         if not email:
             raise HTTPException(status_code=400, detail="Email не указан")
         
-        # Ищем пользователя
         user = await get_user_by_email(email)
         
         if not user:
-            # Создаем нового пользователя
             random_password = secrets.token_urlsafe(16)
             password_hash = hashlib.sha256(random_password.encode()).hexdigest()
             
             username = email.split('@')[0]
-            # Проверяем уникальность username
             existing = await get_user_by_username(username)
             if existing:
                 username = f"{username}_{random.randint(100, 999)}"
@@ -1896,6 +1995,62 @@ async def google_auth(request: Request, data: dict):
     except Exception as e:
         logger.error(f"Google auth error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ---------- API восстановления пароля ----------
+@app.post("/api/auth/reset-password")
+async def reset_password(request: Request, data: dict):
+    email = data.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email обязателен")
+    
+    user = await get_user_by_email(email)
+    if not user:
+        return {"success": True, "message": "Инструкции отправлены на email"}
+    
+    reset_code = str(random.randint(100000, 999999))
+    email_verification_codes[f"reset_{email}"] = {
+        "code": reset_code,
+        "expires_at": datetime.now() + timedelta(minutes=10)
+    }
+    
+    logger.info(f"🔐 Код сброса для {email}: {reset_code}")
+    
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['From'] = SMTP_FROM
+        msg['To'] = email
+        msg['Subject'] = 'Восстановление пароля — Movie Admin'
+        
+        html = f'''
+        <html>
+        <body style="font-family: Arial, sans-serif; background: #0d0d0d; color: #d4d4d4; padding: 40px;">
+            <div style="max-width: 500px; margin: 0 auto; background: #1a1a1a; border-radius: 16px; padding: 30px; border: 1px solid #2a2a2a;">
+                <h1 style="color: #e8e8e8; font-weight: 300; text-align: center;">Movie Admin</h1>
+                <p style="color: #ccc; text-align: center;">Код для восстановления пароля</p>
+                <div style="background: #0d0d0d; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+                    <span style="font-size: 36px; font-weight: 700; color: #0088cc; letter-spacing: 8px;">{reset_code}</span>
+                </div>
+                <p style="color: #888; font-size: 14px; text-align: center;">Код действителен <b>10 минут</b>.</p>
+            </div>
+        </body>
+        </html>
+        '''
+        
+        part1 = MIMEText("Код восстановления: " + reset_code, 'plain')
+        part2 = MIMEText(html, 'html')
+        msg.attach(part1)
+        msg.attach(part2)
+        
+        if SMTP_USER and SMTP_PASSWORD:
+            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10)
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+    except Exception as e:
+        logger.error(f"Reset email error: {e}")
+    
+    return {"success": True, "message": "Инструкции отправлены на email"}
 
 # ==================== API ДАШБОРДА ====================
 
